@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  tmn-admin-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tmn-admin-template:latest
+    container_name: tmn-admin-frontend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - tmn-network
+
+networks:
+  tmn-network:
+    driver: bridge
+
