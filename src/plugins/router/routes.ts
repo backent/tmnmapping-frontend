@@ -10,10 +10,12 @@ export const routes = [
       },
       {
         path: 'buildings',
+        name: 'buildings',
         component: () => import('@/pages/buildings.vue'),
       },
       {
-        path: 'building-form',
+        path: 'buildings/:id/edit',
+        name: 'building-edit',
         component: () => import('@/pages/building-form.vue'),
       },
     ],

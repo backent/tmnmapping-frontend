@@ -5,12 +5,11 @@ export const apiConfig = {
     auth_login: '/login',
     auth_logout: '/logout',
     auth_me: '/current-user',
-    
+
     // Building endpoints
     buildings_list: '/buildings',
     buildings_get: '/buildings/:id',
-    buildings_create: '/buildings',
     buildings_update: '/buildings/:id',
-    buildings_delete: '/buildings/:id',
+    buildings_sync: '/buildings/sync',
   },
 }

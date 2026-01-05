@@ -1,48 +1,35 @@
+// Entity interface matching backend response
 export interface Building {
   id: number
+  external_building_id: string
+  iris_code: string
   name: string
-  iris_building_id?: string | null
-  external_building_id?: string | null
-  project_name?: string | null
-  resource_type_id?: number | null
-  resource_type_name?: string | null
-  audience?: number | null
-  traffic_per_week?: number | null
-  address: string
-  latitude: number | null
-  longitude: number | null
-  description: string
-  building_area_id: number
-  building_sub_area_id: number
-  building_type_id: number
-  package_id?: number | null
-  package_name?: string | null
-  created_by?: number
-  created_at?: string
-  updated_at?: string
+  project_name: string
+  audience: number
+  impression: number
+  cbd_area: string
+  building_status: number
+  competitor_location: boolean
+  sellable: string
+  connectivity: string
+  resource_type: string
+  synced_at: string
+  created_at: string
+  updated_at: string
 }
 
-export interface BuildingImportData {
-  name: string
-  address: string
-  building_area: string
-  building_sub_area: string
-  building_type: string
-  iris_building_id?: string | null
-  external_building_id?: string | null
-  project_name?: string | null
-  resource_type_id?: number | null
-  resource_type?: string | null
-  audience?: number | null
-  traffic_per_week?: number | null
-  latitude?: number | null
-  longitude?: number | null
-  description?: string
+// Update request data (only user-editable fields)
+export interface BuildingUpdateData {
+  sellable?: string
+  connectivity?: string
+  resource_type?: string
 }
 
-export interface BuildingScreenAvailable {
-  building_id: number
-  screen_type: 'inside' | 'outside'
-  building: Building
+// Pagination parameters for API requests
+export interface PaginationParams {
+  take?: number
+  skip?: number
+  orderBy?: string
+  orderDirection?: 'ASC' | 'DESC'
 }
 

@@ -6,6 +6,7 @@ export interface ApiResponse<T = any> {
   data: T
   message?: string
   status?: string
+  extras?: any
 }
 
 export interface PaginatedResponse<T> {

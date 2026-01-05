@@ -10,78 +10,79 @@ const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
+// Pagination state
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([{ key: 'created_at', order: 'desc' }])
 
-// Fetch buildings on component mount
-onMounted(async () => {
-  await loadBuildings()
-})
+// Computed properties
+const buildings = computed(() => buildingStore.buildings)
+const isLoading = computed(() => buildingStore.isLoading)
+const isSyncing = computed(() => buildingStore.isSyncing)
+const totalRecords = computed(() => buildingStore.pagination.total)
 
-const loadBuildings = async () => {
+// Fetch buildings with pagination
+const fetchBuildings = async () => {
   try {
-    // Build params object with pagination and ordering
     const skip = (currentPage.value - 1) * itemsPerPage.value
-    const params = {
+
+    const params: any = {
       take: itemsPerPage.value,
-      skip: skip,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      skip,
+    }
+
+    // Add sorting if present
+    if (sortBy.value.length > 0) {
+      const sort = sortBy.value[0]
+      params.orderBy = sort.key
+      params.orderDirection = sort.order === 'desc' ? 'DESC' : 'ASC'
     }
 
     await buildingStore.fetchBuildings(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || 'Failed to load buildings'
+    snackbarMessage.value = error?.response?.data?.data || 'Failed to load buildings'
     snackbarColor.value = 'error'
     snackbar.value = true
   }
 }
 
-// Computed properties from store
-const buildings = computed(() => buildingStore.buildings)
-const isLoading = computed(() => buildingStore.isLoading)
-const totalPages = computed(() => buildingStore.pagination.lastPage || 1)
-const totalBuildings = computed(() => buildingStore.pagination.total || 0)
+// Watch for pagination/sort changes
+watch([currentPage, itemsPerPage, sortBy], () => {
+  fetchBuildings()
+}, { deep: true })
 
 const handleEdit = (building: Building) => {
-  router.push({
-    path: '/building-form',
-    query: { id: building.id.toString() },
-  })
+  router.push({ name: 'building-edit', params: { id: building.id.toString() } })
 }
 
-const handleDelete = async (id: number) => {
-  if (confirm('Are you sure you want to delete this building?')) {
-    try {
-      await buildingStore.deleteBuilding(id)
-      
-      snackbarMessage.value = 'Building deleted successfully'
-      snackbarColor.value = 'success'
-      snackbar.value = true
-      await loadBuildings()
-    }
-    catch (error: any) {
-      snackbarMessage.value = error?.details?.message || 'Failed to delete building'
-      snackbarColor.value = 'error'
-      snackbar.value = true
-    }
+const triggerSync = async () => {
+  try {
+    await buildingStore.triggerSync()
+    snackbarMessage.value = 'Buildings synced successfully!'
+    snackbarColor.value = 'success'
+    snackbar.value = true
+
+    // Refresh current page after sync
+    await fetchBuildings()
+  }
+  catch (error: any) {
+    snackbarMessage.value = error?.response?.data?.data || 'Failed to sync buildings'
+    snackbarColor.value = 'error'
+    snackbar.value = true
   }
 }
 
-const handleAddNew = () => {
-  router.push('/building-form')
+const formatDate = (dateString: string) => {
+  if (!dateString)
+    return '-'
+
+  return new Date(dateString).toLocaleString()
 }
 
-const handlePageChange = async (page: number) => {
-  currentPage.value = page
-  await loadBuildings()
-}
-
-const handleItemsPerPageChange = async () => {
-  currentPage.value = 1
-  await loadBuildings()
-}
+onMounted(() => {
+  fetchBuildings()
+})
 </script>
 
 <template>
@@ -89,16 +90,18 @@ const handleItemsPerPageChange = async () => {
     <VCol cols="12">
       <VCard>
         <VCardTitle class="d-flex align-center justify-space-between">
-          <span>Buildings List</span>
+          <span>Buildings</span>
           <VBtn
-            color="primary"
-            @click="handleAddNew"
+            color="secondary"
+            :loading="isSyncing"
+            :disabled="isSyncing"
+            @click="triggerSync"
           >
             <VIcon
-              icon="ri-add-line"
+              icon="ri-refresh-line"
               class="me-1"
             />
-            Add New Building
+            Sync from ERP
           </VBtn>
         </VCardTitle>
 
@@ -114,22 +117,6 @@ const handleItemsPerPageChange = async () => {
             />
           </div>
 
-          <!-- Empty State -->
-          <div
-            v-else-if="buildings.length === 0"
-            class="text-center py-8"
-          >
-            <VIcon
-              icon="ri-building-line"
-              size="48"
-              color="grey"
-              class="mb-4"
-            />
-            <p class="text-body-1 text-medium-emphasis">
-              No buildings found. Add your first building to get started.
-            </p>
-          </div>
-
           <!-- Buildings Table -->
           <div v-else>
             <VTable>
@@ -139,19 +126,31 @@ const handleItemsPerPageChange = async () => {
                     ID
                   </th>
                   <th class="text-uppercase">
-                    Building Name
+                    Name
                   </th>
                   <th class="text-uppercase">
-                    Address
-                  </th>
-                  <th class="text-uppercase text-center">
-                    Latitude
-                  </th>
-                  <th class="text-uppercase text-center">
-                    Longitude
+                    IRIS Code
                   </th>
                   <th class="text-uppercase">
-                    Description
+                    Project
+                  </th>
+                  <th class="text-uppercase">
+                    Audience
+                  </th>
+                  <th class="text-uppercase">
+                    Impression
+                  </th>
+                  <th class="text-uppercase">
+                    CBD Area
+                  </th>
+                  <th class="text-uppercase">
+                    Sellable
+                  </th>
+                  <th class="text-uppercase">
+                    Connectivity
+                  </th>
+                  <th class="text-uppercase">
+                    Synced At
                   </th>
                   <th class="text-uppercase text-center">
                     Actions
@@ -164,25 +163,64 @@ const handleItemsPerPageChange = async () => {
                   v-for="building in buildings"
                   :key="building.id"
                 >
-                  <td>
-                    {{ building.id }}
-                  </td>
+                  <td>{{ building.id }}</td>
                   <td>
                     <span class="font-weight-medium">{{ building.name }}</span>
                   </td>
                   <td>
-                    {{ building.address }}
-                  </td>
-                  <td class="text-center">
-                    {{ building.latitude ?? '-' }}
-                  </td>
-                  <td class="text-center">
-                    {{ building.longitude ?? '-' }}
+                    <code
+                      v-if="building.iris_code"
+                      class="text-primary"
+                    >{{ building.iris_code }}</code>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
                   </td>
                   <td>
-                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
-                      {{ building.description }}
-                    </span>
+                    <span v-if="building.project_name">{{ building.project_name }}</span>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
+                  </td>
+                  <td>{{ building.audience || 0 }}</td>
+                  <td>{{ building.impression || 0 }}</td>
+                  <td>
+                    <span v-if="building.cbd_area">{{ building.cbd_area }}</span>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
+                  </td>
+                  <td>
+                    <VChip
+                      v-if="building.sellable"
+                      :color="building.sellable === 'sell' ? 'success' : 'error'"
+                      size="small"
+                    >
+                      {{ building.sellable === 'sell' ? 'Sell' : 'Not Sell' }}
+                    </VChip>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
+                  </td>
+                  <td>
+                    <VChip
+                      v-if="building.connectivity"
+                      :color="building.connectivity === 'online' ? 'success' : building.connectivity === 'manual' ? 'warning' : 'default'"
+                      size="small"
+                    >
+                      {{ building.connectivity === 'online' ? 'Online' : building.connectivity === 'manual' ? 'Manual' : 'Not Yet Checked' }}
+                    </VChip>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
+                  </td>
+                  <td>
+                    <span class="text-body-2">{{ formatDate(building.synced_at) }}</span>
                   </td>
                   <td class="text-center">
                     <VBtn
@@ -200,48 +238,40 @@ const handleItemsPerPageChange = async () => {
                         Edit
                       </VTooltip>
                     </VBtn>
-                    <VBtn
-                      icon
-                      size="small"
-                      color="error"
-                      variant="text"
-                      @click="handleDelete(building.id)"
-                    >
-                      <VIcon icon="ri-delete-bin-line" />
-                      <VTooltip
-                        activator="parent"
-                        location="top"
-                      >
-                        Delete
-                      </VTooltip>
-                    </VBtn>
+                  </td>
+                </tr>
+                <tr v-if="buildings.length === 0">
+                  <td
+                    colspan="11"
+                    class="text-center text-disabled py-8"
+                  >
+                    No buildings found. Click "Sync from ERP" to fetch building data.
                   </td>
                 </tr>
               </tbody>
             </VTable>
 
             <!-- Pagination Controls -->
-            <div
-              v-if="totalBuildings > 0"
-              class="d-flex align-center justify-space-between mt-4"
-            >
-              <div class="text-body-2 text-disabled">
-                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalBuildings) }} of {{ totalBuildings }} buildings
+            <div class="d-flex justify-space-between align-center mt-4">
+              <div class="text-body-2">
+                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalRecords) }} of {{ totalRecords }} entries
               </div>
-              <div class="d-flex align-center gap-4">
+
+              <div class="d-flex align-center gap-2">
                 <VSelect
                   v-model="itemsPerPage"
-                  :items="[5, 10, 25, 50]"
-                  label="Items per page"
+                  :items="[10, 25, 50, 100]"
+                  label="Per page"
                   density="compact"
-                  style="width: 150px;"
-                  @update:model-value="handleItemsPerPageChange"
+                  hide-details
+                  style="max-width: 100px"
                 />
+
                 <VPagination
                   v-model="currentPage"
-                  :length="totalPages"
-                  :total-visible="7"
-                  @update:model-value="handlePageChange"
+                  :length="Math.ceil(totalRecords / itemsPerPage)"
+                  :total-visible="5"
+                  density="compact"
                 />
               </div>
             </div>
@@ -250,14 +280,13 @@ const handleItemsPerPageChange = async () => {
       </VCard>
     </VCol>
 
-    <!-- Snackbar -->
+    <!-- Snackbar for feedback -->
     <VSnackbar
       v-model="snackbar"
       :color="snackbarColor"
-      timeout="3000"
+      :timeout="3000"
     >
       {{ snackbarMessage }}
     </VSnackbar>
   </VRow>
 </template>
-
