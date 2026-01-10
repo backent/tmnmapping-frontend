@@ -19,11 +19,20 @@ const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([{ key: 'created_at
 const searchQuery = ref('')
 const searchDebounce = ref<NodeJS.Timeout | null>(null)
 
+// Filter state
+const filterBuildingStatus = ref<string | null>(null)
+const filterSellable = ref<string | null>(null)
+const filterConnectivity = ref<string | null>(null)
+const filterResourceType = ref<string | null>(null)
+const filterCompetitorLocation = ref<boolean | null>(null)
+const filterCbdArea = ref<string | null>(null)
+
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
 const isLoading = computed(() => buildingStore.isLoading)
 const isSyncing = computed(() => buildingStore.isSyncing)
 const totalRecords = computed(() => buildingStore.pagination.total)
+const filterOptions = computed(() => buildingStore.filterOptions)
 
 // Fetch buildings with pagination
 const fetchBuildings = async () => {
@@ -38,6 +47,26 @@ const fetchBuildings = async () => {
     // Add search if present
     if (searchQuery.value.trim()) {
       params.search = searchQuery.value.trim()
+    }
+
+    // Add filters if present
+    if (filterBuildingStatus.value) {
+      params.building_status = filterBuildingStatus.value
+    }
+    if (filterSellable.value) {
+      params.sellable = filterSellable.value
+    }
+    if (filterConnectivity.value) {
+      params.connectivity = filterConnectivity.value
+    }
+    if (filterResourceType.value) {
+      params.resource_type = filterResourceType.value
+    }
+    if (filterCompetitorLocation.value !== null) {
+      params.competitor_location = filterCompetitorLocation.value
+    }
+    if (filterCbdArea.value) {
+      params.cbd_area = filterCbdArea.value
     }
 
     // Add sorting if present
@@ -77,6 +106,13 @@ watch(searchQuery, () => {
   }, 500)
 })
 
+// Watch for filter changes
+watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea], () => {
+  // Reset to first page when filters change
+  currentPage.value = 1
+  fetchBuildings()
+})
+
 const handleEdit = (building: Building) => {
   router.push({ name: 'building-edit', params: { id: building.id.toString() } })
 }
@@ -105,8 +141,22 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString()
 }
 
-onMounted(() => {
+const clearFilters = () => {
+  filterBuildingStatus.value = null
+  filterSellable.value = null
+  filterConnectivity.value = null
+  filterResourceType.value = null
+  filterCompetitorLocation.value = null
+  filterCbdArea.value = null
+  currentPage.value = 1
   fetchBuildings()
+}
+
+onMounted(async () => {
+  // Fetch filter options first
+  await buildingStore.fetchFilterOptions()
+  // Then fetch buildings
+  await fetchBuildings()
 })
 </script>
 
@@ -131,7 +181,79 @@ onMounted(() => {
         </VCardTitle>
 
         <VCardText>
-          <!-- Search Field -->
+          <!-- Filters -->
+          <VRow class="mb-4">
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterBuildingStatus"
+                :items="filterOptions?.building_status || []"
+                label="Status"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterSellable"
+                :items="filterOptions?.sellable || []"
+                label="Sellable"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterConnectivity"
+                :items="filterOptions?.connectivity || []"
+                label="Connectivity"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterResourceType"
+                :items="filterOptions?.resource_type || []"
+                label="Resource Type"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterCompetitorLocation"
+                :items="[
+                  { title: 'All', value: null },
+                  { title: 'Yes', value: true },
+                  { title: 'No', value: false },
+                ]"
+                label="Competitor Location"
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VSelect
+                v-model="filterCbdArea"
+                :items="filterOptions?.cbd_area || []"
+                label="CBD Area"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+          </VRow>
+
+          <!-- Search and Clear Filters -->
           <VRow class="mb-4">
             <VCol cols="12" md="4">
               <VTextField
@@ -143,6 +265,16 @@ onMounted(() => {
                 density="compact"
                 hide-details
               />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VBtn
+                color="secondary"
+                variant="outlined"
+                block
+                @click="clearFilters"
+              >
+                Clear Filters
+              </VBtn>
             </VCol>
           </VRow>
 

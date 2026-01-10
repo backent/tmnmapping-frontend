@@ -4,14 +4,16 @@ import {
   getBuildings,
   putBuilding,
   syncBuildings,
+  getFilterOptions,
 } from '@/http/building'
-import type { Building, BuildingUpdateData, PaginationParams } from '@/types/building'
+import type { Building, BuildingUpdateData, PaginationParams, FilterOptions } from '@/types/building'
 
 interface BuildingState {
   buildings: Building[]
   currentBuilding: Building | null
   isLoading: boolean
   isSyncing: boolean
+  filterOptions: FilterOptions | null
   pagination: {
     currentPage: number
     lastPage: number
@@ -26,6 +28,7 @@ export const useBuildingStore = defineStore('building', {
     currentBuilding: null,
     isLoading: false,
     isSyncing: false,
+    filterOptions: null,
     pagination: {
       currentPage: 1,
       lastPage: 1,
@@ -169,6 +172,19 @@ export const useBuildingStore = defineStore('building', {
     // Clear current building
     clearCurrentBuilding() {
       this.currentBuilding = null
+    },
+
+    // Fetch filter options for dropdowns
+    async fetchFilterOptions() {
+      try {
+        const response = await getFilterOptions()
+        this.filterOptions = response.data || null
+        return response
+      }
+      catch (error) {
+        console.error('Error fetching filter options:', error)
+        throw error
+      }
     },
   },
 })

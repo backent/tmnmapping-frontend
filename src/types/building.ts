@@ -32,5 +32,20 @@ export interface PaginationParams {
   orderBy?: string
   orderDirection?: 'ASC' | 'DESC'
   search?: string
+  building_status?: string
+  sellable?: string
+  connectivity?: string
+  resource_type?: string
+  competitor_location?: boolean
+  cbd_area?: string
+}
+
+// Filter options from backend
+export interface FilterOptions {
+  building_status: string[]
+  sellable: string[]
+  connectivity: string[]
+  resource_type: string[]
+  cbd_area: string[]
 }
 
