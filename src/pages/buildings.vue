@@ -49,6 +49,10 @@ const filterCompetitorLocation = ref<boolean | null>(
     : parseQueryParam(route.query.competitor_location, null, val => val === 'true'),
 )
 const filterCbdArea = ref<string | null>(parseQueryParam(route.query.cbd_area, null))
+const filterSubdistrict = ref<string | null>(parseQueryParam(route.query.subdistrict, null))
+const filterCitytown = ref<string | null>(parseQueryParam(route.query.citytown, null))
+const filterProvince = ref<string | null>(parseQueryParam(route.query.province, null))
+const filterGradeResource = ref<string | null>(parseQueryParam(route.query.grade_resource, null))
 
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
@@ -90,6 +94,18 @@ const updateURL = () => {
 
   if (filterCbdArea.value)
     query.cbd_area = filterCbdArea.value
+
+  if (filterSubdistrict.value)
+    query.subdistrict = filterSubdistrict.value
+
+  if (filterCitytown.value)
+    query.citytown = filterCitytown.value
+
+  if (filterProvince.value)
+    query.province = filterProvince.value
+
+  if (filterGradeResource.value)
+    query.grade_resource = filterGradeResource.value
 
   // Add sorting
   if (sortBy.value.length > 0) {
@@ -140,6 +156,18 @@ const fetchBuildings = async () => {
     if (filterCbdArea.value) {
       params.cbd_area = filterCbdArea.value
     }
+    if (filterSubdistrict.value) {
+      params.subdistrict = filterSubdistrict.value
+    }
+    if (filterCitytown.value) {
+      params.citytown = filterCitytown.value
+    }
+    if (filterProvince.value) {
+      params.province = filterProvince.value
+    }
+    if (filterGradeResource.value) {
+      params.grade_resource = filterGradeResource.value
+    }
 
     // Add sorting if present
     if (sortBy.value.length > 0) {
@@ -181,7 +209,7 @@ watch(searchQuery, () => {
 })
 
 // Watch for filter changes
-watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea], () => {
+watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea, filterSubdistrict, filterCitytown, filterProvince, filterGradeResource], () => {
   // Reset to first page when filters change
   currentPage.value = 1
   updateURL()
@@ -223,6 +251,10 @@ const clearFilters = () => {
   filterResourceType.value = null
   filterCompetitorLocation.value = null
   filterCbdArea.value = null
+  filterSubdistrict.value = null
+  filterCitytown.value = null
+  filterProvince.value = null
+  filterGradeResource.value = null
   searchQuery.value = ''
   currentPage.value = 1
   updateURL()
@@ -261,7 +293,7 @@ onMounted(async () => {
           <!-- Filters -->
           <VRow class="mb-4">
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterBuildingStatus"
                 :items="filterOptions?.building_status || []"
                 label="Status"
@@ -272,7 +304,7 @@ onMounted(async () => {
               />
             </VCol>
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterSellable"
                 :items="filterOptions?.sellable || []"
                 label="Sellable"
@@ -283,7 +315,7 @@ onMounted(async () => {
               />
             </VCol>
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterConnectivity"
                 :items="filterOptions?.connectivity || []"
                 label="Connectivity"
@@ -294,7 +326,7 @@ onMounted(async () => {
               />
             </VCol>
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterResourceType"
                 :items="filterOptions?.resource_type || []"
                 label="Resource Type"
@@ -305,7 +337,7 @@ onMounted(async () => {
               />
             </VCol>
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterCompetitorLocation"
                 :items="[
                   { title: 'All', value: null },
@@ -318,10 +350,54 @@ onMounted(async () => {
               />
             </VCol>
             <VCol cols="12" md="2">
-              <VSelect
+              <VAutocomplete
                 v-model="filterCbdArea"
                 :items="filterOptions?.cbd_area || []"
                 label="CBD Area"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VAutocomplete
+                v-model="filterSubdistrict"
+                :items="filterOptions?.subdistrict || []"
+                label="Subdistrict"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VAutocomplete
+                v-model="filterCitytown"
+                :items="filterOptions?.citytown || []"
+                label="City/Town"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VAutocomplete
+                v-model="filterProvince"
+                :items="filterOptions?.province || []"
+                label="Province"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VAutocomplete
+                v-model="filterGradeResource"
+                :items="filterOptions?.grade_resource || []"
+                label="Grade Resource"
                 placeholder="All"
                 clearable
                 density="compact"

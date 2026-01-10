@@ -181,6 +181,54 @@ onUnmounted(() => {
 
           <VCol
             cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.subdistrict || '-'"
+              label="Subdistrict"
+              readonly
+              variant="outlined"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.citytown || '-'"
+              label="City/Town"
+              readonly
+              variant="outlined"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.province || '-'"
+              label="Province"
+              readonly
+              variant="outlined"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.grade_resource || '-'"
+              label="Grade Resource"
+              readonly
+              variant="outlined"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
             md="4"
           >
             <VTextField

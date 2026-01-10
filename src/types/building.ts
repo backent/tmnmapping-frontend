@@ -19,6 +19,10 @@ export interface Building {
   sellable: string
   connectivity: string
   resource_type: string
+  subdistrict: string
+  citytown: string
+  province: string
+  grade_resource: string
   images: BuildingImage[]
   synced_at: string
   created_at: string
@@ -45,6 +49,10 @@ export interface PaginationParams {
   resource_type?: string
   competitor_location?: boolean
   cbd_area?: string
+  subdistrict?: string
+  citytown?: string
+  province?: string
+  grade_resource?: string
 }
 
 // Filter options from backend
@@ -54,4 +62,8 @@ export interface FilterOptions {
   connectivity: string[]
   resource_type: string[]
   cbd_area: string[]
+  subdistrict: string[]
+  citytown: string[]
+  province: string[]
+  grade_resource: string[]
 }
