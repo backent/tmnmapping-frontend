@@ -18,6 +18,11 @@ export const routes = [
         name: 'building-edit',
         component: () => import('@/pages/building-form.vue'),
       },
+      {
+        path: 'mapping',
+        name: 'mapping',
+        component: () => import('@/pages/mapping.vue'),
+      },
     ],
   },
   {

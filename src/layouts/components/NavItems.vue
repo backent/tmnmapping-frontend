@@ -26,4 +26,11 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/buildings',
     }"
   />
+  <VerticalNavLink
+    :item="{
+      title: 'Mapping',
+      icon: 'ri-map-pin-line',
+      to: '/mapping',
+    }"
+  />
 </template>

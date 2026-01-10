@@ -12,5 +12,19 @@ export const apiConfig = {
     buildings_update: '/buildings/:id',
     buildings_sync: '/buildings/sync',
     buildings_filter_options: '/building-filter-options',
+
+    // Mapping endpoints
+    mapping_buildings: '/admin/mapping-building',
+    mapping_buildings_cache: '/admin/mapping-building/cache',
+    mapping_filter_options: '/admin/mapping-filter-options',
+    mapping_regions: '/admin/mapping-region',
+    mapping_screen_types: '/admin/mapping-screentype',
+    mapping_year_list: '/admin/mapping-yearlist',
+    mapping_export: '/admin/mapping-building/export',
+
+    // Potential clients
+    potential_clients: '/admin/potentialclient',
+    potential_client_get: '/admin/potentialclient/:id',
+    potential_client_place: '/admin/potentialclient-place/:id',
   },
 }
