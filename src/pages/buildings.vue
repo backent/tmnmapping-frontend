@@ -1,31 +1,54 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useBuildingStore } from '@/stores/building'
 import type { Building } from '@/types/building'
 
 const router = useRouter()
+const route = useRoute()
 const buildingStore = useBuildingStore()
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
-// Pagination state
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([{ key: 'created_at', order: 'desc' }])
+// Helper function to parse query parameter
+const parseQueryParam = (value: any, defaultValue: any, parser?: (val: string) => any): any => {
+  if (value === null || value === undefined)
+    return defaultValue
+
+  const str = Array.isArray(value) ? value[0] : value
+
+  if (!str || str === '')
+    return defaultValue
+
+  return parser ? parser(String(str)) : String(str)
+}
+
+// Initialize state from URL query parameters
+const currentPage = ref(parseQueryParam(route.query.page, 1, val => Number.parseInt(val, 10)))
+const itemsPerPage = ref(parseQueryParam(route.query.perPage, 10, val => Number.parseInt(val, 10)))
+const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
+  {
+    key: parseQueryParam(route.query.orderBy, 'created_at'),
+    order: (parseQueryParam(route.query.orderDirection, 'desc') as string).toLowerCase() as 'asc' | 'desc',
+  },
+])
 
 // Search state
-const searchQuery = ref('')
+const searchQuery = ref(parseQueryParam(route.query.search, ''))
 const searchDebounce = ref<NodeJS.Timeout | null>(null)
 
 // Filter state
-const filterBuildingStatus = ref<string | null>(null)
-const filterSellable = ref<string | null>(null)
-const filterConnectivity = ref<string | null>(null)
-const filterResourceType = ref<string | null>(null)
-const filterCompetitorLocation = ref<boolean | null>(null)
-const filterCbdArea = ref<string | null>(null)
+const filterBuildingStatus = ref<string | null>(parseQueryParam(route.query.building_status, null))
+const filterSellable = ref<string | null>(parseQueryParam(route.query.sellable, null))
+const filterConnectivity = ref<string | null>(parseQueryParam(route.query.connectivity, null))
+const filterResourceType = ref<string | null>(parseQueryParam(route.query.resource_type, null))
+const filterCompetitorLocation = ref<boolean | null>(
+  route.query.competitor_location === undefined
+    ? null
+    : parseQueryParam(route.query.competitor_location, null, val => val === 'true'),
+)
+const filterCbdArea = ref<string | null>(parseQueryParam(route.query.cbd_area, null))
 
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
@@ -33,6 +56,55 @@ const isLoading = computed(() => buildingStore.isLoading)
 const isSyncing = computed(() => buildingStore.isSyncing)
 const totalRecords = computed(() => buildingStore.pagination.total)
 const filterOptions = computed(() => buildingStore.filterOptions)
+
+// Update URL query parameters
+const updateURL = () => {
+  const query: Record<string, string | number> = {}
+
+  // Add pagination
+  if (currentPage.value > 1)
+    query.page = currentPage.value
+
+  if (itemsPerPage.value !== 10)
+    query.perPage = itemsPerPage.value
+
+  // Add search
+  if (searchQuery.value.trim())
+    query.search = searchQuery.value.trim()
+
+  // Add filters
+  if (filterBuildingStatus.value)
+    query.building_status = filterBuildingStatus.value
+
+  if (filterSellable.value)
+    query.sellable = filterSellable.value
+
+  if (filterConnectivity.value)
+    query.connectivity = filterConnectivity.value
+
+  if (filterResourceType.value)
+    query.resource_type = filterResourceType.value
+
+  if (filterCompetitorLocation.value !== null)
+    query.competitor_location = filterCompetitorLocation.value ? 'true' : 'false'
+
+  if (filterCbdArea.value)
+    query.cbd_area = filterCbdArea.value
+
+  // Add sorting
+  if (sortBy.value.length > 0) {
+    const sort = sortBy.value[0]
+
+    if (sort.key !== 'created_at')
+      query.orderBy = sort.key
+
+    if (sort.order !== 'desc')
+      query.orderDirection = sort.order === 'asc' ? 'ASC' : 'DESC'
+  }
+
+  // Update URL without adding to browser history
+  router.push({ query, replace: true })
+}
 
 // Fetch buildings with pagination
 const fetchBuildings = async () => {
@@ -87,6 +159,7 @@ const fetchBuildings = async () => {
 
 // Watch for pagination/sort changes
 watch([currentPage, itemsPerPage, sortBy], () => {
+  updateURL()
   fetchBuildings()
 }, { deep: true })
 
@@ -102,6 +175,7 @@ watch(searchQuery, () => {
 
   // Debounce search - wait 500ms after user stops typing
   searchDebounce.value = setTimeout(() => {
+    updateURL()
     fetchBuildings()
   }, 500)
 })
@@ -110,6 +184,7 @@ watch(searchQuery, () => {
 watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea], () => {
   // Reset to first page when filters change
   currentPage.value = 1
+  updateURL()
   fetchBuildings()
 })
 
@@ -148,7 +223,9 @@ const clearFilters = () => {
   filterResourceType.value = null
   filterCompetitorLocation.value = null
   filterCbdArea.value = null
+  searchQuery.value = ''
   currentPage.value = 1
+  updateURL()
   fetchBuildings()
 }
 

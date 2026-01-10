@@ -26,11 +26,4 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/buildings',
     }"
   />
-  <VerticalNavLink
-    :item="{
-      title: 'Add Building',
-      icon: 'ri-add-circle-line',
-      to: '/building-form',
-    }"
-  />
 </template>
