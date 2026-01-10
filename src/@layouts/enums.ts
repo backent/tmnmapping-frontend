@@ -25,3 +25,4 @@ export const HorizontalNavType = {
   Static: 'static',
   Hidden: 'hidden',
 } as const
+

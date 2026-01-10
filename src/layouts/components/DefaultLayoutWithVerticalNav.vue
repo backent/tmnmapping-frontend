@@ -84,3 +84,4 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
   }
 }
 </style>
+

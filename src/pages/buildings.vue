@@ -15,6 +15,10 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([{ key: 'created_at', order: 'desc' }])
 
+// Search state
+const searchQuery = ref('')
+const searchDebounce = ref<NodeJS.Timeout | null>(null)
+
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
 const isLoading = computed(() => buildingStore.isLoading)
@@ -29,6 +33,11 @@ const fetchBuildings = async () => {
     const params: any = {
       take: itemsPerPage.value,
       skip,
+    }
+
+    // Add search if present
+    if (searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim()
     }
 
     // Add sorting if present
@@ -51,6 +60,22 @@ const fetchBuildings = async () => {
 watch([currentPage, itemsPerPage, sortBy], () => {
   fetchBuildings()
 }, { deep: true })
+
+// Watch for search changes with debounce
+watch(searchQuery, () => {
+  // Reset to first page when searching
+  currentPage.value = 1
+
+  // Clear existing timeout
+  if (searchDebounce.value) {
+    clearTimeout(searchDebounce.value)
+  }
+
+  // Debounce search - wait 500ms after user stops typing
+  searchDebounce.value = setTimeout(() => {
+    fetchBuildings()
+  }, 500)
+})
 
 const handleEdit = (building: Building) => {
   router.push({ name: 'building-edit', params: { id: building.id.toString() } })
@@ -106,6 +131,21 @@ onMounted(() => {
         </VCardTitle>
 
         <VCardText>
+          <!-- Search Field -->
+          <VRow class="mb-4">
+            <VCol cols="12" md="4">
+              <VTextField
+                v-model="searchQuery"
+                label="Search by name"
+                placeholder="Enter building name..."
+                prepend-inner-icon="ri-search-line"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+          </VRow>
+
           <!-- Loading State -->
           <div
             v-if="isLoading"
@@ -142,6 +182,9 @@ onMounted(() => {
                   </th>
                   <th class="text-uppercase">
                     CBD Area
+                  </th>
+                  <th class="text-uppercase">
+                    Status
                   </th>
                   <th class="text-uppercase">
                     Sellable
@@ -188,6 +231,19 @@ onMounted(() => {
                   <td>{{ building.impression || 0 }}</td>
                   <td>
                     <span v-if="building.cbd_area">{{ building.cbd_area }}</span>
+                    <span
+                      v-else
+                      class="text-disabled"
+                    >-</span>
+                  </td>
+                  <td>
+                    <VChip
+                      v-if="building.building_status"
+                      color="primary"
+                      size="small"
+                    >
+                      {{ building.building_status }}
+                    </VChip>
                     <span
                       v-else
                       class="text-disabled"
@@ -242,7 +298,7 @@ onMounted(() => {
                 </tr>
                 <tr v-if="buildings.length === 0">
                   <td
-                    colspan="11"
+                    colspan="12"
                     class="text-center text-disabled py-8"
                   >
                     No buildings found. Click "Sync from ERP" to fetch building data.

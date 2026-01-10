@@ -209,7 +209,7 @@ onUnmounted(() => {
             md="4"
           >
             <VTextField
-              :model-value="building?.building_status === 1 ? 'Eligible' : 'Not Eligible'"
+              :model-value="building?.building_status || '-'"
               label="Building Status"
               readonly
               variant="outlined"

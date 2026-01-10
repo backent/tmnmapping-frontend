@@ -8,7 +8,7 @@ export interface Building {
   audience: number
   impression: number
   cbd_area: string
-  building_status: number
+  building_status: string
   competitor_location: boolean
   sellable: string
   connectivity: string
@@ -31,5 +31,6 @@ export interface PaginationParams {
   skip?: number
   orderBy?: string
   orderDirection?: 'ASC' | 'DESC'
+  search?: string
 }
 

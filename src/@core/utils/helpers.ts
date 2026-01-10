@@ -30,3 +30,4 @@ export const isToday = (date: Date) => {
     && date.getFullYear() === today.getFullYear()
   )
 }
+
