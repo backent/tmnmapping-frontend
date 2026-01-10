@@ -14,8 +14,8 @@ export const apiConfig = {
     buildings_filter_options: '/building-filter-options',
 
     // Mapping endpoints
-    mapping_buildings: '/admin/mapping-building',
-    mapping_buildings_cache: '/admin/mapping-building/cache',
+    mapping_buildings: '/mapping-buildings',
+    mapping_buildings_cache: '/mapping-buildings/cache',
     mapping_filter_options: '/admin/mapping-filter-options',
     mapping_regions: '/admin/mapping-region',
     mapping_screen_types: '/admin/mapping-screentype',

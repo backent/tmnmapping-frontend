@@ -26,6 +26,10 @@ const selected = computed({
 })
 
 const items = computed(() => {
+  // Return empty array if no screen types available
+  if (!mappingStore.screenTypes || mappingStore.screenTypes.length === 0) {
+    return []
+  }
   return mappingStore.screenTypes.map(st => ({
     name: st.name,
     value: JSON.stringify(st),
@@ -74,11 +78,12 @@ const toggleItem = (value: string) => {
   selected.value = current
 }
 
-onMounted(async () => {
-  if (mappingStore.screenTypes.length === 0) {
-    await mappingStore.fetchScreenTypes()
-  }
-})
+// Removed API call since it returns 404
+// onMounted(async () => {
+//   if (mappingStore.screenTypes.length === 0) {
+//     await mappingStore.fetchScreenTypes()
+//   }
+// })
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import {
-  getCachedMappingBuildings,
+  getMappingBuildings,
   getMappingFilterOptions,
   searchRegions,
   searchScreenTypes,
@@ -113,7 +113,7 @@ export const useMappingStore = defineStore('mapping', {
       this.isLoading = true
 
       try {
-        const response = await getCachedMappingBuildings(this.filters)
+        const response = await getMappingBuildings(this.filters)
 
         if (response.data) {
           this.buildings = response.data.data || []

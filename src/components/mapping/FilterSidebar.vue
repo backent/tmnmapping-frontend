@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMappingStore } from '@/stores/mapping'
+import { useBuildingStore } from '@/stores/building'
 import { useAuthStore } from '@/stores/auth'
 import { exportMappingData } from '@/utils/exportUtils'
 import { useDebounceFn } from '@vueuse/core'
@@ -7,13 +8,11 @@ import BuildingTypeFilter from './BuildingTypeFilter.vue'
 import InstallationFilter from './InstallationFilter.vue'
 import ScreenTypeFilter from './ScreenTypeFilter.vue'
 import ProgressFilter from './ProgressFilter.vue'
-import LCDPresenceFilter from './LCDPresenceFilter.vue'
 import BuildingGradeFilter from './BuildingGradeFilter.vue'
 import YearRangeFilter from './YearRangeFilter.vue'
 import RadiusFilter from './RadiusFilter.vue'
 import LocationFilter from './LocationFilter.vue'
 import BuildingDetail from './BuildingDetail.vue'
-import PlaceDetail from './PlaceDetail.vue'
 
 interface Props {
   reporting?: boolean
@@ -31,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const mappingStore = useMappingStore()
+const buildingStore = useBuildingStore()
 const authStore = useAuthStore()
 
 const showInner = ref(true)
@@ -80,29 +80,77 @@ const handleMultiLocationClick = () => {
   emit('update:showSingle', false)
   emit('update:showMulti', true)
 }
+
+// Helper function to generate initial from building type name
+// Examples: "Apartment" -> "A", "Mixed Use" -> "MU", "Office Building" -> "OB"
+const getBuildingTypeInitial = (typeName: string): string => {
+  // Handle special cases
+  const specialCases: Record<string, string> = {
+    'other': 'OT',
+    'mixed use': 'MU',
+    'office building': 'OB',
+  }
+
+  const lowerName = typeName.toLowerCase()
+
+  if (specialCases[lowerName])
+    return specialCases[lowerName]
+
+  // For single word types, return first letter
+  if (!typeName.includes(' '))
+    return typeName.charAt(0).toUpperCase()
+
+  // For multi-word types, return first letter of each word
+  return typeName
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+}
+
+// Helper function to map building type name to totals key
+// Examples: "Apartment" -> "apartment", "Other" -> "other"
+const getTotalsKey = (typeName: string): string => {
+  // Handle special case for "Other" -> "other" (not "others")
+  if (typeName.toLowerCase() === 'other')
+    return 'other'
+
+  // Convert to lowercase for most cases
+  return typeName.toLowerCase()
+}
+
+// Computed property for dynamic building type totals based on API data
+const buildingTypeTotals = computed(() => {
+  const totals = mappingStore.totals
+  const buildingTypes = buildingStore.filterOptions?.building_type || []
+
+  return buildingTypes
+    .map(typeName => {
+      const totalsKey = getTotalsKey(typeName)
+      const total = totals[totalsKey as keyof typeof totals] || 0
+
+      return {
+        name: typeName,
+        initial: getBuildingTypeInitial(typeName),
+        total,
+        key: totalsKey,
+      }
+    })
+})
 </script>
 
 <template>
   <div>
     <!-- Building Type Totals -->
     <div
-      v-if="!mappingStore.isLoading"
+      v-if="!mappingStore.isLoading && buildingTypeTotals.length > 0"
       class="text-center pb-2 pt-1"
     >
-      <VChip class="ma-1">
-        A: {{ mappingStore.totals.apartment }}
-      </VChip>
-      <VChip class="ma-1">
-        O: {{ mappingStore.totals.office }}
-      </VChip>
-      <VChip class="ma-1">
-        H: {{ mappingStore.totals.hotel }}
-      </VChip>
-      <VChip class="ma-1">
-        R: {{ mappingStore.totals.retail }}
-      </VChip>
-      <VChip class="ma-1">
-        OT: {{ mappingStore.totals.other }}
+      <VChip
+        v-for="type in buildingTypeTotals"
+        :key="type.key"
+        class="ma-1"
+      >
+        {{ type.initial }}: {{ type.total }}
       </VChip>
     </div>
 
@@ -177,47 +225,42 @@ const handleMultiLocationClick = () => {
           />
 
           <!-- Filter Card -->
-          <VCard class="mb-4 pb-2">
-            <!-- Building Type -->
-            <BuildingTypeFilter
-              :model-value="mappingStore.filters.building_type || []"
-              @update:model-value="mappingStore.filters.building_type = $event"
-            />
+          <VCard class="mb-4 pb-2" >
+            <div style="max-height: 250px; overflow-y: auto;">
+                <!-- Building Type -->
+              <BuildingTypeFilter
+                :model-value="mappingStore.filters.building_type || []"
+                @update:model-value="mappingStore.filters.building_type = $event"
+              />
 
-            <!-- Installation -->
-            <InstallationFilter
-              v-if="!isReporting"
-              :model-value="mappingStore.filters.installation || []"
-              @update:model-value="mappingStore.filters.installation = $event"
-            />
+              <!-- Installation -->
+              <InstallationFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.installation || []"
+                @update:model-value="mappingStore.filters.installation = $event"
+              />
 
-            <!-- Screen Type -->
-            <ScreenTypeFilter
-              v-if="!isReporting"
-              :model-value="mappingStore.filters.screen_type || []"
-              @update:model-value="mappingStore.filters.screen_type = $event"
-            />
+              <!-- Screen Type -->
+              <ScreenTypeFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.screen_type || []"
+                @update:model-value="mappingStore.filters.screen_type = $event"
+              />
 
-            <!-- Progress -->
-            <ProgressFilter
-              v-if="!isReporting"
-              :model-value="mappingStore.filters.progress || []"
-              @update:model-value="mappingStore.filters.progress = $event"
-            />
+              <!-- Progress -->
+              <ProgressFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.progress || []"
+                @update:model-value="mappingStore.filters.progress = $event"
+              />
 
-            <!-- LCD Presence -->
-            <LCDPresenceFilter
-              v-if="!isReporting"
-              :model-value="mappingStore.filters.lcd_presence || []"
-              @update:model-value="mappingStore.filters.lcd_presence = $event"
-            />
-
-            <!-- Building Grade -->
-            <BuildingGradeFilter
-              v-if="!isReporting"
-              :model-value="mappingStore.filters.building_grade || []"
-              @update:model-value="mappingStore.filters.building_grade = $event"
-            />
+              <!-- Building Grade -->
+              <BuildingGradeFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.building_grade || []"
+                @update:model-value="mappingStore.filters.building_grade = $event"
+              />
+            </div>
 
             <VDivider />
 

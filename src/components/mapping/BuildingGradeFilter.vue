@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BUILDING_GRADES } from '@/utils/mappingConstants'
-import { useMappingStore } from '@/stores/mapping'
+import { onMounted } from 'vue'
+import { useBuildingStore } from '@/stores/building'
 
 interface Props {
   modelValue: string[]
@@ -13,10 +13,25 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const mappingStore = useMappingStore()
+const buildingStore = useBuildingStore()
 
+// Fetch filter options if not already loaded
+onMounted(async () => {
+  if (!buildingStore.filterOptions) {
+    await buildingStore.fetchFilterOptions()
+  }
+})
+
+// Transform backend grade_resource array to component format
 const items = computed(() => {
-  return mappingStore.filterOptions?.buildingGrades || BUILDING_GRADES
+  const backendGrades = buildingStore.filterOptions?.grade_resource || []
+  
+  // Map backend values to component format
+  // Backend returns array of strings like ['Premium', 'Grade A', 'Grade B', ...]
+  return backendGrades.map(grade => ({
+    name: grade,
+    value: grade,
+  }))
 })
 
 const selected = computed({

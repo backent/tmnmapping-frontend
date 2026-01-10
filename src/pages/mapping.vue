@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { useMappingStore } from '@/stores/mapping'
+import { useBuildingStore } from '@/stores/building'
 import { useAuthStore } from '@/stores/auth'
 import MapView from '@/components/mapping/MapView.vue'
 import FilterSidebar from '@/components/mapping/FilterSidebar.vue'
 
 const mappingStore = useMappingStore()
+const buildingStore = useBuildingStore()
 const authStore = useAuthStore()
 
 const drawer = ref(true)
@@ -19,10 +21,12 @@ const isReporting = computed(() => {
 // Initialize data
 onMounted(async () => {
   await Promise.all([
-    mappingStore.fetchFilterOptions(),
-    mappingStore.fetchYearList(),
-    mappingStore.fetchPotentialClients(),
-    mappingStore.fetchScreenTypes(),
+    buildingStore.fetchFilterOptions(), // Fetch building filter options first
+    // Removed API calls that return 404:
+    // mappingStore.fetchFilterOptions(),
+    // mappingStore.fetchYearList(),
+    // mappingStore.fetchPotentialClients(),
+    // mappingStore.fetchScreenTypes(),
     mappingStore.fetchBuildings(),
   ])
 })

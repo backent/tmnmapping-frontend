@@ -25,14 +25,32 @@ const emit = defineEmits<Emits>()
 const dialogOpen = ref(false)
 const searchQuery = ref('')
 
+// Local reactive state that syncs with prop
+const localSelected = ref<(string | number)[]>([...props.modelValue])
+
+// Watch prop changes and sync to local state
+watch(() => props.modelValue, newValue => {
+  localSelected.value = [...newValue]
+}, { deep: true })
+
+// Computed property for v-model binding
+const selected = computed({
+  get: () => localSelected.value,
+  set: value => {
+    localSelected.value = value
+    emit('update:modelValue', value)
+  },
+})
+
 const filteredItems = computed(() => {
-  if (!props.showSearch || !searchQuery.value) {
+  if (!props.showSearch || !searchQuery.value)
     return props.items
-  }
+
   const query = searchQuery.value.toLowerCase()
+
   return props.items.filter(item =>
-    item.name.toLowerCase().includes(query) ||
-    String(item.value).toLowerCase().includes(query),
+    item.name.toLowerCase().includes(query)
+    || String(item.value).toLowerCase().includes(query),
   )
 })
 
@@ -43,25 +61,6 @@ const visibleItems = computed(() => {
 const hasMore = computed(() => {
   return filteredItems.value.length > props.maxVisible
 })
-
-const selected = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
-})
-
-const toggleItem = (value: string | number) => {
-  const current = [...selected.value]
-  const index = current.indexOf(value)
-
-  if (index > -1) {
-    current.splice(index, 1)
-  }
-  else {
-    current.push(value)
-  }
-
-  selected.value = current
-}
 </script>
 
 <template>
@@ -86,11 +85,10 @@ const toggleItem = (value: string | number) => {
       :key="i"
     >
       <VCheckbox
-        :model-value="selected.includes(item.value)"
+        v-model="selected"
         :label="item.name"
         :value="item.value"
         hide-details
-        @update:model-value="toggleItem(item.value)"
       />
     </VListItem>
 
@@ -142,11 +140,10 @@ const toggleItem = (value: string | number) => {
                 :key="i"
               >
                 <VCheckbox
-                  :model-value="selected.includes(item.value)"
+                  v-model="selected"
                   :label="item.name"
                   :value="item.value"
                   hide-details
-                  @update:model-value="toggleItem(item.value)"
                 />
               </VListItem>
             </VList>
@@ -166,4 +163,3 @@ const toggleItem = (value: string | number) => {
     </VListItem>
   </VListGroup>
 </template>
-
