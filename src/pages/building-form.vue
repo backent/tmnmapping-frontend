@@ -229,6 +229,31 @@ onUnmounted(() => {
 
           <VCol
             cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.building_type || '-'"
+              label="Building Type"
+              readonly
+              variant="outlined"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <VTextField
+              :model-value="building?.completion_year || '-'"
+              label="Completion Year"
+              readonly
+              variant="outlined"
+              type="number"
+            />
+          </VCol>
+
+          <VCol
+            cols="12"
             md="4"
           >
             <VTextField

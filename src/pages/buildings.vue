@@ -53,6 +53,7 @@ const filterSubdistrict = ref<string | null>(parseQueryParam(route.query.subdist
 const filterCitytown = ref<string | null>(parseQueryParam(route.query.citytown, null))
 const filterProvince = ref<string | null>(parseQueryParam(route.query.province, null))
 const filterGradeResource = ref<string | null>(parseQueryParam(route.query.grade_resource, null))
+const filterBuildingType = ref<string | null>(parseQueryParam(route.query.building_type, null))
 
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
@@ -106,6 +107,9 @@ const updateURL = () => {
 
   if (filterGradeResource.value)
     query.grade_resource = filterGradeResource.value
+
+  if (filterBuildingType.value)
+    query.building_type = filterBuildingType.value
 
   // Add sorting
   if (sortBy.value.length > 0) {
@@ -168,6 +172,9 @@ const fetchBuildings = async () => {
     if (filterGradeResource.value) {
       params.grade_resource = filterGradeResource.value
     }
+    if (filterBuildingType.value) {
+      params.building_type = filterBuildingType.value
+    }
 
     // Add sorting if present
     if (sortBy.value.length > 0) {
@@ -209,7 +216,7 @@ watch(searchQuery, () => {
 })
 
 // Watch for filter changes
-watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea, filterSubdistrict, filterCitytown, filterProvince, filterGradeResource], () => {
+watch([filterBuildingStatus, filterSellable, filterConnectivity, filterResourceType, filterCompetitorLocation, filterCbdArea, filterSubdistrict, filterCitytown, filterProvince, filterGradeResource, filterBuildingType], () => {
   // Reset to first page when filters change
   currentPage.value = 1
   updateURL()
@@ -221,19 +228,19 @@ const handleEdit = (building: Building) => {
 }
 
 const triggerSync = async () => {
-  try {
+    try {
     await buildingStore.triggerSync()
     snackbarMessage.value = 'Buildings synced successfully!'
-    snackbarColor.value = 'success'
-    snackbar.value = true
+      snackbarColor.value = 'success'
+      snackbar.value = true
 
     // Refresh current page after sync
     await fetchBuildings()
-  }
-  catch (error: any) {
+    }
+    catch (error: any) {
     snackbarMessage.value = error?.response?.data?.data || 'Failed to sync buildings'
-    snackbarColor.value = 'error'
-    snackbar.value = true
+      snackbarColor.value = 'error'
+      snackbar.value = true
   }
 }
 
@@ -255,6 +262,7 @@ const clearFilters = () => {
   filterCitytown.value = null
   filterProvince.value = null
   filterGradeResource.value = null
+  filterBuildingType.value = null
   searchQuery.value = ''
   currentPage.value = 1
   updateURL()
@@ -398,6 +406,17 @@ onMounted(async () => {
                 v-model="filterGradeResource"
                 :items="filterOptions?.grade_resource || []"
                 label="Grade Resource"
+                placeholder="All"
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol cols="12" md="2">
+              <VAutocomplete
+                v-model="filterBuildingType"
+                :items="filterOptions?.building_type || []"
+                label="Building Type"
                 placeholder="All"
                 clearable
                 density="compact"

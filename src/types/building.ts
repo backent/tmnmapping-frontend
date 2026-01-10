@@ -23,6 +23,8 @@ export interface Building {
   citytown: string
   province: string
   grade_resource: string
+  building_type: string
+  completion_year: number
   images: BuildingImage[]
   synced_at: string
   created_at: string
@@ -53,6 +55,7 @@ export interface PaginationParams {
   citytown?: string
   province?: string
   grade_resource?: string
+  building_type?: string
 }
 
 // Filter options from backend
@@ -66,4 +69,5 @@ export interface FilterOptions {
   citytown: string[]
   province: string[]
   grade_resource: string[]
+  building_type: string[]
 }
