@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useBuildingStore } from '@/stores/building'
 import { useRoute, useRouter } from 'vue-router'
+import { useBuildingStore } from '@/stores/building'
 import type { BuildingUpdateData } from '@/types/building'
+import { getImageProxyPath } from '@/utils/images'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,9 +111,9 @@ onUnmounted(() => {
           variant="text"
           @click="cancel"
         >
-          <VIcon icon="mdi-arrow-left" />
+          <VIcon icon="ri-arrow-left-s-line" />
         </VBtn>
-        <span class="text-h4 ml-4">Edit Building</span>
+        <span class="text-h4 ms-4">Edit Building</span>
       </VCol>
     </VRow>
 
@@ -241,6 +242,61 @@ onUnmounted(() => {
           </VCol>
         </VRow>
 
+        <!-- Building Images Section -->
+        <VRow class="mt-4">
+          <VCol cols="12">
+            <h4 class="text-subtitle-1 mb-2">
+              Building Images
+            </h4>
+            <VRow v-if="building?.images && building.images.length > 0">
+              <VCol
+                v-for="(image, index) in building.images"
+                :key="index"
+                cols="12"
+                sm="6"
+                md="3"
+              >
+                <VCard>
+                  <VCardText class="pa-2">
+                    <div class="text-caption mb-1 text-capitalize">
+                      {{ image.name.replace('_', ' ') }}
+                    </div>
+                    <VImg
+                      :src="getImageProxyPath(image.path)"
+                      :alt="image.name"
+                      aspect-ratio="1"
+                      cover
+                      class="rounded"
+                      @error="(e: any) => { e.target.style.display = 'none' }"
+                    >
+                      <template #placeholder>
+                        <div class="d-flex align-center justify-center fill-height">
+                          <VProgressCircular
+                            indeterminate
+                            color="grey-lighten-5"
+                          />
+                        </div>
+                      </template>
+                      <template #error>
+                        <div class="d-flex align-center justify-center fill-height bg-grey-lighten-4">
+                          <span class="text-caption text-grey">Image not available</span>
+                        </div>
+                      </template>
+                    </VImg>
+                  </VCardText>
+                </VCard>
+              </VCol>
+            </VRow>
+            <VAlert
+              v-else
+              type="info"
+              variant="tonal"
+            >
+              No images available for this building.
+            </VAlert>
+          </VCol>
+        </VRow>
+
         <VDivider class="my-6" />
 
         <!-- Editable user fields section -->
@@ -328,4 +384,3 @@ onUnmounted(() => {
     </VCard>
   </div>
 </template>
-

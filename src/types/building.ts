@@ -1,3 +1,9 @@
+// Image interface
+export interface BuildingImage {
+  name: string
+  path: string
+}
+
 // Entity interface matching backend response
 export interface Building {
   id: number
@@ -13,6 +19,7 @@ export interface Building {
   sellable: string
   connectivity: string
   resource_type: string
+  images: BuildingImage[]
   synced_at: string
   created_at: string
   updated_at: string
@@ -48,4 +55,3 @@ export interface FilterOptions {
   resource_type: string[]
   cbd_area: string[]
 }
-
