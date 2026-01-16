@@ -42,27 +42,27 @@ const fetchBuilding = async () => {
   if (!buildingId.value)
     return
 
-  isLoading.value = true
-  try {
+    isLoading.value = true
+    try {
     await buildingStore.fetchBuildingById(buildingId.value)
 
     const b = buildingStore.currentBuilding
     if (b) {
-      form.value = {
+        form.value = {
         sellable: b.sellable || '',
         connectivity: b.connectivity || '',
         resource_type: b.resource_type || '',
+        }
       }
     }
-  }
-  catch (error: any) {
+    catch (error: any) {
     errorMessage.value = 'Failed to load building'
     console.error('Fetch error:', error)
+    }
+    finally {
+      isLoading.value = false
+    }
   }
-  finally {
-    isLoading.value = false
-  }
-}
 
 // Submit form
 const submit = async () => {
@@ -105,7 +105,7 @@ onUnmounted(() => {
   <div>
     <!-- Header -->
     <VRow class="mb-4">
-      <VCol cols="12">
+    <VCol cols="12">
         <VBtn
           icon
           variant="text"
@@ -125,7 +125,7 @@ onUnmounted(() => {
 
     <!-- Form -->
     <VCard v-else>
-      <VCardText>
+        <VCardText>
         <!-- Read-only ERP fields section -->
         <h3 class="text-h6 mb-4">
           ERP Data (Read-only)
@@ -155,95 +155,95 @@ onUnmounted(() => {
             />
           </VCol>
 
-          <VCol
-            cols="12"
+              <VCol
+                cols="12"
             md="6"
-          >
+              >
             <VTextField
               :model-value="building?.project_name"
               label="Project Name"
               readonly
               variant="outlined"
             />
-          </VCol>
+              </VCol>
 
           <VCol
             cols="12"
             md="6"
           >
-            <VTextField
+                <VTextField
               :model-value="building?.cbd_area"
               label="CBD Area"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.subdistrict || '-'"
               label="Subdistrict"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.citytown || '-'"
               label="City/Town"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.province || '-'"
               label="Province"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
+              <VCol
+                cols="12"
+                md="6"
+              >
             <VTextField
               :model-value="building?.grade_resource || '-'"
               label="Grade Resource"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.building_type || '-'"
               label="Building Type"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.completion_year || '-'"
               label="Completion Year"
               readonly
@@ -274,50 +274,50 @@ onUnmounted(() => {
               label="Impression"
               readonly
               variant="outlined"
-              type="number"
-            />
-          </VCol>
+                  type="number"
+                />
+              </VCol>
 
           <VCol
             cols="12"
             md="4"
           >
-            <VTextField
+                <VTextField
               :model-value="building?.building_status || '-'"
               label="Building Status"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.competitor_location ? 'Yes' : 'No'"
               label="Competitor Location"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
 
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
               :model-value="building?.synced_at ? new Date(building.synced_at).toLocaleString() : '-'"
               label="Last Synced"
               readonly
               variant="outlined"
-            />
-          </VCol>
+                />
+              </VCol>
         </VRow>
 
         <!-- Building Images Section -->
         <VRow class="mt-4">
-          <VCol cols="12">
+              <VCol cols="12">
             <h4 class="text-subtitle-1 mb-2">
               Building Images
             </h4>
@@ -389,9 +389,9 @@ onUnmounted(() => {
                 label="Sellable"
                 placeholder="Select sellable status"
                 :disabled="isSaving"
-                clearable
-              />
-            </VCol>
+                  clearable
+                />
+              </VCol>
 
             <!-- Connectivity -->
             <VCol
@@ -404,20 +404,20 @@ onUnmounted(() => {
                 label="Connectivity"
                 placeholder="Select connectivity status"
                 :disabled="isSaving"
-                clearable
-              />
-            </VCol>
+                  clearable
+                />
+              </VCol>
 
             <!-- Resource Type -->
-            <VCol cols="12">
+              <VCol cols="12">
               <VTextField
                 v-model="form.resource_type"
                 label="Resource Type"
                 placeholder="Enter resource type"
                 :disabled="isSaving"
-                clearable
-              />
-            </VCol>
+                  clearable
+                />
+              </VCol>
 
             <!-- Error Message -->
             <VCol
@@ -430,30 +430,30 @@ onUnmounted(() => {
             </VCol>
 
             <!-- Actions -->
-            <VCol
-              cols="12"
-              class="d-flex gap-4"
-            >
-              <VBtn
-                type="submit"
-                color="primary"
+              <VCol
+                cols="12"
+                class="d-flex gap-4"
+              >
+                <VBtn
+                  type="submit"
+                  color="primary"
                 :loading="isSaving"
                 :disabled="isSaving"
-              >
+                >
                 Update
-              </VBtn>
+                </VBtn>
 
-              <VBtn
-                variant="outlined"
+                <VBtn
+                  variant="outlined"
                 :disabled="isSaving"
                 @click="cancel"
-              >
-                Cancel
-              </VBtn>
-            </VCol>
-          </VRow>
-        </VForm>
-      </VCardText>
-    </VCard>
+                >
+                  Cancel
+                </VBtn>
+              </VCol>
+            </VRow>
+          </VForm>
+        </VCardText>
+      </VCard>
   </div>
 </template>

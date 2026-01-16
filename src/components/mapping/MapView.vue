@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Loader } from '@googlemaps/js-api-loader'
-import { MarkerClusterer } from '@googlemaps/markerclusterer'
+// NOTE: MarkerClusterer groups nearby markers into clusters for better performance
+// Uncomment the line below to re-enable marker clustering
+// import { MarkerClusterer } from '@googlemaps/markerclusterer'
 import { useMappingStore } from '@/stores/mapping'
 import { getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding } from '@/types/mapping'
@@ -28,7 +30,8 @@ const emit = defineEmits<Emits>()
 const mapContainer = ref<HTMLDivElement>()
 const map = ref<google.maps.Map | null>(null)
 const markers = ref<google.maps.Marker[]>([])
-const clusterer = ref<MarkerClusterer | null>(null)
+// NOTE: Clusterer disabled - uncomment to re-enable marker clustering
+// const clusterer = ref<MarkerClusterer | null>(null)
 const circle = ref<google.maps.Circle | null>(null)
 const centerMarker = ref<google.maps.Marker | null>(null)
 
@@ -114,10 +117,11 @@ function updateMarkers() {
   markers.value.forEach(marker => marker.setMap(null))
   markers.value = []
 
-  if (clusterer.value) {
-    clusterer.value.clearMarkers()
-    clusterer.value = null
-  }
+  // NOTE: Clusterer cleanup disabled - uncomment to re-enable
+  // if (clusterer.value) {
+  //   clusterer.value.clearMarkers()
+  //   clusterer.value = null
+  // }
 
   // Create new markers
   const installation = props.filters.installation || []
@@ -149,13 +153,19 @@ function updateMarkers() {
 
   markers.value = newMarkers
 
-  // Create clusterer if we have markers
-  if (newMarkers.length > 0 && map.value) {
-    clusterer.value = new MarkerClusterer({
-      map: map.value,
-      markers: newMarkers,
-    })
-  }
+  // NOTE: Marker clustering disabled - this groups nearby markers into clusters
+  // To re-enable clustering (improves performance with many markers):
+  // 1. Uncomment the MarkerClusterer import at the top
+  // 2. Uncomment the clusterer ref declaration
+  // 3. Uncomment the code below
+  // 4. Uncomment the clusterer cleanup in onBeforeUnmount
+  //
+  // if (newMarkers.length > 0 && map.value) {
+  //   clusterer.value = new MarkerClusterer({
+  //     map: map.value,
+  //     markers: newMarkers,
+  //   })
+  // }
 }
 
 function updateCircle() {
@@ -206,9 +216,10 @@ function updateCircle() {
 onBeforeUnmount(() => {
   // Clean up markers
   markers.value.forEach(marker => marker.setMap(null))
-  if (clusterer.value) {
-    clusterer.value.clearMarkers()
-  }
+  // NOTE: Clusterer cleanup disabled - uncomment to re-enable
+  // if (clusterer.value) {
+  //   clusterer.value.clearMarkers()
+  // }
   if (circle.value) {
     circle.value.setMap(null)
   }

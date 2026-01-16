@@ -63,18 +63,18 @@ export const useBuildingStore = defineStore('building', {
     // Fetch all buildings with pagination
     async fetchBuildings(params?: PaginationParams) {
       this.isLoading = true
-
+      
       try {
         const response = await getBuildings(params)
-
+        
         this.buildings = response.data || []
-
+        
         // Check if response has pagination metadata (extras)
         if (response.extras) {
           const take = response.extras.take || 10
           const skip = response.extras.skip || 0
           const total = response.extras.total || 0
-
+          
           this.pagination = {
             currentPage: Math.floor(skip / take) + 1,
             lastPage: Math.ceil(total / take) || 1,
@@ -91,7 +91,7 @@ export const useBuildingStore = defineStore('building', {
           this.pagination.perPage = params?.take || 10
           this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
         }
-
+        
         return response
       }
       catch (error) {
@@ -106,10 +106,10 @@ export const useBuildingStore = defineStore('building', {
     // Fetch single building
     async fetchBuildingById(id: number) {
       this.isLoading = true
-
+      
       try {
         const response = await getBuildingById(id)
-        this.currentBuilding = response.data
+          this.currentBuilding = response.data
         return response
       }
       catch (error) {
@@ -124,19 +124,19 @@ export const useBuildingStore = defineStore('building', {
     // Update existing building (user fields only)
     async updateBuilding(id: number, data: BuildingUpdateData) {
       this.isLoading = true
-
+      
       try {
         const response = await putBuilding(id, data)
-
+        
         // Update in local state
-        const index = this.buildings.findIndex(b => b.id === id)
-
+          const index = this.buildings.findIndex(b => b.id === id)
+          
         if (index !== -1)
-          this.buildings[index] = response.data
-
+            this.buildings[index] = response.data
+          
         if (this.currentBuilding?.id === id)
-          this.currentBuilding = response.data
-
+            this.currentBuilding = response.data
+        
         return response
       }
       catch (error) {
@@ -151,13 +151,13 @@ export const useBuildingStore = defineStore('building', {
     // Trigger manual sync from ERP
     async triggerSync() {
       this.isSyncing = true
-
+      
       try {
         const response = await syncBuildings()
-
+        
         // Refresh buildings list after sync
         await this.fetchBuildings()
-
+        
         return response
       }
       catch (error) {

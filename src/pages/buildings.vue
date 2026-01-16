@@ -241,7 +241,7 @@ const triggerSync = async () => {
     snackbarMessage.value = error?.response?.data?.data || 'Failed to sync buildings'
       snackbarColor.value = 'error'
       snackbar.value = true
-  }
+    }
 }
 
 const formatDate = (dateString: string) => {

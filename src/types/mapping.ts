@@ -36,6 +36,8 @@ export interface MappingBuilding {
     lat: number
     lng: number
   }
+  latitude: number
+  longitude: number
   tower_id: string | null
   screen_installed: string | null
   fmi: 'Yes' | 'No'

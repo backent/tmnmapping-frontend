@@ -116,7 +116,16 @@ export const useMappingStore = defineStore('mapping', {
         const response = await getMappingBuildings(this.filters)
 
         if (response.data) {
-          this.buildings = response.data.data || []
+          // Transform backend response to include coordinates object
+          this.buildings = (response.data.data || []).map((building: any) => ({
+            ...building,
+            building_name: building.name,
+            coordinates: {
+              lat: building.latitude,
+              lng: building.longitude,
+            },
+          }))
+
           this.totals = {
             apartment: response.data.total_appartment || 0,
             hotel: response.data.total_hotel || 0,
