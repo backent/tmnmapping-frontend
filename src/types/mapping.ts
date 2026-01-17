@@ -100,11 +100,7 @@ export interface MappingFilters {
 // API response with totals
 export interface MappingResponse {
   data: MappingBuilding[]
-  total_appartment: number
-  total_hotel: number
-  total_office: number
-  total_retail: number
-  total_others: number
+  totals: Record<string, number> // Dynamic totals map - key is building type (lowercase), value is count
 }
 
 // Filter options from backend

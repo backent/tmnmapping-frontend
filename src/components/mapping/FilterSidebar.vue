@@ -121,6 +121,7 @@ const getTotalsKey = (typeName: string): string => {
 }
 
 // Computed property for dynamic building type totals based on API data
+// Shows all building types from /api/building-filter-options, even if count is 0
 const buildingTypeTotals = computed(() => {
   const totals = mappingStore.totals
   const buildingTypes = buildingStore.filterOptions?.building_type || []
@@ -128,7 +129,8 @@ const buildingTypeTotals = computed(() => {
   return buildingTypes
     .map(typeName => {
       const totalsKey = getTotalsKey(typeName)
-      const total = totals[totalsKey as keyof typeof totals] || 0
+      // Get total from the dynamic totals map (defaults to 0 if not found)
+      const total = totals[totalsKey] || 0
 
       return {
         name: typeName,
@@ -137,6 +139,7 @@ const buildingTypeTotals = computed(() => {
         key: totalsKey,
       }
     })
+  // Removed filter - show all building types from filter options, even with 0 counts
 })
 </script>
 

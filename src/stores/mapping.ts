@@ -25,13 +25,7 @@ interface MappingState {
   filters: MappingFilters
   isLoading: boolean
   isSearching: boolean
-  totals: {
-    apartment: number
-    hotel: number
-    office: number
-    retail: number
-    other: number
-  }
+  totals: Record<string, number> // Dynamic totals map - key is building type (lowercase), value is count
   selectedBuilding: MappingBuilding | null
   mapCenter: {
     lat: number
@@ -54,13 +48,7 @@ export const useMappingStore = defineStore('mapping', {
     },
     isLoading: false,
     isSearching: false,
-    totals: {
-      apartment: 0,
-      hotel: 0,
-      office: 0,
-      retail: 0,
-      other: 0,
-    },
+    totals: {},
     selectedBuilding: null,
     mapCenter: {
       lat: -6.2,
@@ -78,13 +66,8 @@ export const useMappingStore = defineStore('mapping', {
     hasBuildings: (state): boolean => state.buildings.length > 0,
 
     totalBuildings: (state): number => {
-      return (
-        state.totals.apartment +
-        state.totals.hotel +
-        state.totals.office +
-        state.totals.retail +
-        state.totals.other
-      )
+      // Sum all values in the totals map
+      return Object.values(state.totals).reduce((sum, count) => sum + count, 0)
     },
 
     hasActiveFilters: (state): boolean => {
@@ -126,13 +109,8 @@ export const useMappingStore = defineStore('mapping', {
             },
           }))
 
-          this.totals = {
-            apartment: response.data.total_appartment || 0,
-            hotel: response.data.total_hotel || 0,
-            office: response.data.total_office || 0,
-            retail: response.data.total_retail || 0,
-            other: response.data.total_others || 0,
-          }
+          // Use dynamic totals map from backend
+          this.totals = response.data.totals || {}
         }
 
         return response
