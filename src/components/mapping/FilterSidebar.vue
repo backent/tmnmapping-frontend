@@ -8,6 +8,7 @@ import BuildingTypeFilter from './BuildingTypeFilter.vue'
 import InstallationFilter from './InstallationFilter.vue'
 import ScreenTypeFilter from './ScreenTypeFilter.vue'
 import ProgressFilter from './ProgressFilter.vue'
+import LCDPresenceFilter from './LCDPresenceFilter.vue'
 import BuildingGradeFilter from './BuildingGradeFilter.vue'
 import YearRangeFilter from './YearRangeFilter.vue'
 import RadiusFilter from './RadiusFilter.vue'
@@ -47,9 +48,10 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
 }, 1000)
 
 // Watch filters and update
-watch(() => mappingStore.filters, () => {
+// Using JSON.stringify to only trigger when actual values change, not object references
+watch(() => JSON.stringify(mappingStore.filters), () => {
   debouncedUpdateFilters()
-}, { deep: true })
+})
 
 const handleReset = async () => {
   await mappingStore.resetFilters()
@@ -252,6 +254,13 @@ const buildingTypeTotals = computed(() => {
                 v-if="!isReporting"
                 :model-value="mappingStore.filters.progress || []"
                 @update:model-value="mappingStore.filters.progress = $event"
+              />
+
+              <!-- LCD Presence -->
+              <LCDPresenceFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.lcd_presence || []"
+                @update:model-value="mappingStore.filters.lcd_presence = $event"
               />
 
               <!-- Building Grade -->

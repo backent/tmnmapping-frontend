@@ -3,6 +3,7 @@ import { Loader } from '@googlemaps/js-api-loader'
 // NOTE: MarkerClusterer groups nearby markers into clusters for better performance
 // Uncomment the line below to re-enable marker clustering
 // import { MarkerClusterer } from '@googlemaps/markerclusterer'
+import { nextTick } from 'vue'
 import { useMappingStore } from '@/stores/mapping'
 import { getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding } from '@/types/mapping'
@@ -87,11 +88,11 @@ onMounted(async () => {
 })
 
 // Update markers when buildings change
-watch(() => props.buildings, () => {
+watch(() => props.buildings, async () => {
   if (isMapLoaded.value) {
-    updateMarkers()
+    await updateMarkers()
   }
-}, { deep: true })
+})
 
 // Update center when it changes
 watch(() => props.center, () => {
@@ -99,7 +100,7 @@ watch(() => props.center, () => {
     map.value.setCenter(props.center)
     updateCircle()
   }
-}, { deep: true })
+})
 
 // Update radius circle
 watch(() => props.radius, () => {
@@ -108,64 +109,86 @@ watch(() => props.radius, () => {
   }
 })
 
-function updateMarkers() {
+async function updateMarkers() {
   if (!map.value) {
     return
   }
 
-  // Clear existing markers
-  markers.value.forEach(marker => marker.setMap(null))
+  // Step 1: AGGRESSIVELY clear ALL existing markers
+  const oldMarkers = [...markers.value]
+  
+  // Immediately clear the markers array so no references remain
   markers.value = []
+  
+  // Remove each old marker completely
+  for (const marker of oldMarkers) {
+    try {
+      // Clear all event listeners first
+      google.maps.event.clearInstanceListeners(marker)
+      // Hide the marker immediately
+      marker.setVisible(false)
+      // Remove from map
+      marker.setMap(null)
+    }
+    catch (error) {
+      console.error('Error removing marker:', error)
+    }
+  }
 
-  // NOTE: Clusterer cleanup disabled - uncomment to re-enable
-  // if (clusterer.value) {
-  //   clusterer.value.clearMarkers()
-  //   clusterer.value = null
-  // }
+  // Step 2: Wait for Vue's next tick AND give Google Maps time to process
+  await nextTick()
+  await new Promise(resolve => setTimeout(resolve, 100))
 
-  // Create new markers
+  // Step 3: If no buildings, we're done
+  if (!props.buildings || props.buildings.length === 0) {
+    return
+  }
+
+  // Step 4: Create ALL new markers first (without adding to map)
   const installation = props.filters.installation || []
   const newMarkers: google.maps.Marker[] = []
-
-  props.buildings.forEach((building) => {
+  
+  for (const building of props.buildings) {
     const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false)
 
     if (!iconConfig) {
-      return
+      continue
     }
 
-    const marker = new google.maps.Marker({
-      position: {
-        lat: building.coordinates.lat,
-        lng: building.coordinates.lng,
-      },
-      map: map.value,
-      icon: iconConfig,
-      title: building.building_name,
-    })
+    try {
+      // Create marker but don't add to map yet
+      const marker = new google.maps.Marker({
+        position: {
+          lat: building.coordinates.lat,
+          lng: building.coordinates.lng,
+        },
+        icon: iconConfig,
+        title: building.building_name,
+        visible: false, // Start hidden
+        optimized: false, // Disable optimization to force re-render
+      })
 
-    marker.addListener('click', () => {
-      emit('markerClick', building)
-    })
+      marker.addListener('click', () => {
+        emit('markerClick', building)
+      })
 
-    newMarkers.push(marker)
-  })
-
+      newMarkers.push(marker)
+    }
+    catch (error) {
+      console.error('Error creating marker:', error)
+    }
+  }
+  
+  // Step 5: Now add all markers to map at once and make visible
+  for (const marker of newMarkers) {
+    marker.setMap(map.value)
+    marker.setVisible(true)
+  }
+  
+  // Step 6: Update our markers reference
   markers.value = newMarkers
 
-  // NOTE: Marker clustering disabled - this groups nearby markers into clusters
-  // To re-enable clustering (improves performance with many markers):
-  // 1. Uncomment the MarkerClusterer import at the top
-  // 2. Uncomment the clusterer ref declaration
-  // 3. Uncomment the code below
-  // 4. Uncomment the clusterer cleanup in onBeforeUnmount
-  //
-  // if (newMarkers.length > 0 && map.value) {
-  //   clusterer.value = new MarkerClusterer({
-  //     map: map.value,
-  //     markers: newMarkers,
-  //   })
-  // }
+  // NOTE: Marker clustering disabled
 }
 
 function updateCircle() {

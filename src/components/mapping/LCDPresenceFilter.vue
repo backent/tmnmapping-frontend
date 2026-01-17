@@ -1,29 +1,27 @@
 <script setup lang="ts">
-import { LCD_PRESENCE } from '@/utils/mappingConstants'
-import type { LCDPresence } from '@/types/mapping'
+import { computed } from 'vue'
 
 interface Props {
-  modelValue: LCDPresence[]
+  modelValue: string[]
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: LCDPresence[]): void
+  (e: 'update:modelValue', value: string[]): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const items = [
-  { name: 'TMN', value: LCD_PRESENCE.TMN },
-  { name: 'FMI', value: LCD_PRESENCE.FMI },
-  { name: 'DFI', value: LCD_PRESENCE.DFI },
-  { name: 'Opportunities', value: LCD_PRESENCE.OPPORTUNITIES },
-  { name: 'Other', value: LCD_PRESENCE.OTHER },
+  { name: 'TMN', value: 'TMN' },
+  { name: 'Competitor', value: 'Competitor' },
+  { name: 'CoExist', value: 'CoExist' },
+  { name: 'Opportunity', value: 'Opportunity' },
 ]
 
 const selected = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  set: value => emit('update:modelValue', value),
 })
 </script>
 
@@ -36,4 +34,3 @@ const selected = computed({
     @update:model-value="selected = $event"
   />
 </template>
-

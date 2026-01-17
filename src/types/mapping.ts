@@ -21,6 +21,8 @@ export type LCDPresence =
   | 'Opportunities'
   | 'Other'
 
+export type LCDPresenceStatus = 'TMN' | 'Competitor' | 'CoExist' | 'Opportunity'
+
 export type InstallationStatus =
   | 'complete'
   | 'incomplete'
@@ -38,6 +40,7 @@ export interface MappingBuilding {
   }
   latitude: number
   longitude: number
+  lcd_presence_status: string | null
   tower_id: string | null
   screen_installed: string | null
   fmi: 'Yes' | 'No'
@@ -87,7 +90,7 @@ export interface MappingFilters {
   progress?: string[]
 
   // Presence filters
-  lcd_presence?: LCDPresence[]
+  lcd_presence?: string[]
 
   // Other filters
   year?: [number, number] // [min, max]
