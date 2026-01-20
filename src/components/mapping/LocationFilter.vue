@@ -22,6 +22,82 @@ const selected = computed({
   set: (value) => emit('update:modelValue', value),
 })
 
+// For Google Maps Places Autocomplete (Single Location Mode)
+const locationTextFieldRef = ref<any>(null)
+const autocomplete = ref<google.maps.places.Autocomplete | null>(null)
+const locationSearchText = ref('')
+
+// Initialize Google Maps Places Autocomplete
+onMounted(() => {
+  if (props.mode === 'single') {
+    nextTick(() => {
+      initializeAutocomplete()
+    })
+  }
+})
+
+// Re-initialize when mode changes to single
+watch(() => props.mode, (newMode) => {
+  if (newMode === 'single') {
+    nextTick(() => {
+      if (!autocomplete.value) {
+        initializeAutocomplete()
+      }
+    })
+  }
+})
+
+const initializeAutocomplete = () => {
+  if (typeof google === 'undefined' || !locationTextFieldRef.value) {
+    // Retry after a short delay if Google Maps isn't loaded yet
+    setTimeout(initializeAutocomplete, 100)
+    return
+  }
+
+  try {
+    // Get the native input element from VTextField
+    const inputElement = locationTextFieldRef.value.$el.querySelector('input')
+    
+    if (!inputElement) {
+      console.error('Could not find input element in VTextField')
+      return
+    }
+
+    // Create autocomplete instance
+    autocomplete.value = new google.maps.places.Autocomplete(inputElement, {
+      fields: ['geometry', 'formatted_address', 'name'],
+    })
+
+    // Listen for place selection
+    autocomplete.value.addListener('place_changed', () => {
+      if (!autocomplete.value) return
+
+      const place = autocomplete.value.getPlace()
+      
+      if (place.geometry?.location) {
+        const lat = place.geometry.location.lat()
+        const lng = place.geometry.location.lng()
+        
+        // Update the text field to show the place name
+        const placeName = place.formatted_address || place.name || ''
+        locationSearchText.value = placeName
+        
+        // Clear the district_subdistrict filter - we don't want to filter by the full address
+        // Instead, we'll use lat/lng with radius to search
+        selected.value = []
+        
+        // Update map center and trigger search with radius
+        mappingStore.setMapCenter(lat, lng)
+        
+        emit('placeSelected', place)
+      }
+    })
+  } catch (error) {
+    console.error('Error initializing Google Maps Autocomplete:', error)
+  }
+}
+
+// Multi Location Mode - Dialog and search
 const dialogOpen = ref(false)
 const searchQuery = ref('')
 const districtResults = ref<string[]>([])
@@ -66,15 +142,6 @@ const toggleItem = (value: string) => {
   selected.value = current
 }
 
-const handlePlaceChanged = (place: google.maps.places.PlaceResult) => {
-  if (place.geometry?.location) {
-    const lat = place.geometry.location.lat()
-    const lng = place.geometry.location.lng()
-    mappingStore.setMapCenter(lat, lng)
-    emit('placeSelected', place)
-  }
-}
-
 const items = computed(() => {
   return mappingStore.filterOptions?.district.map(d => ({
     name: d,
@@ -86,14 +153,15 @@ const items = computed(() => {
 <template>
   <!-- Single Location Mode - Google Places Autocomplete -->
   <template v-if="mode === 'single'">
-    <VAutocomplete
-      :model-value="selected[0] || ''"
+    <VTextField
+      ref="locationTextFieldRef"
+      v-model="locationSearchText"
       placeholder="Type a location or Region"
       prepend-inner-icon="mdi-map-marker"
       outlined
       hide-details
       class="mb-5"
-      @update:model-value="selected = $event ? [$event] : []"
+      clearable
     />
   </template>
 

@@ -222,14 +222,6 @@ const buildingTypeTotals = computed(() => {
             :model-value="mappingStore.filters.district_subdistrict || []"
             mode="single"
             @update:model-value="mappingStore.filters.district_subdistrict = $event"
-            @place-selected="(place) => {
-              if (place.geometry?.location) {
-                mappingStore.setMapCenter(
-                  place.geometry.location.lat(),
-                  place.geometry.location.lng()
-                )
-              }
-            }"
           />
 
           <!-- Building Detail -->
