@@ -1,16 +1,13 @@
 <script setup lang="ts">
 interface Props {
   modelValue: number
-  max?: number
 }
 
 interface Emits {
   (e: 'update:modelValue', value: number): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  max: 200,
-})
+const props = defineProps<Props>()
 
 const emit = defineEmits<Emits>()
 
@@ -21,32 +18,10 @@ watch(() => props.modelValue, (newValue) => {
   radiusValue.value = newValue
 }, { immediate: true })
 
-// Validation and update function
+// Simple update function - no validation, no clamping, just emit the value
 const updateRadius = () => {
-  let validRadius = radiusValue.value
-
-  // Clamp value to valid range
-  if (validRadius < 0)
-    validRadius = 0
-  if (props.max && validRadius > props.max)
-    validRadius = props.max
-
-  // Update ref if clamped
-  if (radiusValue.value !== validRadius)
-    radiusValue.value = validRadius
-
-  // Emit the updated radius
-  emit('update:modelValue', validRadius)
+  emit('update:modelValue', radiusValue.value)
 }
-
-// Computed for error messages
-const radiusError = computed(() => {
-  if (radiusValue.value < 0)
-    return 'Radius must be greater than or equal to 0'
-  if (props.max && radiusValue.value > props.max)
-    return `Radius must be less than or equal to ${props.max}`
-  return ''
-})
 </script>
 
 <template>
@@ -57,12 +32,9 @@ const radiusError = computed(() => {
       v-model.number="radiusValue"
       label="Radius"
       type="number"
-      :min="0"
-      :max="max"
       suffix="km"
       outlined
       dense
-      :error-messages="radiusError"
       @update:model-value="updateRadius"
     />
   </div>

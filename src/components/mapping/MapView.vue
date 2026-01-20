@@ -196,43 +196,63 @@ function updateCircle() {
     return
   }
 
-  // Remove existing circle
-  if (circle.value) {
-    circle.value.setMap(null)
-  }
-
-  // Remove center marker
-  if (centerMarker.value) {
-    centerMarker.value.setMap(null)
-  }
-
-  // Only show circle if radius > 0
+  // Only show circle and center marker if radius > 0
   if (props.radius > 0) {
-    circle.value = new google.maps.Circle({
-      center: props.center,
-      radius: props.radius * 1000, // Convert km to meters
-      fillColor: '#ff0000',
-      fillOpacity: 0.2,
-      strokeWeight: 1,
-      strokeOpacity: 1,
-      strokeColor: '#ff0000',
-      map: map.value,
-    })
+    // Update or create circle
+    if (circle.value) {
+      // Update existing circle
+      circle.value.setCenter(props.center)
+      circle.value.setRadius(props.radius * 1000)
+    }
+    else {
+      // Create new circle
+      circle.value = new google.maps.Circle({
+        center: props.center,
+        radius: props.radius * 1000, // Convert km to meters
+        fillColor: '#ff0000',
+        fillOpacity: 0.2,
+        strokeWeight: 1,
+        strokeOpacity: 1,
+        strokeColor: '#ff0000',
+        map: map.value,
+      })
+    }
 
-    // Add center marker
-    centerMarker.value = new google.maps.Marker({
-      position: props.center,
-      map: map.value,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: '#ffe34c',
-        fillOpacity: 1,
-        strokeWeight: 2,
-        strokeColor: '#000',
-      },
-      zIndex: 1000,
-    })
+    // Update or create center marker
+    if (centerMarker.value) {
+      // Update existing marker position
+      centerMarker.value.setPosition(props.center)
+      if (!centerMarker.value.getMap()) {
+        centerMarker.value.setMap(map.value)
+      }
+    }
+    else {
+      // Create new center marker
+      centerMarker.value = new google.maps.Marker({
+        position: props.center,
+        map: map.value,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#ffe34c',
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: '#000',
+        },
+        zIndex: 1000,
+      })
+    }
+  }
+  else {
+    // Remove circle and center marker when radius is 0
+    if (circle.value) {
+      circle.value.setMap(null)
+      circle.value = null
+    }
+    if (centerMarker.value) {
+      centerMarker.value.setMap(null)
+      centerMarker.value = null
+    }
   }
 }
 

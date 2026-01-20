@@ -96,7 +96,7 @@ export const useMappingStore = defineStore('mapping', {
       this.isLoading = true
 
       try {
-        const response = await getMappingBuildings(this.filters)
+        const response = await getMappingBuildings(this.filters, this.mapCenter)
 
         if (response.data) {
           // Transform backend response to include coordinates object

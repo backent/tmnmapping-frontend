@@ -12,8 +12,10 @@ import type {
 
 /**
  * Build query parameters from mapping filters
+ * @param filters - Mapping filters
+ * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
  */
-function buildFilterParams(filters?: MappingFilters): QueryParams {
+function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; lng: number }): QueryParams {
   const params: QueryParams = {}
 
   if (!filters) {
@@ -50,13 +52,32 @@ function buildFilterParams(filters?: MappingFilters): QueryParams {
   if (filters.year) {
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
   }
-  if (filters.lat && filters.lng) {
-    params['filter[lat]'] = filters.lat
-    params['filter[lng]'] = filters.lng
+  
+  // For radius filtering, we need lat/lng. 
+  // If radius is set, always use current mapCenter (like oldmapping - it always uses current map center)
+  // Otherwise, use filters.lat/lng if set, or fallback to mapCenter
+  let lat: number | undefined
+  let lng: number | undefined
+  
+  if (filters.radius && filters.radius > 0) {
+    // When radius is active, always use current map center (like oldmapping)
+    lat = mapCenter?.lat
+    lng = mapCenter?.lng
+  } else {
+    // When radius is not set, use filters if available, otherwise fallback to mapCenter
+    lat = filters.lat ?? mapCenter?.lat
+    lng = filters.lng ?? mapCenter?.lng
   }
+  
+  if (lat != null && lng != null) {
+    params['filter[lat]'] = lat
+    params['filter[lng]'] = lng
+  }
+  
   if (filters.radius) {
     params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
   }
+  
   if (filters.places_id) {
     params['filter[places_id]'] = filters.places_id
   }
@@ -66,11 +87,14 @@ function buildFilterParams(filters?: MappingFilters): QueryParams {
 
 /**
  * Get mapping buildings with filters
+ * @param filters - Mapping filters
+ * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
  */
 export function getMappingBuildings(
   filters?: MappingFilters,
+  mapCenter?: { lat: number; lng: number },
 ): Promise<ApiResponse<MappingResponse>> {
-  const params = buildFilterParams(filters)
+  const params = buildFilterParams(filters, mapCenter)
 
   return getApi<ApiResponse<MappingResponse>>(
     apiConfig.endpoints.mapping_buildings,
@@ -80,11 +104,14 @@ export function getMappingBuildings(
 
 /**
  * Get cached mapping buildings (for performance)
+ * @param filters - Mapping filters
+ * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
  */
 export function getCachedMappingBuildings(
   filters?: MappingFilters,
+  mapCenter?: { lat: number; lng: number },
 ): Promise<ApiResponse<MappingResponse>> {
-  const params = buildFilterParams(filters)
+  const params = buildFilterParams(filters, mapCenter)
 
   return getApi<ApiResponse<MappingResponse>>(
     apiConfig.endpoints.mapping_buildings_cache,
