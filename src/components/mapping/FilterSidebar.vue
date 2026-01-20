@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useMappingStore } from '@/stores/mapping'
 import { useBuildingStore } from '@/stores/building'
 import { useAuthStore } from '@/stores/auth'
@@ -51,6 +52,16 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
 // Using JSON.stringify to only trigger when actual values change, not object references
 watch(() => JSON.stringify(mappingStore.filters), () => {
   debouncedUpdateFilters()
+})
+
+// Automatically activate Single Location mode when a building is selected
+watch(() => mappingStore.selectedBuilding, (building) => {
+  if (building && !showSingle.value && !showMulti.value) {
+    showSingle.value = true
+    showInner.value = false
+    emit('update:showSingle', true)
+    emit('update:showMulti', false)
+  }
 })
 
 const handleReset = async () => {
@@ -144,7 +155,7 @@ const buildingTypeTotals = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div class="filter-sidebar-container">
     <!-- Building Type Totals -->
     <div
       v-if="!mappingStore.isLoading && buildingTypeTotals.length > 0"
@@ -379,6 +390,13 @@ const buildingTypeTotals = computed(() => {
 </template>
 
 <style scoped>
+.filter-sidebar-container {
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .inner-type {
   margin-top: 60px;
 }

@@ -181,6 +181,21 @@ export function getPotentialClientPlace(
 }
 
 /**
+ * Get building details for mapping (full details with photos, job_detail_info, etc.)
+ * This fetches the full building data needed for the BuildingDetail component
+ * Note: The API returns Building type, which will be transformed to MappingBuilding in the component
+ */
+export function getBuildingDetailForMapping(
+  id: number,
+): Promise<ApiResponse<any>> {
+  return getApi<ApiResponse<any>>(
+    apiConfig.endpoints.buildings_get,
+    {},
+    { id },
+  )
+}
+
+/**
  * Export mapping data
  */
 export async function exportMappingData(
