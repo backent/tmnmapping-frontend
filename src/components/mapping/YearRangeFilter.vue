@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useMappingStore } from '@/stores/mapping'
-
 interface Props {
   modelValue: [number, number]
   reporting?: boolean
@@ -16,12 +14,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-const mappingStore = useMappingStore()
-
-// Use default range if not set from API
-const minYear = computed(() => mappingStore.yearRange?.[0] || 1980)
-const maxYear = computed(() => mappingStore.yearRange?.[1] || new Date().getFullYear())
-
 // Individual year values
 const startYear = ref<number>(props.modelValue[0])
 const endYear = ref<number>(props.modelValue[1])
@@ -32,51 +24,10 @@ watch(() => props.modelValue, (newValue) => {
   endYear.value = newValue[1]
 }, { immediate: true })
 
-// Validation and update function
+// Simple update function - no validation, no clamping, just emit the values
 const updateYearRange = () => {
-  let validStart = startYear.value
-  let validEnd = endYear.value
-
-  // Clamp values to min/max range
-  if (validStart < minYear.value)
-    validStart = minYear.value
-  if (validStart > maxYear.value)
-    validStart = maxYear.value
-  if (validEnd < minYear.value)
-    validEnd = minYear.value
-  if (validEnd > maxYear.value)
-    validEnd = maxYear.value
-
-  // Ensure start <= end
-  if (validStart > validEnd)
-    validStart = validEnd
-
-  // Update refs if clamped
-  if (startYear.value !== validStart)
-    startYear.value = validStart
-  if (endYear.value !== validEnd)
-    endYear.value = validEnd
-
-  // Emit the updated range
-  emit('update:modelValue', [validStart, validEnd])
+  emit('update:modelValue', [startYear.value, endYear.value])
 }
-
-// Computed for error messages
-const startYearError = computed(() => {
-  if (startYear.value > endYear.value)
-    return 'Start year must be less than or equal to end year'
-  if (startYear.value < minYear.value || startYear.value > maxYear.value)
-    return `Year must be between ${minYear.value} and ${maxYear.value}`
-  return ''
-})
-
-const endYearError = computed(() => {
-  if (endYear.value < startYear.value)
-    return 'End year must be greater than or equal to start year'
-  if (endYear.value < minYear.value || endYear.value > maxYear.value)
-    return `Year must be between ${minYear.value} and ${maxYear.value}`
-  return ''
-})
 </script>
 
 <template>
@@ -92,22 +43,16 @@ const endYearError = computed(() => {
       v-model.number="startYear"
       label="Start Year"
       type="number"
-      :min="minYear"
-      :max="maxYear"
       outlined
       dense
-      :error-messages="startYearError"
       @update:model-value="updateYearRange"
     />
     <VTextField
       v-model.number="endYear"
       label="End Year"
       type="number"
-      :min="minYear"
-      :max="maxYear"
       outlined
       dense
-      :error-messages="endYearError"
       @update:model-value="updateYearRange"
     />
   </div>

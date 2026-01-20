@@ -290,9 +290,9 @@ const buildingTypeTotals = computed(() => {
             <!-- Year Range -->
             <YearRangeFilter
               v-if="!isReporting"
-              :model-value="mappingStore.yearRange"
+              :model-value="mappingStore.filters.year || mappingStore.yearRange"
               :reporting="isReporting"
-              @update:model-value="mappingStore.filters.year = $event; mappingStore.yearRange = $event"
+              @update:model-value="mappingStore.filters.year = $event"
             />
 
             <!-- Radius -->
