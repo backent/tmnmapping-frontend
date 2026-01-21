@@ -273,17 +273,64 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="mapContainer"
-    class="map-container"
-  />
+  <div class="map-wrapper">
+    <div
+      ref="mapContainer"
+      class="map-container"
+    />
+    <!-- Loading Overlay -->
+    <div
+      v-if="mappingStore.isLoading"
+      class="map-loading-overlay"
+    >
+      <div class="loading-content">
+        <VProgressCircular
+          indeterminate
+          color="primary"
+          size="64"
+        />
+        <p class="mt-4 text-body-1">
+          Loading...
+        </p>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+}
+
 .map-container {
   width: 100%;
   height: 100%;
   min-height: 600px;
+}
+
+.map-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 </style>
 
