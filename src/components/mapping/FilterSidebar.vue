@@ -158,7 +158,7 @@ const buildingTypeTotals = computed(() => {
   <div class="filter-sidebar-container">
     <!-- Building Type Totals -->
     <div
-      v-if="!mappingStore.isLoading && buildingTypeTotals.length > 0"
+      v-if="buildingTypeTotals.length > 0"
       class="text-center pb-2 pt-1"
     >
       <VChip
