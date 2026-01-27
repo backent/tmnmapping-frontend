@@ -33,4 +33,18 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/mapping',
     }"
   />
+
+  <!-- POI Section -->
+  <VerticalNavSectionTitle
+    :item="{
+      heading: 'Points of Interest',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'POI List',
+      icon: 'ri-map-pin-3-line',
+      to: '/pois',
+    }"
+  />
 </template>

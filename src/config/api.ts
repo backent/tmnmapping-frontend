@@ -26,5 +26,12 @@ export const apiConfig = {
     potential_clients: '/admin/potentialclient',
     potential_client_get: '/admin/potentialclient/:id',
     potential_client_place: '/admin/potentialclient-place/:id',
+
+    // POI endpoints
+    pois_list: '/pois',
+    pois_get: '/pois/:id',
+    pois_create: '/pois',
+    pois_update: '/pois/:id',
+    pois_delete: '/pois/:id',
   },
 }

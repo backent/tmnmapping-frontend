@@ -23,6 +23,21 @@ export const routes = [
         name: 'mapping',
         component: () => import('@/pages/mapping.vue'),
       },
+      {
+        path: 'pois',
+        name: 'pois',
+        component: () => import('@/pages/pois.vue'),
+      },
+      {
+        path: 'pois/new',
+        name: 'poi-new',
+        component: () => import('@/pages/poi-form.vue'),
+      },
+      {
+        path: 'pois/:id/edit',
+        name: 'poi-edit',
+        component: () => import('@/pages/poi-form.vue'),
+      },
     ],
   },
   {
