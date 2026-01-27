@@ -19,7 +19,7 @@ onMounted(async () => {
     await poiStore.fetchPOIs()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.response?.data?.data || 'Failed to load POIs'
+    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load POIs'
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -42,7 +42,7 @@ const handleDelete = async (poi: POI) => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.response?.data?.data || 'Failed to delete POI'
+    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete POI'
     snackbarColor.value = 'error'
     snackbar.value = true
   }

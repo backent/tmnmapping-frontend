@@ -54,6 +54,11 @@ const errorMessage = ref('')
 const isGoogleMapsLoaded = ref(false)
 const colorPickerDialog = ref(false)
 
+// Snackbar state
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref<'success' | 'error'>('success')
+
 // Load Google Maps API
 onMounted(async () => {
   // Load Google Maps if not already loaded
@@ -112,8 +117,8 @@ const fetchPOI = async () => {
     }
   }
   catch (error: any) {
-    errorMessage.value = 'Failed to load POI'
     console.error('Fetch error:', error)
+    errorMessage.value = error?.details?.message || error?.details || 'Failed to load POI'
   }
   finally {
     isLoading.value = false
@@ -175,19 +180,40 @@ const submit = async () => {
   try {
     if (isEdit.value && poiId.value) {
       await poiStore.updatePOI(poiId.value, form.value)
+      
+      // Show success message
+      snackbarMessage.value = 'POI updated successfully'
+      snackbarColor.value = 'success'
+      snackbar.value = true
+      
+      // Navigate after brief delay to show message
+      setTimeout(() => {
+        router.push({ name: 'pois' })
+      }, 1000)
     }
     else {
       await poiStore.createPOI(form.value)
+      
+      // Show success message
+      snackbarMessage.value = 'POI created successfully'
+      snackbarColor.value = 'success'
+      snackbar.value = true
+      
+      // Navigate after brief delay to show message
+      setTimeout(() => {
+        router.push({ name: 'pois' })
+      }, 1000)
     }
-
-    // Navigate back to list
-    router.push({ name: 'pois' })
   }
   catch (error: any) {
-    errorMessage.value = error.response?.data?.data || 'Failed to save POI'
     console.error('Save error:', error)
-  }
-  finally {
+    const errorMsg = error?.details?.message || error?.details || 'Failed to save POI'
+    errorMessage.value = errorMsg
+    
+    // Also show error in snackbar
+    snackbarMessage.value = errorMsg
+    snackbarColor.value = 'error'
+    snackbar.value = true
     isSaving.value = false
   }
 }
@@ -408,5 +434,14 @@ onUnmounted(() => {
         </VForm>
       </VCardText>
     </VCard>
+
+    <!-- Snackbar for feedback -->
+    <VSnackbar
+      v-model="snackbar"
+      :color="snackbarColor"
+      :timeout="3000"
+    >
+      {{ snackbarMessage }}
+    </VSnackbar>
   </div>
 </template>
