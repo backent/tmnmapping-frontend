@@ -11,6 +11,8 @@ import ScreenTypeFilter from './ScreenTypeFilter.vue'
 import ProgressFilter from './ProgressFilter.vue'
 import LCDPresenceFilter from './LCDPresenceFilter.vue'
 import BuildingGradeFilter from './BuildingGradeFilter.vue'
+import SellableFilter from './SellableFilter.vue'
+import ConnectivityFilter from './ConnectivityFilter.vue'
 import YearRangeFilter from './YearRangeFilter.vue'
 import RadiusFilter from './RadiusFilter.vue'
 import LocationFilter from './LocationFilter.vue'
@@ -274,6 +276,20 @@ const buildingTypeTotals = computed(() => {
                 v-if="!isReporting"
                 :model-value="mappingStore.filters.building_grade || []"
                 @update:model-value="mappingStore.filters.building_grade = $event"
+              />
+
+              <!-- Sellable -->
+              <SellableFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.sellable || []"
+                @update:model-value="mappingStore.filters.sellable = $event"
+              />
+
+              <!-- Connectivity -->
+              <ConnectivityFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.connectivity || []"
+                @update:model-value="mappingStore.filters.connectivity = $event"
               />
             </div>
 

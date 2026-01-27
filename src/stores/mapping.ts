@@ -81,6 +81,8 @@ export const useMappingStore = defineStore('mapping', {
         filters.screen_type?.length ||
         filters.progress?.length ||
         (filters.lcd_presence && filters.lcd_presence.length > 0 && filters.lcd_presence[0] !== 'TMN') ||
+        filters.sellable?.length ||
+        filters.connectivity?.length ||
         filters.year ||
         filters.radius ||
         filters.places_id

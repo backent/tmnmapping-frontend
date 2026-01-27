@@ -49,6 +49,12 @@ function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; 
   if (filters.lcd_presence?.length) {
     params['filter[lcd_presence]'] = filters.lcd_presence.join(',')
   }
+  if (filters.sellable?.length) {
+    params['filter[sellable]'] = filters.sellable.join(',')
+  }
+  if (filters.connectivity?.length) {
+    params['filter[connectivity]'] = filters.connectivity.join(',')
+  }
   if (filters.year) {
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
   }

@@ -92,6 +92,10 @@ export interface MappingFilters {
   // Presence filters
   lcd_presence?: string[]
 
+  // Status filters
+  sellable?: string[]
+  connectivity?: string[]
+
   // Other filters
   year?: [number, number] // [min, max]
   places_id?: string
