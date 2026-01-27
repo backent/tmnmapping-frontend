@@ -1,12 +1,13 @@
 import { getApi, postApi, putApi, deleteApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
-import type { ApiResponse } from '@/types/api'
+import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
 
-// GET /pois - List all POIs
-export function getPOIs(): Promise<ApiResponse<POI[]>> {
+// GET /pois - List all POIs with pagination
+export function getPOIs(params?: PaginationParams): Promise<ApiResponse<POI[]>> {
   return getApi<ApiResponse<POI[]>>(
     apiConfig.endpoints.pois_list,
+    params || {},
   )
 }
 

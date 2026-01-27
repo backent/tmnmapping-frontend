@@ -7,11 +7,18 @@ import {
   deletePOI,
 } from '@/http/poi'
 import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
+import type { PaginationParams } from '@/types/api'
 
 interface POIState {
   pois: POI[]
   currentPOI: POI | null
   isLoading: boolean
+  pagination: {
+    currentPage: number
+    lastPage: number
+    perPage: number
+    total: number
+  }
 }
 
 export const usePOIStore = defineStore('poi', {
@@ -19,6 +26,12 @@ export const usePOIStore = defineStore('poi', {
     pois: [],
     currentPOI: null,
     isLoading: false,
+    pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      perPage: 10,
+      total: 0,
+    },
   }),
 
   getters: {
@@ -27,13 +40,38 @@ export const usePOIStore = defineStore('poi', {
 
   actions: {
     /**
-     * Fetch all POIs
+     * Fetch all POIs with pagination
      */
-    async fetchPOIs() {
+    async fetchPOIs(params?: PaginationParams) {
       this.isLoading = true
       try {
-        const response = await getPOIs()
+        const response = await getPOIs(params)
+        
         this.pois = response.data || []
+        
+        // Check if response has pagination metadata (extras)
+        if (response.extras) {
+          const take = response.extras.take || 10
+          const skip = response.extras.skip || 0
+          const total = response.extras.total || 0
+          
+          this.pagination = {
+            currentPage: Math.floor(skip / take) + 1,
+            lastPage: Math.ceil(total / take) || 1,
+            perPage: take,
+            total,
+          }
+        }
+        else {
+          // If no pagination metadata, fallback
+          this.pagination.total = response.data?.length || 0
+          this.pagination.currentPage = params?.skip
+            ? Math.floor((params.skip / (params.take || 10)) + 1)
+            : 1
+          this.pagination.perPage = params?.take || 10
+          this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
+        }
+        
         return response
       }
       catch (error) {

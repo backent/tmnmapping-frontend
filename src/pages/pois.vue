@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import { usePOIStore } from '@/stores/poi'
 import type { POI } from '@/types/poi'
+import type { PaginationParams } from '@/types/api'
 
 const router = useRouter()
 const poiStore = usePOIStore()
@@ -10,20 +11,50 @@ const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
+// Pagination state
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+
 const pois = computed(() => poiStore.pois)
 const isLoading = computed(() => poiStore.isLoading)
+const totalRecords = computed(() => poiStore.pagination.total)
+const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.value) || 1)
 
-// Fetch POIs on mount
-onMounted(async () => {
+// Fetch POIs with pagination
+const fetchPOIs = async () => {
   try {
-    await poiStore.fetchPOIs()
+    const skip = (currentPage.value - 1) * itemsPerPage.value
+    const params: PaginationParams = {
+      take: itemsPerPage.value,
+      skip,
+      orderBy: 'created_at',
+      orderDirection: 'DESC',
+    }
+    await poiStore.fetchPOIs(params)
   }
   catch (error: any) {
     snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load POIs'
     snackbarColor.value = 'error'
     snackbar.value = true
   }
+}
+
+// Fetch POIs on mount
+onMounted(async () => {
+  await fetchPOIs()
 })
+
+// Handle page change
+const handlePageChange = async (page: number) => {
+  currentPage.value = page
+  await fetchPOIs()
+}
+
+// Handle items per page change
+const handleItemsPerPageChange = async () => {
+  currentPage.value = 1
+  await fetchPOIs()
+}
 
 // Handle edit
 const handleEdit = (poi: POI) => {
@@ -40,6 +71,8 @@ const handleDelete = async (poi: POI) => {
     snackbarMessage.value = 'POI deleted successfully'
     snackbarColor.value = 'success'
     snackbar.value = true
+    // Refresh current page after deletion
+    await fetchPOIs()
   }
   catch (error: any) {
     snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete POI'
@@ -176,6 +209,36 @@ const handleCreate = () => {
                 </tr>
               </tbody>
             </VTable>
+
+            <!-- Pagination Controls -->
+            <div
+              v-if="totalRecords > 0"
+              class="d-flex justify-space-between align-center mt-4"
+            >
+              <div class="text-body-2">
+                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalRecords) }} of {{ totalRecords }} entries
+              </div>
+
+              <div class="d-flex align-center gap-2">
+                <VSelect
+                  v-model="itemsPerPage"
+                  :items="[10, 25, 50, 100]"
+                  label="Per page"
+                  density="compact"
+                  hide-details
+                  style="max-width: 100px"
+                  @update:model-value="handleItemsPerPageChange"
+                />
+
+                <VPagination
+                  v-model="currentPage"
+                  :length="totalPages"
+                  :total-visible="5"
+                  density="compact"
+                  @update:model-value="handlePageChange"
+                />
+              </div>
+            </div>
           </div>
         </VCardText>
       </VCard>
