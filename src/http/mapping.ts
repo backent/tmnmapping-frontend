@@ -59,29 +59,42 @@ function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; 
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
   }
   
-  // For radius filtering, we need lat/lng. 
-  // If radius is set, always use current mapCenter (like oldmapping - it always uses current map center)
-  // Otherwise, use filters.lat/lng if set, or fallback to mapCenter
-  let lat: number | undefined
-  let lng: number | undefined
-  
-  if (filters.radius && filters.radius > 0) {
-    // When radius is active, always use current map center (like oldmapping)
-    lat = mapCenter?.lat
-    lng = mapCenter?.lng
+  // POI filter handling
+  if (filters.poi_id) {
+    // When POI is selected, send POI ID and radius (if set)
+    params['filter[poi_id]'] = filters.poi_id
+    
+    if (filters.radius) {
+      params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
+    }
+    
+    // Do NOT send lat/lng when POI is selected (POI points will be used instead)
   } else {
-    // When radius is not set, use filters if available, otherwise fallback to mapCenter
-    lat = filters.lat ?? mapCenter?.lat
-    lng = filters.lng ?? mapCenter?.lng
-  }
-  
-  if (lat != null && lng != null) {
-    params['filter[lat]'] = lat
-    params['filter[lng]'] = lng
-  }
-  
-  if (filters.radius) {
-    params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
+    // When POI is NOT selected, use existing map center radius logic
+    // For radius filtering, we need lat/lng. 
+    // If radius is set, always use current mapCenter (like oldmapping - it always uses current map center)
+    // Otherwise, use filters.lat/lng if set, or fallback to mapCenter
+    let lat: number | undefined
+    let lng: number | undefined
+    
+    if (filters.radius && filters.radius > 0) {
+      // When radius is active, always use current map center (like oldmapping)
+      lat = mapCenter?.lat
+      lng = mapCenter?.lng
+    } else {
+      // When radius is not set, use filters if available, otherwise fallback to mapCenter
+      lat = filters.lat ?? mapCenter?.lat
+      lng = filters.lng ?? mapCenter?.lng
+    }
+    
+    if (lat != null && lng != null) {
+      params['filter[lat]'] = lat
+      params['filter[lng]'] = lng
+    }
+    
+    if (filters.radius) {
+      params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
+    }
   }
   
   if (filters.places_id) {

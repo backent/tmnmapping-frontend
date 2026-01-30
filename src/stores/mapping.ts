@@ -10,6 +10,7 @@ import {
   getPotentialClientById,
   exportMappingData,
 } from '@/http/mapping'
+import { usePOIStore } from '@/stores/poi'
 import type {
   MappingBuilding,
   MappingFilters,
@@ -18,6 +19,7 @@ import type {
   RegionSearchResponse,
   ScreenTypeOption,
 } from '@/types/mapping'
+import type { POI } from '@/types/poi'
 
 interface MappingState {
   buildings: MappingBuilding[]
@@ -37,6 +39,7 @@ interface MappingState {
   selectedPotentialClient: PotentialClient | null
   screenTypes: ScreenTypeOption[]
   regionSearchResults: RegionSearchResponse | null
+  selectedPOI: POI | null
 }
 
 export const useMappingStore = defineStore('mapping', {
@@ -60,6 +63,7 @@ export const useMappingStore = defineStore('mapping', {
     selectedPotentialClient: null,
     screenTypes: [],
     regionSearchResults: null,
+    selectedPOI: null,
   }),
 
   getters: {
@@ -85,7 +89,8 @@ export const useMappingStore = defineStore('mapping', {
         filters.connectivity?.length ||
         filters.year ||
         filters.radius ||
-        filters.places_id
+        filters.places_id ||
+        filters.poi_id
       )
     },
   },
@@ -146,6 +151,7 @@ export const useMappingStore = defineStore('mapping', {
         lng: 106.816666,
       }
       this.radius = 0
+      this.selectedPOI = null
       await this.fetchBuildings()
     },
 
@@ -164,6 +170,56 @@ export const useMappingStore = defineStore('mapping', {
     setRadius(radius: number) {
       this.radius = radius
       this.filters.radius = radius
+    },
+
+    /**
+     * Set selected POI
+     */
+    async setSelectedPOI(poiId: number | null) {
+      if (poiId === null) {
+        this.selectedPOI = null
+        this.filters.poi_id = undefined
+        // Clear radius and lat/lng when POI is cleared
+        this.filters.radius = undefined
+        this.filters.lat = undefined
+        this.filters.lng = undefined
+        this.radius = 0
+        await this.fetchBuildings()
+        return
+      }
+
+      try {
+        const poiStore = usePOIStore()
+        await poiStore.fetchPOIById(poiId)
+        
+        if (poiStore.currentPOI) {
+          this.selectedPOI = poiStore.currentPOI
+          this.filters.poi_id = poiId
+          // Clear map center radius filter when POI is selected
+          this.filters.radius = undefined
+          this.filters.lat = undefined
+          this.filters.lng = undefined
+          this.radius = 0
+          await this.fetchBuildings()
+        }
+      }
+      catch (error) {
+        console.error('Error fetching POI:', error)
+        this.selectedPOI = null
+        this.filters.poi_id = undefined
+      }
+    },
+
+    /**
+     * Clear selected POI
+     */
+    clearSelectedPOI() {
+      this.selectedPOI = null
+      this.filters.poi_id = undefined
+      this.filters.radius = undefined
+      this.filters.lat = undefined
+      this.filters.lng = undefined
+      this.radius = 0
     },
 
     /**

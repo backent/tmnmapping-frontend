@@ -23,6 +23,7 @@ declare module 'vue' {
     MoreBtn: typeof import('./src/@core/components/MoreBtn.vue')['default']
     PlaceAutocomplete: typeof import('./src/components/poi/PlaceAutocomplete.vue')['default']
     PlaceDetail: typeof import('./src/components/mapping/PlaceDetail.vue')['default']
+    POIFilter: typeof import('./src/components/mapping/POIFilter.vue')['default']
     PointList: typeof import('./src/components/poi/PointList.vue')['default']
     ProgressFilter: typeof import('./src/components/mapping/ProgressFilter.vue')['default']
     RadiusFilter: typeof import('./src/components/mapping/RadiusFilter.vue')['default']

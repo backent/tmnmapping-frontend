@@ -16,6 +16,7 @@ import ConnectivityFilter from './ConnectivityFilter.vue'
 import YearRangeFilter from './YearRangeFilter.vue'
 import RadiusFilter from './RadiusFilter.vue'
 import LocationFilter from './LocationFilter.vue'
+import POIFilter from './POIFilter.vue'
 import BuildingDetail from './BuildingDetail.vue'
 
 interface Props {
@@ -224,6 +225,12 @@ const buildingTypeTotals = computed(() => {
             :model-value="mappingStore.filters.district_subdistrict || []"
             mode="single"
             @update:model-value="mappingStore.filters.district_subdistrict = $event"
+          />
+
+          <!-- POI Filter -->
+          <POIFilter
+            :model-value="mappingStore.filters.poi_id"
+            @update:model-value="mappingStore.setSelectedPOI($event)"
           />
 
           <!-- Building Detail -->

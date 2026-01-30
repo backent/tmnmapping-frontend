@@ -99,6 +99,7 @@ export interface MappingFilters {
   // Other filters
   year?: [number, number] // [min, max]
   places_id?: string
+  poi_id?: number // Selected POI ID for radius filtering
 }
 
 // API response with totals

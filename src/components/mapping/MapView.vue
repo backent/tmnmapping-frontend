@@ -35,10 +35,13 @@ const markers = ref<google.maps.Marker[]>([])
 // const clusterer = ref<MarkerClusterer | null>(null)
 const circle = ref<google.maps.Circle | null>(null)
 const centerMarker = ref<google.maps.Marker | null>(null)
+const poiPointMarkers = ref<google.maps.Marker[]>([])
+const poiCircles = ref<google.maps.Circle[]>([])
 
 const mappingStore = useMappingStore()
 
 const isMapLoaded = ref(false)
+const selectedPOI = computed(() => mappingStore.selectedPOI)
 
 // Initialize Google Maps
 onMounted(async () => {
@@ -81,6 +84,8 @@ onMounted(async () => {
     isMapLoaded.value = true
     updateMarkers()
     updateCircle()
+    updatePOIMarkers()
+    updatePOICircles()
   }
   catch (error) {
     console.error('Error loading Google Maps:', error)
@@ -106,6 +111,18 @@ watch(() => props.center, () => {
 watch(() => props.radius, () => {
   if (isMapLoaded.value) {
     updateCircle()
+    updatePOICircles()
+  }
+})
+
+// Watch selected POI
+watch(() => selectedPOI.value, () => {
+  if (isMapLoaded.value) {
+    updatePOIMarkers()
+    updatePOICircles()
+    updateCircle() // Update map center circle (hide if POI selected)
+    // Adjust zoom to show all POI points (only when POI is selected, not on radius change)
+    fitPOIBounds()
   }
 })
 
@@ -168,9 +185,9 @@ async function updateMarkers() {
         optimized: false, // Disable optimization to force re-render
       })
 
-      marker.addListener('click', () => {
-        emit('markerClick', building)
-      })
+      // marker.addListener('click', () => {
+      //   emit('markerClick', building)
+      // })
 
       newMarkers.push(marker)
     }
@@ -191,13 +208,136 @@ async function updateMarkers() {
   // NOTE: Marker clustering disabled
 }
 
+function updatePOIMarkers() {
+  if (!map.value) {
+    return
+  }
+
+  // Clear existing POI markers
+  poiPointMarkers.value.forEach(marker => {
+    google.maps.event.clearInstanceListeners(marker)
+    marker.setMap(null)
+  })
+  poiPointMarkers.value = []
+
+  // If POI is selected, create markers for each POI point
+  if (selectedPOI.value && selectedPOI.value.points.length > 0) {
+    const poiColor = selectedPOI.value.color
+
+    for (const point of selectedPOI.value.points) {
+      try {
+        const marker = new google.maps.Marker({
+          position: {
+            lat: point.latitude,
+            lng: point.longitude,
+          },
+          map: map.value,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: poiColor,
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#000',
+          },
+          title: `${selectedPOI.value.name} - ${point.place_name}`,
+          zIndex: 999,
+        })
+
+        poiPointMarkers.value.push(marker)
+      }
+      catch (error) {
+        console.error('Error creating POI point marker:', error)
+      }
+    }
+  }
+}
+
+function updatePOICircles() {
+  if (!map.value) {
+    return
+  }
+
+  // Clear existing POI circles
+  poiCircles.value.forEach(circle => {
+    circle.setMap(null)
+  })
+  poiCircles.value = []
+
+  // If POI is selected AND radius > 0, create circles for each POI point
+  if (selectedPOI.value && props.radius > 0 && selectedPOI.value.points.length > 0) {
+    const poiColor = selectedPOI.value.color
+
+    for (const point of selectedPOI.value.points) {
+      try {
+        const circle = new google.maps.Circle({
+          center: {
+            lat: point.latitude,
+            lng: point.longitude,
+          },
+          radius: props.radius * 1000, // Convert km to meters
+          fillColor: poiColor,
+          fillOpacity: 0.2,
+          strokeWeight: 1,
+          strokeOpacity: 1,
+          strokeColor: poiColor,
+          map: map.value,
+        })
+
+        poiCircles.value.push(circle)
+      }
+      catch (error) {
+        console.error('Error creating POI circle:', error)
+      }
+    }
+  }
+}
+
+function fitPOIBounds() {
+  if (!map.value || !selectedPOI.value || selectedPOI.value.points.length === 0) {
+    return
+  }
+
+  try {
+    const bounds = new google.maps.LatLngBounds()
+
+    // Add all POI point coordinates to bounds
+    for (const point of selectedPOI.value.points) {
+      bounds.extend({
+        lat: point.latitude,
+        lng: point.longitude,
+      })
+    }
+
+    // If radius circles exist, include their bounds to show full radius area
+    if (poiCircles.value.length > 0) {
+      for (const circle of poiCircles.value) {
+        const circleBounds = circle.getBounds()
+        if (circleBounds) {
+          bounds.union(circleBounds)
+        }
+      }
+    }
+
+    // Only fit bounds if we have valid bounds
+    if (!bounds.isEmpty()) {
+      // Add padding (in pixels) so markers aren't at the edge
+      const padding = 50
+      map.value.fitBounds(bounds, padding)
+    }
+  }
+  catch (error) {
+    console.error('Error fitting POI bounds:', error)
+  }
+}
+
 function updateCircle() {
   if (!map.value) {
     return
   }
 
-  // Only show circle and center marker if radius > 0
-  if (props.radius > 0) {
+  // Only show circle and center marker if radius > 0 AND POI is NOT selected
+  if (props.radius > 0 && !selectedPOI.value) {
     // Update or create circle
     if (circle.value) {
       // Update existing circle
@@ -259,6 +399,10 @@ function updateCircle() {
 onBeforeUnmount(() => {
   // Clean up markers
   markers.value.forEach(marker => marker.setMap(null))
+  // Clean up POI markers
+  poiPointMarkers.value.forEach(marker => marker.setMap(null))
+  // Clean up POI circles
+  poiCircles.value.forEach(circle => circle.setMap(null))
   // NOTE: Clusterer cleanup disabled - uncomment to re-enable
   // if (clusterer.value) {
   //   clusterer.value.clearMarkers()
