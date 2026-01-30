@@ -33,5 +33,12 @@ export const apiConfig = {
     pois_create: '/pois',
     pois_update: '/pois/:id',
     pois_delete: '/pois/:id',
+
+    // Sales packages
+    sales_packages_list: '/sales-packages',
+    sales_packages_get: '/sales-packages/:id',
+    sales_packages_create: '/sales-packages',
+    sales_packages_update: '/sales-packages/:id',
+    sales_packages_delete: '/sales-packages/:id',
   },
 }

@@ -38,6 +38,21 @@ export const routes = [
         name: 'poi-edit',
         component: () => import('@/pages/poi-form.vue'),
       },
+      {
+        path: 'sales-packages',
+        name: 'sales-packages',
+        component: () => import('@/pages/sales-packages.vue'),
+      },
+      {
+        path: 'sales-packages/new',
+        name: 'sales-package-new',
+        component: () => import('@/pages/sales-package-form.vue'),
+      },
+      {
+        path: 'sales-packages/:id/edit',
+        name: 'sales-package-edit',
+        component: () => import('@/pages/sales-package-form.vue'),
+      },
     ],
   },
   {

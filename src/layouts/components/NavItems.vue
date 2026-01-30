@@ -47,4 +47,18 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/pois',
     }"
   />
+
+  <!-- Sales packages -->
+  <VerticalNavSectionTitle
+    :item="{
+      heading: 'Sales',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Sales Packages',
+      icon: 'ri-price-tag-3-line',
+      to: '/sales-packages',
+    }"
+  />
 </template>
