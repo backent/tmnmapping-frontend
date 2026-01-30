@@ -233,6 +233,32 @@ const buildingTypeTotals = computed(() => {
             @update:model-value="mappingStore.setSelectedPOI($event)"
           />
 
+          <!-- Polygon filter: draw on map, filter buildings inside -->
+          <VDivider />
+          <VSubheader>Polygon</VSubheader>
+          <div class="pa-3">
+            <VBtn
+              v-if="!mappingStore.filters.polygon || mappingStore.filters.polygon.length < 3"
+              size="small"
+              variant="outlined"
+              block
+              @click="mappingStore.setDrawPolygonActive(true)"
+            >
+              Draw polygon
+            </VBtn>
+            <template v-else>
+              <VBtn
+                size="small"
+                variant="outlined"
+                color="error"
+                block
+                @click="mappingStore.setPolygon(null)"
+              >
+                Clear polygon
+              </VBtn>
+            </template>
+          </div>
+
           <!-- Building Detail -->
           <BuildingDetail
             v-if="mappingStore.selectedBuilding"

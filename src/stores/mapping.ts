@@ -40,6 +40,7 @@ interface MappingState {
   screenTypes: ScreenTypeOption[]
   regionSearchResults: RegionSearchResponse | null
   selectedPOI: POI | null
+  drawPolygonActive: boolean
 }
 
 export const useMappingStore = defineStore('mapping', {
@@ -64,6 +65,7 @@ export const useMappingStore = defineStore('mapping', {
     screenTypes: [],
     regionSearchResults: null,
     selectedPOI: null,
+    drawPolygonActive: false,
   }),
 
   getters: {
@@ -90,7 +92,8 @@ export const useMappingStore = defineStore('mapping', {
         filters.year ||
         filters.radius ||
         filters.places_id ||
-        filters.poi_id
+        filters.poi_id ||
+        (filters.polygon && filters.polygon.length >= 3)
       )
     },
   },
@@ -152,6 +155,7 @@ export const useMappingStore = defineStore('mapping', {
       }
       this.radius = 0
       this.selectedPOI = null
+      this.drawPolygonActive = false
       await this.fetchBuildings()
     },
 
@@ -208,6 +212,22 @@ export const useMappingStore = defineStore('mapping', {
         this.selectedPOI = null
         this.filters.poi_id = undefined
       }
+    },
+
+    /**
+     * Set polygon filter (drawn on map). Clears draw mode and fetches buildings.
+     */
+    async setPolygon(path: { lat: number; lng: number }[] | null) {
+      this.filters.polygon = path ?? undefined
+      this.drawPolygonActive = false
+      await this.fetchBuildings()
+    },
+
+    /**
+     * Enable or disable polygon drawing mode on the map.
+     */
+    setDrawPolygonActive(active: boolean) {
+      this.drawPolygonActive = active
     },
 
     /**

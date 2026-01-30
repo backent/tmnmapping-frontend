@@ -100,6 +100,7 @@ export interface MappingFilters {
   year?: [number, number] // [min, max]
   places_id?: string
   poi_id?: number // Selected POI ID for radius filtering
+  polygon?: { lat: number; lng: number }[] // User-drawn polygon for spatial filter
 }
 
 // API response with totals

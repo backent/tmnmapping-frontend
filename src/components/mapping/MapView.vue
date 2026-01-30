@@ -37,11 +37,16 @@ const circle = ref<google.maps.Circle | null>(null)
 const centerMarker = ref<google.maps.Marker | null>(null)
 const poiPointMarkers = ref<google.maps.Marker[]>([])
 const poiCircles = ref<google.maps.Circle[]>([])
+const drawingManager = ref<google.maps.drawing.DrawingManager | null>(null)
+const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
+let overlaycompleteListener: google.maps.MapsEventListener | null = null
 
 const mappingStore = useMappingStore()
 
 const isMapLoaded = ref(false)
 const selectedPOI = computed(() => mappingStore.selectedPOI)
+const drawPolygonActive = computed(() => mappingStore.drawPolygonActive)
+const filterPolygon = computed(() => mappingStore.filters.polygon)
 
 // Initialize Google Maps
 onMounted(async () => {
@@ -60,7 +65,7 @@ onMounted(async () => {
     const loader = new Loader({
       apiKey,
       version: 'weekly',
-      libraries: ['places', 'geometry'],
+      libraries: ['places', 'geometry', 'drawing'],
     })
 
     await loader.load()
@@ -81,11 +86,36 @@ onMounted(async () => {
       }
     })
 
+    // Drawing Manager for polygon filter (mode toggled via drawPolygonActive)
+    drawingManager.value = new google.maps.drawing.DrawingManager({
+      drawingMode: null,
+      drawingControl: false,
+      map: map.value,
+    })
+    overlaycompleteListener = google.maps.event.addListener(
+      drawingManager.value,
+      'overlaycomplete',
+      (e: google.maps.drawing.OverlayCompleteEvent) => {
+        if (e.type !== google.maps.drawing.OverlayType.POLYGON || !e.overlay) {
+          return
+        }
+        const path: { lat: number; lng: number }[] = []
+        e.overlay.getPath().forEach((latLng: google.maps.LatLng) => {
+          path.push({ lat: latLng.lat(), lng: latLng.lng() })
+        })
+        e.overlay.setMap(null)
+        if (path.length >= 3) {
+          mappingStore.setPolygon(path)
+        }
+      },
+    )
+
     isMapLoaded.value = true
     updateMarkers()
     updateCircle()
     updatePOIMarkers()
     updatePOICircles()
+    updateFilterPolygonOverlay()
   }
   catch (error) {
     console.error('Error loading Google Maps:', error)
@@ -120,11 +150,27 @@ watch(() => selectedPOI.value, () => {
   if (isMapLoaded.value) {
     updatePOIMarkers()
     updatePOICircles()
-    updateCircle() // Update map center circle (hide if POI selected)
-    // Adjust zoom to show all POI points (only when POI is selected, not on radius change)
+    updateCircle()
     fitPOIBounds()
   }
 })
+
+// Toggle Drawing Manager polygon mode when draw polygon is active
+watch(() => drawPolygonActive.value, () => {
+  if (!drawingManager.value) {
+    return
+  }
+  drawingManager.value.setDrawingMode(
+    drawPolygonActive.value ? google.maps.drawing.OverlayType.POLYGON : null,
+  )
+})
+
+// Render stored polygon overlay when filters.polygon changes
+watch(() => filterPolygon.value, () => {
+  if (isMapLoaded.value) {
+    updateFilterPolygonOverlay()
+  }
+}, { deep: true })
 
 async function updateMarkers() {
   if (!map.value) {
@@ -293,6 +339,29 @@ function updatePOICircles() {
   }
 }
 
+function updateFilterPolygonOverlay() {
+  if (!map.value) {
+    return
+  }
+  if (filterPolygonOverlay.value) {
+    filterPolygonOverlay.value.setMap(null)
+    filterPolygonOverlay.value = null
+  }
+  const path = filterPolygon.value
+  if (path && path.length >= 3) {
+    const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
+    filterPolygonOverlay.value = new google.maps.Polygon({
+      paths: gmPath,
+      strokeColor: '#1a73e8',
+      strokeOpacity: 1,
+      strokeWeight: 2,
+      fillColor: '#1a73e8',
+      fillOpacity: 0.2,
+      map: map.value,
+    })
+  }
+}
+
 function fitPOIBounds() {
   if (!map.value || !selectedPOI.value || selectedPOI.value.points.length === 0) {
     return
@@ -397,16 +466,21 @@ function updateCircle() {
 }
 
 onBeforeUnmount(() => {
-  // Clean up markers
+  if (overlaycompleteListener) {
+    google.maps.event.removeListener(overlaycompleteListener)
+    overlaycompleteListener = null
+  }
+  if (drawingManager.value) {
+    drawingManager.value.setMap(null)
+    drawingManager.value = null
+  }
+  if (filterPolygonOverlay.value) {
+    filterPolygonOverlay.value.setMap(null)
+    filterPolygonOverlay.value = null
+  }
   markers.value.forEach(marker => marker.setMap(null))
-  // Clean up POI markers
   poiPointMarkers.value.forEach(marker => marker.setMap(null))
-  // Clean up POI circles
-  poiCircles.value.forEach(circle => circle.setMap(null))
-  // NOTE: Clusterer cleanup disabled - uncomment to re-enable
-  // if (clusterer.value) {
-  //   clusterer.value.clearMarkers()
-  // }
+  poiCircles.value.forEach(c => c.setMap(null))
   if (circle.value) {
     circle.value.setMap(null)
   }
