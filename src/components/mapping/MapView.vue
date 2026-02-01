@@ -62,6 +62,29 @@ const selectedPOI = computed(() => mappingStore.selectedPOI)
 const drawPolygonActive = computed(() => mappingStore.drawPolygonActive)
 const filterPolygon = computed(() => mappingStore.filters.polygon)
 
+/** When POI is cleared we keep showing circles with radius 0 (don't unmount) so they can't reappear on zoom */
+const lastPOIPoints = ref<{ lat: number; lng: number }[]>([])
+watch(selectedPOI, () => {
+  if (selectedPOI.value?.points?.length) {
+    lastPOIPoints.value = selectedPOI.value.points.map(p => ({ lat: p.latitude, lng: p.longitude }))
+  }
+}, { immediate: true })
+
+const poiCircleData = computed(() => {
+  if (selectedPOI.value?.points?.length) {
+    return {
+      centers: selectedPOI.value.points.map(p => ({ lat: p.latitude, lng: p.longitude })),
+      radiusKm: props.radius,
+      color: selectedPOI.value.color,
+    }
+  }
+  return {
+    centers: lastPOIPoints.value,
+    radiusKm: 0,
+    color: '#ff0000',
+  }
+})
+
 // Initialize Google Maps
 onMounted(async () => {
   if (!mapContainer.value) {
@@ -552,16 +575,16 @@ onBeforeUnmount(() => {
       :map="map"
       :position="props.center"
     />
-    <!-- POI radius circles: one per POI point when POI selected (always mounted; radius 0 = invisible) -->
-    <template v-if="map && selectedPOI?.points?.length">
+    <!-- POI radius circles: when POI selected show circles; when POI cleared keep same circles with radius 0 (don't unmount) -->
+    <template v-if="map && poiCircleData.centers.length">
       <MapRadiusCircle
-        v-for="(point, i) in selectedPOI.points"
-        :key="`poi-circle-${selectedPOI.id}-${i}`"
+        v-for="(circleCenter, i) in poiCircleData.centers"
+        :key="`poi-circle-${i}-${circleCenter.lat}-${circleCenter.lng}`"
         :map="map"
-        :center="{ lat: point.latitude, lng: point.longitude }"
-        :radius-km="props.radius"
-        :fill-color="selectedPOI.color"
-        :stroke-color="selectedPOI.color"
+        :center="circleCenter"
+        :radius-km="poiCircleData.radiusKm"
+        :fill-color="poiCircleData.color"
+        :stroke-color="poiCircleData.color"
       />
     </template>
     <!-- Loading Overlay -->

@@ -51,11 +51,17 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
   await mappingStore.fetchBuildings()
 }, 1000)
 
-// Watch filters and update
-// Using JSON.stringify to only trigger when actual values change, not object references
-watch(() => JSON.stringify(mappingStore.filters), () => {
-  debouncedUpdateFilters()
-})
+// Watch filters and update (exclude poi_id so selecting/clearing POI doesn't double-fetch;
+// setSelectedPOI already calls fetchBuildings() when POI changes)
+watch(
+  () => {
+    const { poi_id: _poi, ...rest } = mappingStore.filters
+    return JSON.stringify(rest)
+  },
+  () => {
+    debouncedUpdateFilters()
+  },
+)
 
 // Automatically activate Single Location mode when a building is selected
 watch(() => mappingStore.selectedBuilding, (building) => {
