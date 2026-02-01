@@ -40,10 +40,22 @@ const poiCircles = ref<google.maps.Circle[]>([])
 const drawingManager = ref<google.maps.drawing.DrawingManager | null>(null)
 const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
 let overlaycompleteListener: google.maps.MapsEventListener | null = null
+let idleListener: google.maps.MapsEventListener | null = null
+let mapClickListener: google.maps.MapsEventListener | null = null
+const IDLE_DEBOUNCE_MS = 350
+let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null
+// Click radius in pixels; converted to meters using current zoom so hit area is consistent on screen
+const CLICK_MAX_RADIUS_PX = 40
+// Buildings within this many meters of the nearest are "same position" (multi-building picker)
+const SAME_POSITION_EPSILON_METERS = 1
+// Fallback max radius in meters when map/container not ready
+const FALLBACK_MAX_RADIUS_METERS = 1000
 
 const mappingStore = useMappingStore()
 
 const isMapLoaded = ref(false)
+const showBuildingPicker = ref(false)
+const buildingPickerCandidates = ref<MappingBuilding[]>([])
 const selectedPOI = computed(() => mappingStore.selectedPOI)
 const drawPolygonActive = computed(() => mappingStore.drawPolygonActive)
 const filterPolygon = computed(() => mappingStore.filters.polygon)
@@ -74,6 +86,7 @@ onMounted(async () => {
       center: props.center,
       zoom: 12,
       disableDoubleClickZoom: true,
+      clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.)
     })
 
     // Handle double click
@@ -83,6 +96,30 @@ onMounted(async () => {
         const lng = event.latLng.lng()
         mappingStore.setMapCenter(lat, lng)
         emit('mapDoubleClick', lat, lng)
+      }
+    })
+
+    // Single map-level click: resolve latLng to building(s) and emit or show picker
+    mapClickListener = google.maps.event.addListener(map.value, 'click', (event: google.maps.MapMouseEvent) => {
+      if (!event.latLng) {
+        console.log('[MapView] map click: no latLng')
+        return
+      }
+      const clickLat = event.latLng.lat()
+      const clickLng = event.latLng.lng()
+      const maxRadiusMeters = getClickRadiusMeters()
+      console.log('[MapView] map click:', { lat: clickLat, lng: clickLng, maxRadiusMeters: maxRadiusMeters.toFixed(0), zoom: map.value?.getZoom?.() })
+      const candidates = findBuildingAtClick(event.latLng, maxRadiusMeters)
+      if (candidates.length === 0) {
+        console.log('[MapView] no building at click (max radius:', maxRadiusMeters.toFixed(0), 'm)')
+      }
+      else if (candidates.length === 1) {
+        console.log('[MapView] building at click:', candidates[0].id, candidates[0].building_name)
+        emit('markerClick', candidates[0])
+      }
+      else {
+        buildingPickerCandidates.value = candidates
+        showBuildingPicker.value = true
       }
     })
 
@@ -109,6 +146,28 @@ onMounted(async () => {
         }
       },
     )
+
+    // Bounds-based fetch: on map idle (pan/zoom finished), send viewport bounds and refetch
+    idleListener = google.maps.event.addListener(map.value, 'idle', () => {
+      if (idleDebounceTimer) {
+        clearTimeout(idleDebounceTimer)
+      }
+      idleDebounceTimer = setTimeout(() => {
+        idleDebounceTimer = null
+        const bounds = map.value?.getBounds()
+        if (!bounds) {
+          return
+        }
+        const ne = bounds.getNorthEast()
+        const sw = bounds.getSouthWest()
+        const minLat = sw.lat()
+        const minLng = sw.lng()
+        const maxLat = ne.lat()
+        const maxLng = ne.lng()
+        mappingStore.setMapBounds({ minLat, minLng, maxLat, maxLng })
+        mappingStore.fetchBuildings()
+      }, IDLE_DEBOUNCE_MS)
+    })
 
     isMapLoaded.value = true
     updateMarkers()
@@ -172,6 +231,71 @@ watch(() => filterPolygon.value, () => {
   }
 }, { deep: true })
 
+/** Max click radius in meters from current zoom and map size (fixed pixel radius → meters). */
+function getClickRadiusMeters(): number {
+  if (!map.value || !mapContainer.value) {
+    return FALLBACK_MAX_RADIUS_METERS
+  }
+  const bounds = map.value.getBounds()
+  if (!bounds) {
+    return FALLBACK_MAX_RADIUS_METERS
+  }
+  const sw = bounds.getSouthWest()
+  const ne = bounds.getNorthEast()
+  const horizontalSpanMeters = google.maps.geometry.spherical.computeDistanceBetween(
+    sw,
+    new google.maps.LatLng(sw.lat(), ne.lng()),
+  )
+  const widthPx = mapContainer.value.offsetWidth || 256
+  const metersPerPixel = horizontalSpanMeters / widthPx
+  const radiusMeters = CLICK_MAX_RADIUS_PX * metersPerPixel
+  return radiusMeters
+}
+
+/** Resolve map click to all buildings at the same position (nearest within max radius in meters). */
+function findBuildingAtClick(latLng: google.maps.LatLng, maxRadiusMeters: number): MappingBuilding[] {
+  const buildings = props.buildings || []
+  console.log('[MapView] findBuildingAtClick: buildings count =', buildings.length, 'maxRadiusMeters =', maxRadiusMeters)
+  let dMinMeters = Infinity
+  for (const b of buildings) {
+    const lat = b.coordinates?.lat ?? b.latitude
+    const lng = b.coordinates?.lng ?? b.longitude
+    const buildingLatLng = new google.maps.LatLng(lat, lng)
+    const distMeters = google.maps.geometry.spherical.computeDistanceBetween(latLng, buildingLatLng)
+    if (distMeters < dMinMeters) {
+      dMinMeters = distMeters
+    }
+  }
+  if (dMinMeters > maxRadiusMeters) {
+    if (buildings.length > 0) {
+      console.log('[MapView] findBuildingAtClick: no match, closest ~', dMinMeters.toFixed(0), 'm away (max:', maxRadiusMeters.toFixed(0), 'm)')
+    }
+    return []
+  }
+  const samePosition: MappingBuilding[] = []
+  for (const b of buildings) {
+    const lat = b.coordinates?.lat ?? b.latitude
+    const lng = b.coordinates?.lng ?? b.longitude
+    const buildingLatLng = new google.maps.LatLng(lat, lng)
+    const distMeters = google.maps.geometry.spherical.computeDistanceBetween(latLng, buildingLatLng)
+    if (distMeters <= dMinMeters + SAME_POSITION_EPSILON_METERS) {
+      samePosition.push(b)
+    }
+  }
+  console.log('[MapView] findBuildingAtClick: match count =', samePosition.length, '~', dMinMeters.toFixed(0), 'm away')
+  return samePosition
+}
+
+function closeBuildingPicker() {
+  showBuildingPicker.value = false
+  buildingPickerCandidates.value = []
+}
+
+function selectBuildingFromPicker(building: MappingBuilding) {
+  emit('markerClick', building)
+  closeBuildingPicker()
+}
+
 async function updateMarkers() {
   if (!map.value) {
     return
@@ -186,8 +310,6 @@ async function updateMarkers() {
   // Remove each old marker completely
   for (const marker of oldMarkers) {
     try {
-      // Clear all event listeners first
-      google.maps.event.clearInstanceListeners(marker)
       // Hide the marker immediately
       marker.setVisible(false)
       // Remove from map
@@ -229,11 +351,8 @@ async function updateMarkers() {
         title: building.building_name,
         visible: false, // Start hidden
         optimized: false, // Disable optimization to force re-render
+        clickable: false, // Clicks pass through to map; single map-level listener resolves building
       })
-
-      // marker.addListener('click', () => {
-      //   emit('markerClick', building)
-      // })
 
       newMarkers.push(marker)
     }
@@ -466,6 +585,18 @@ function updateCircle() {
 }
 
 onBeforeUnmount(() => {
+  if (idleDebounceTimer) {
+    clearTimeout(idleDebounceTimer)
+    idleDebounceTimer = null
+  }
+  if (idleListener) {
+    google.maps.event.removeListener(idleListener)
+    idleListener = null
+  }
+  if (mapClickListener) {
+    google.maps.event.removeListener(mapClickListener)
+    mapClickListener = null
+  }
   if (overlaycompleteListener) {
     google.maps.event.removeListener(overlaycompleteListener)
     overlaycompleteListener = null
@@ -512,6 +643,44 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </div>
+
+    <!-- Multiple buildings at same position: pick one -->
+    <div
+      v-if="showBuildingPicker && buildingPickerCandidates.length > 1"
+      class="building-picker-backdrop"
+      role="dialog"
+      aria-label="Select a building"
+      @click.self="closeBuildingPicker"
+    >
+      <VCard
+        class="building-picker-card"
+        @click.stop
+      >
+        <VCardTitle class="text-subtitle-1">
+          Multiple buildings at this location
+        </VCardTitle>
+        <VList density="compact">
+          <VListItem
+            v-for="b in buildingPickerCandidates"
+            :key="b.id"
+            :title="b.building_name"
+            :subtitle="b.building_type || undefined"
+            clickable
+            @click="selectBuildingFromPicker(b)"
+          />
+        </VList>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            variant="text"
+            size="small"
+            @click="closeBuildingPicker"
+          >
+            Cancel
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </div>
   </div>
 </template>
 
@@ -549,6 +718,24 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.building-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.building-picker-card {
+  min-width: 280px;
+  max-width: 360px;
+  max-height: 70vh;
+  overflow: auto;
 }
 </style>
 

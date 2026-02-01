@@ -10,12 +10,25 @@ import type {
   ScreenTypeOption,
 } from '@/types/mapping'
 
+/** Map viewport bounds for bounds-based fetching */
+export interface MapBounds {
+  minLat: number
+  minLng: number
+  maxLat: number
+  maxLng: number
+}
+
 /**
  * Build query parameters from mapping filters
  * @param filters - Mapping filters
  * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
+ * @param bounds - Optional map viewport bounds (minLat, minLng, maxLat, maxLng)
  */
-function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; lng: number }): QueryParams {
+function buildFilterParams(
+  filters?: MappingFilters,
+  mapCenter?: { lat: number; lng: number },
+  bounds?: MapBounds | null,
+): QueryParams {
   const params: QueryParams = {}
 
   if (!filters) {
@@ -93,6 +106,14 @@ function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; 
     params['filter[places_id]'] = filters.places_id
   }
 
+  // Map viewport bounds (backend returns only buildings in view when set)
+  if (bounds) {
+    params['filter[min_lat]'] = bounds.minLat
+    params['filter[max_lat]'] = bounds.maxLat
+    params['filter[min_lng]'] = bounds.minLng
+    params['filter[max_lng]'] = bounds.maxLng
+  }
+
   return params
 }
 
@@ -100,12 +121,14 @@ function buildFilterParams(filters?: MappingFilters, mapCenter?: { lat: number; 
  * Get mapping buildings with filters
  * @param filters - Mapping filters
  * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
+ * @param bounds - Optional map viewport bounds; when set, backend returns only buildings in view
  */
 export function getMappingBuildings(
   filters?: MappingFilters,
   mapCenter?: { lat: number; lng: number },
+  bounds?: MapBounds | null,
 ): Promise<ApiResponse<MappingResponse>> {
-  const params = buildFilterParams(filters, mapCenter)
+  const params = buildFilterParams(filters, mapCenter, bounds)
 
   return getApi<ApiResponse<MappingResponse>>(
     apiConfig.endpoints.mapping_buildings,

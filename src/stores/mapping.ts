@@ -21,6 +21,9 @@ import type {
 } from '@/types/mapping'
 import type { POI } from '@/types/poi'
 
+/** Map viewport bounds for bounds-based fetching */
+export type MapBounds = { minLat: number; minLng: number; maxLat: number; maxLng: number }
+
 interface MappingState {
   buildings: MappingBuilding[]
   filterOptions: MappingFilterOptions | null
@@ -33,6 +36,8 @@ interface MappingState {
     lat: number
     lng: number
   }
+  /** Map viewport bounds; when set, fetch returns only buildings in view */
+  mapBounds: MapBounds | null
   radius: number // in kilometers
   yearRange: [number, number]
   potentialClients: PotentialClient[]
@@ -106,7 +111,7 @@ export const useMappingStore = defineStore('mapping', {
       this.isLoading = true
 
       try {
-        const response = await getMappingBuildings(this.filters, this.mapCenter)
+        const response = await getMappingBuildings(this.filters, this.mapCenter, this.mapBounds)
 
         if (response.data) {
           // Transform backend response to include coordinates object
@@ -157,6 +162,13 @@ export const useMappingStore = defineStore('mapping', {
       this.selectedPOI = null
       this.drawPolygonActive = false
       await this.fetchBuildings()
+    },
+
+    /**
+     * Set map viewport bounds and optionally refetch (caller may call fetchBuildings after)
+     */
+    setMapBounds(bounds: MapBounds | null) {
+      this.mapBounds = bounds
     },
 
     /**
