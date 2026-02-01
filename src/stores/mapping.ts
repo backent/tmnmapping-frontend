@@ -230,6 +230,9 @@ export const useMappingStore = defineStore('mapping', {
      * Set polygon filter (drawn on map). Clears draw mode and fetches buildings.
      */
     async setPolygon(path: { lat: number; lng: number }[] | null) {
+      if (path === null) {
+        console.log('[mapping store] setPolygon(null) – clearing polygon filter')
+      }
       this.filters.polygon = path ?? undefined
       this.drawPolygonActive = false
       await this.fetchBuildings()

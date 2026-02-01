@@ -8,6 +8,8 @@ import { useMappingStore } from '@/stores/mapping'
 import { getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding } from '@/types/mapping'
 import type { MappingFilters } from '@/types/mapping'
+import MapRadiusCircle from '@/components/mapping/MapRadiusCircle.vue'
+import MapCenterMarker from '@/components/mapping/MapCenterMarker.vue'
 
 interface Props {
   buildings: MappingBuilding[]
@@ -33,21 +35,21 @@ const map = ref<google.maps.Map | null>(null)
 const markers = ref<google.maps.Marker[]>([])
 // NOTE: Clusterer disabled - uncomment to re-enable marker clustering
 // const clusterer = ref<MarkerClusterer | null>(null)
-const circle = ref<google.maps.Circle | null>(null)
-const centerMarker = ref<google.maps.Marker | null>(null)
 const poiPointMarkers = ref<google.maps.Marker[]>([])
-const poiCircles = ref<google.maps.Circle[]>([])
 const drawingManager = ref<google.maps.drawing.DrawingManager | null>(null)
 const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
+/** Drawing Manager's completed overlay; kept so we can remove it again if it reappears on zoom */
+let lastDrawingManagerOverlay: google.maps.Polygon | null = null
 let overlaycompleteListener: google.maps.MapsEventListener | null = null
 let idleListener: google.maps.MapsEventListener | null = null
 let mapClickListener: google.maps.MapsEventListener | null = null
 const IDLE_DEBOUNCE_MS = 350
 let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const DEBUG_POLYGON = true // set false to disable polygon overlay debug logs
 // Click radius in pixels; converted to meters using current zoom so hit area is consistent on screen
 const CLICK_MAX_RADIUS_PX = 40
 // Buildings within this many meters of the nearest are "same position" (multi-building picker)
-const SAME_POSITION_EPSILON_METERS = 1
+const SAME_POSITION_EPSILON_METERS = 100
 // Fallback max radius in meters when map/container not ready
 const FALLBACK_MAX_RADIUS_METERS = 1000
 
@@ -140,7 +142,11 @@ onMounted(async () => {
         e.overlay.getPath().forEach((latLng: google.maps.LatLng) => {
           path.push({ lat: latLng.lat(), lng: latLng.lng() })
         })
+        lastDrawingManagerOverlay = e.overlay as google.maps.Polygon
         e.overlay.setMap(null)
+        if (DEBUG_POLYGON) {
+          console.log('[MapView polygon] overlaycomplete: path length=', path.length, 'lastDrawingManagerOverlay set, setMap(null) called')
+        }
         if (path.length >= 3) {
           mappingStore.setPolygon(path)
         }
@@ -166,14 +172,17 @@ onMounted(async () => {
         const maxLng = ne.lng()
         mappingStore.setMapBounds({ minLat, minLng, maxLat, maxLng })
         mappingStore.fetchBuildings()
+        // Re-sync overlays with store so cleared polygon/radius don't reappear on zoom
+        if (DEBUG_POLYGON) {
+          console.log('[MapView polygon] idle: calling updateFilterPolygonOverlay(), store polygon=', mappingStore.filters.polygon ? `${mappingStore.filters.polygon.length} points` : 'undefined')
+        }
+        updateFilterPolygonOverlay()
       }, IDLE_DEBOUNCE_MS)
     })
 
     isMapLoaded.value = true
     updateMarkers()
-    updateCircle()
     updatePOIMarkers()
-    updatePOICircles()
     updateFilterPolygonOverlay()
   }
   catch (error) {
@@ -192,24 +201,13 @@ watch(() => props.buildings, async () => {
 watch(() => props.center, () => {
   if (map.value && isMapLoaded.value) {
     map.value.setCenter(props.center)
-    updateCircle()
   }
 })
 
-// Update radius circle
-watch(() => props.radius, () => {
-  if (isMapLoaded.value) {
-    updateCircle()
-    updatePOICircles()
-  }
-})
-
-// Watch selected POI
+// Watch selected POI (radius circles are declarative components; no imperative update)
 watch(() => selectedPOI.value, () => {
   if (isMapLoaded.value) {
     updatePOIMarkers()
-    updatePOICircles()
-    updateCircle()
     fitPOIBounds()
   }
 })
@@ -227,6 +225,9 @@ watch(() => drawPolygonActive.value, () => {
 // Render stored polygon overlay when filters.polygon changes
 watch(() => filterPolygon.value, () => {
   if (isMapLoaded.value) {
+    if (DEBUG_POLYGON) {
+      console.log('[MapView polygon] watcher: filterPolygon changed, calling updateFilterPolygonOverlay(), path=', filterPolygon.value ? `${filterPolygon.value.length} points` : 'undefined')
+    }
     updateFilterPolygonOverlay()
   }
 }, { deep: true })
@@ -418,67 +419,50 @@ function updatePOIMarkers() {
   }
 }
 
-function updatePOICircles() {
-  if (!map.value) {
-    return
-  }
-
-  // Clear existing POI circles
-  poiCircles.value.forEach(circle => {
-    circle.setMap(null)
-  })
-  poiCircles.value = []
-
-  // If POI is selected AND radius > 0, create circles for each POI point
-  if (selectedPOI.value && props.radius > 0 && selectedPOI.value.points.length > 0) {
-    const poiColor = selectedPOI.value.color
-
-    for (const point of selectedPOI.value.points) {
-      try {
-        const circle = new google.maps.Circle({
-          center: {
-            lat: point.latitude,
-            lng: point.longitude,
-          },
-          radius: props.radius * 1000, // Convert km to meters
-          fillColor: poiColor,
-          fillOpacity: 0.2,
-          strokeWeight: 1,
-          strokeOpacity: 1,
-          strokeColor: poiColor,
-          map: map.value,
-        })
-
-        poiCircles.value.push(circle)
-      }
-      catch (error) {
-        console.error('Error creating POI circle:', error)
-      }
-    }
-  }
-}
-
 function updateFilterPolygonOverlay() {
   if (!map.value) {
     return
   }
   if (filterPolygonOverlay.value) {
+    if (DEBUG_POLYGON) {
+      console.log('[MapView polygon] updateFilterPolygonOverlay: clearing filterPolygonOverlay (ours)')
+    }
     filterPolygonOverlay.value.setMap(null)
     filterPolygonOverlay.value = null
   }
   const path = filterPolygon.value
-  if (path && path.length >= 3) {
-    const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
-    filterPolygonOverlay.value = new google.maps.Polygon({
-      paths: gmPath,
-      strokeColor: '#1a73e8',
-      strokeOpacity: 1,
-      strokeWeight: 2,
-      fillColor: '#1a73e8',
-      fillOpacity: 0.2,
-      map: map.value,
-    })
+  if (!path || path.length < 3) {
+    // Ensure Drawing Manager's overlay is also removed if it was re-shown on zoom
+    if (lastDrawingManagerOverlay) {
+      if (DEBUG_POLYGON) {
+        console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, clearing lastDrawingManagerOverlay')
+      }
+      lastDrawingManagerOverlay.setMap(null)
+      lastDrawingManagerOverlay = null
+    }
+    // Force Drawing Manager to drop any internal overlay that may reappear on zoom
+    if (drawingManager.value && map.value) {
+      drawingManager.value.setMap(null)
+      drawingManager.value.setMap(map.value)
+    }
+    if (DEBUG_POLYGON) {
+      console.log('[MapView polygon] updateFilterPolygonOverlay: done (no polygon to show), path=', path ? path.length : 'undefined')
+    }
+    return
   }
+  if (DEBUG_POLYGON) {
+    console.log('[MapView polygon] updateFilterPolygonOverlay: creating new polygon, path length=', path.length)
+  }
+  const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
+  filterPolygonOverlay.value = new google.maps.Polygon({
+    paths: gmPath,
+    strokeColor: '#1a73e8',
+    strokeOpacity: 1,
+    strokeWeight: 2,
+    fillColor: '#1a73e8',
+    fillOpacity: 0.2,
+    map: map.value,
+  })
 }
 
 function fitPOIBounds() {
@@ -488,99 +472,31 @@ function fitPOIBounds() {
 
   try {
     const bounds = new google.maps.LatLngBounds()
+    const radiusMeters = props.radius > 0 ? props.radius * 1000 : 0
+    // ~111320 m per degree at equator; lng scale varies by cos(lat)
+    const metersPerDegreeLat = 111320
 
-    // Add all POI point coordinates to bounds
     for (const point of selectedPOI.value.points) {
-      bounds.extend({
-        lat: point.latitude,
-        lng: point.longitude,
-      })
-    }
-
-    // If radius circles exist, include their bounds to show full radius area
-    if (poiCircles.value.length > 0) {
-      for (const circle of poiCircles.value) {
-        const circleBounds = circle.getBounds()
-        if (circleBounds) {
-          bounds.union(circleBounds)
-        }
+      const lat = point.latitude
+      const lng = point.longitude
+      bounds.extend({ lat, lng })
+      if (radiusMeters > 0) {
+        const degLat = radiusMeters / metersPerDegreeLat
+        const degLng = radiusMeters / (metersPerDegreeLat * Math.max(0.01, Math.cos((lat * Math.PI) / 180)))
+        bounds.extend({ lat: lat + degLat, lng })
+        bounds.extend({ lat: lat - degLat, lng })
+        bounds.extend({ lat, lng: lng + degLng })
+        bounds.extend({ lat, lng: lng - degLng })
       }
     }
 
-    // Only fit bounds if we have valid bounds
     if (!bounds.isEmpty()) {
-      // Add padding (in pixels) so markers aren't at the edge
       const padding = 50
       map.value.fitBounds(bounds, padding)
     }
   }
   catch (error) {
     console.error('Error fitting POI bounds:', error)
-  }
-}
-
-function updateCircle() {
-  if (!map.value) {
-    return
-  }
-
-  // Only show circle and center marker if radius > 0 AND POI is NOT selected
-  if (props.radius > 0 && !selectedPOI.value) {
-    // Update or create circle
-    if (circle.value) {
-      // Update existing circle
-      circle.value.setCenter(props.center)
-      circle.value.setRadius(props.radius * 1000)
-    }
-    else {
-      // Create new circle
-      circle.value = new google.maps.Circle({
-        center: props.center,
-        radius: props.radius * 1000, // Convert km to meters
-        fillColor: '#ff0000',
-        fillOpacity: 0.2,
-        strokeWeight: 1,
-        strokeOpacity: 1,
-        strokeColor: '#ff0000',
-        map: map.value,
-      })
-    }
-
-    // Update or create center marker
-    if (centerMarker.value) {
-      // Update existing marker position
-      centerMarker.value.setPosition(props.center)
-      if (!centerMarker.value.getMap()) {
-        centerMarker.value.setMap(map.value)
-      }
-    }
-    else {
-      // Create new center marker
-      centerMarker.value = new google.maps.Marker({
-        position: props.center,
-        map: map.value,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#ffe34c',
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#000',
-        },
-        zIndex: 1000,
-      })
-    }
-  }
-  else {
-    // Remove circle and center marker when radius is 0
-    if (circle.value) {
-      circle.value.setMap(null)
-      circle.value = null
-    }
-    if (centerMarker.value) {
-      centerMarker.value.setMap(null)
-      centerMarker.value = null
-    }
   }
 }
 
@@ -609,15 +525,12 @@ onBeforeUnmount(() => {
     filterPolygonOverlay.value.setMap(null)
     filterPolygonOverlay.value = null
   }
+  if (lastDrawingManagerOverlay) {
+    lastDrawingManagerOverlay.setMap(null)
+    lastDrawingManagerOverlay = null
+  }
   markers.value.forEach(marker => marker.setMap(null))
   poiPointMarkers.value.forEach(marker => marker.setMap(null))
-  poiCircles.value.forEach(c => c.setMap(null))
-  if (circle.value) {
-    circle.value.setMap(null)
-  }
-  if (centerMarker.value) {
-    centerMarker.value.setMap(null)
-  }
 })
 </script>
 
@@ -627,6 +540,30 @@ onBeforeUnmount(() => {
       ref="mapContainer"
       class="map-container"
     />
+    <!-- Single-location radius circle (always mounted when no POI; radius 0 = invisible, like oldmapping) -->
+    <MapRadiusCircle
+      v-if="map && !selectedPOI"
+      :map="map"
+      :center="props.center"
+      :radius-km="props.radius"
+    />
+    <MapCenterMarker
+      v-if="map && props.radius > 0 && !selectedPOI"
+      :map="map"
+      :position="props.center"
+    />
+    <!-- POI radius circles: one per POI point when POI selected (always mounted; radius 0 = invisible) -->
+    <template v-if="map && selectedPOI?.points?.length">
+      <MapRadiusCircle
+        v-for="(point, i) in selectedPOI.points"
+        :key="`poi-circle-${selectedPOI.id}-${i}`"
+        :map="map"
+        :center="{ lat: point.latitude, lng: point.longitude }"
+        :radius-km="props.radius"
+        :fill-color="selectedPOI.color"
+        :stroke-color="selectedPOI.color"
+      />
+    </template>
     <!-- Loading Overlay -->
     <div
       v-if="mappingStore.isLoading"
