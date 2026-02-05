@@ -446,46 +446,66 @@ function updateFilterPolygonOverlay() {
   if (!map.value) {
     return
   }
-  if (filterPolygonOverlay.value) {
-    if (DEBUG_POLYGON) {
-      console.log('[MapView polygon] updateFilterPolygonOverlay: clearing filterPolygonOverlay (ours)')
-    }
-    filterPolygonOverlay.value.setMap(null)
-    filterPolygonOverlay.value = null
-  }
   const path = filterPolygon.value
-  if (!path || path.length < 3) {
-    // Ensure Drawing Manager's overlay is also removed if it was re-shown on zoom
-    if (lastDrawingManagerOverlay) {
-      if (DEBUG_POLYGON) {
-        console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, clearing lastDrawingManagerOverlay')
+  const hasPath = path && path.length >= 3
+
+  if (hasPath) {
+    const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
+    if (filterPolygonOverlay.value) {
+      filterPolygonOverlay.value.setPath(gmPath)
+      if (!filterPolygonOverlay.value.getMap()) {
+        filterPolygonOverlay.value.setMap(map.value)
       }
-      lastDrawingManagerOverlay.setMap(null)
-      lastDrawingManagerOverlay = null
     }
-    // Force Drawing Manager to drop any internal overlay that may reappear on zoom
-    if (drawingManager.value && map.value) {
-      drawingManager.value.setMap(null)
-      drawingManager.value.setMap(map.value)
-    }
-    if (DEBUG_POLYGON) {
-      console.log('[MapView polygon] updateFilterPolygonOverlay: done (no polygon to show), path=', path ? path.length : 'undefined')
+    else {
+      if (DEBUG_POLYGON) {
+        console.log('[MapView polygon] updateFilterPolygonOverlay: creating new polygon, path length=', path.length)
+      }
+      filterPolygonOverlay.value = new google.maps.Polygon({
+        paths: gmPath,
+        strokeColor: '#1a73e8',
+        strokeOpacity: 1,
+        strokeWeight: 2,
+        fillColor: '#1a73e8',
+        fillOpacity: 0.2,
+        map: map.value,
+      })
     }
     return
   }
-  if (DEBUG_POLYGON) {
-    console.log('[MapView polygon] updateFilterPolygonOverlay: creating new polygon, path length=', path.length)
+
+  // No path (cleared): keep polygon on map with degenerate path so it doesn't reappear on zoom
+  if (filterPolygonOverlay.value) {
+    if (DEBUG_POLYGON) {
+      console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, setting polygon to degenerate path')
+    }
+    const emptyPath = [
+      new google.maps.LatLng(0, 0),
+      new google.maps.LatLng(0, 0),
+      new google.maps.LatLng(0, 0),
+    ]
+    filterPolygonOverlay.value.setPath(emptyPath)
+    if (!filterPolygonOverlay.value.getMap()) {
+      filterPolygonOverlay.value.setMap(map.value)
+    }
   }
-  const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
-  filterPolygonOverlay.value = new google.maps.Polygon({
-    paths: gmPath,
-    strokeColor: '#1a73e8',
-    strokeOpacity: 1,
-    strokeWeight: 2,
-    fillColor: '#1a73e8',
-    fillOpacity: 0.2,
-    map: map.value,
-  })
+
+  // Ensure Drawing Manager's overlay is also removed if it was re-shown on zoom
+  if (lastDrawingManagerOverlay) {
+    if (DEBUG_POLYGON) {
+      console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, clearing lastDrawingManagerOverlay')
+    }
+    lastDrawingManagerOverlay.setMap(null)
+    lastDrawingManagerOverlay = null
+  }
+  // Force Drawing Manager to drop any internal overlay that may reappear on zoom
+  if (drawingManager.value && map.value) {
+    drawingManager.value.setMap(null)
+    drawingManager.value.setMap(map.value)
+  }
+  if (DEBUG_POLYGON) {
+    console.log('[MapView polygon] updateFilterPolygonOverlay: done (no polygon to show), path=', path ? path.length : 'undefined')
+  }
 }
 
 function fitPOIBounds() {
