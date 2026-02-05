@@ -51,11 +51,11 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
   await mappingStore.fetchBuildings()
 }, 1000)
 
-// Watch filters and update (exclude poi_id so selecting/clearing POI doesn't double-fetch;
-// setSelectedPOI already calls fetchBuildings() when POI changes)
+// Watch filters and update (exclude poi_id and polygon so they don't double-fetch;
+// setSelectedPOI and setPolygon already call fetchBuildings() when those change)
 watch(
   () => {
-    const { poi_id: _poi, ...rest } = mappingStore.filters
+    const { poi_id: _poi, polygon: _polygon, ...rest } = mappingStore.filters
     return JSON.stringify(rest)
   },
   () => {
