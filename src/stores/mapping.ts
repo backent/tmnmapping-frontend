@@ -26,6 +26,8 @@ export type MapBounds = { minLat: number; minLng: number; maxLat: number; maxLng
 
 interface MappingState {
   buildings: MappingBuilding[]
+  /** Accumulated buildings by id (merged on each fetch); used for marker pool + visibility */
+  buildingsAccumulated: Record<string, MappingBuilding>
   filterOptions: MappingFilterOptions | null
   filters: MappingFilters
   isLoading: boolean
@@ -51,6 +53,7 @@ interface MappingState {
 export const useMappingStore = defineStore('mapping', {
   state: (): MappingState => ({
     buildings: [],
+    buildingsAccumulated: {},
     filterOptions: null,
     filters: {
       lcd_presence: [], // Empty array shows all LCD presence statuses
@@ -80,6 +83,9 @@ export const useMappingStore = defineStore('mapping', {
       // Sum all values in the totals map
       return Object.values(state.totals).reduce((sum, count) => sum + count, 0)
     },
+
+    buildingsAccumulatedList: (state): MappingBuilding[] =>
+      Object.values(state.buildingsAccumulated),
 
     hasActiveFilters: (state): boolean => {
       const filters = state.filters
@@ -115,7 +121,7 @@ export const useMappingStore = defineStore('mapping', {
 
         if (response.data) {
           // Transform backend response to include coordinates object
-          this.buildings = (response.data.data || []).map((building: any) => ({
+          const transformed = (response.data.data || []).map((building: any) => ({
             ...building,
             building_name: building.name,
             coordinates: {
@@ -123,6 +129,12 @@ export const useMappingStore = defineStore('mapping', {
               lng: building.longitude,
             },
           }))
+          this.buildings = transformed
+
+          // Merge into accumulated so we never destroy markers; only show/hide by current response
+          for (const building of transformed) {
+            this.buildingsAccumulated[String(building.id)] = building
+          }
 
           // Use dynamic totals map from backend
           this.totals = response.data.totals || {}

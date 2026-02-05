@@ -3,7 +3,6 @@ import { Loader } from '@googlemaps/js-api-loader'
 // NOTE: MarkerClusterer groups nearby markers into clusters for better performance
 // Uncomment the line below to re-enable marker clustering
 // import { MarkerClusterer } from '@googlemaps/markerclusterer'
-import { nextTick } from 'vue'
 import { useMappingStore } from '@/stores/mapping'
 import { getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding } from '@/types/mapping'
@@ -32,7 +31,8 @@ const emit = defineEmits<Emits>()
 
 const mapContainer = ref<HTMLDivElement>()
 const map = ref<google.maps.Map | null>(null)
-const markers = ref<google.maps.Marker[]>([])
+/** Marker pool by building id; markers are never destroyed on filter/pan, only visibility is updated */
+const markersByBuildingId = ref<Record<string, { marker: google.maps.Marker; building: MappingBuilding; clickListener: google.maps.MapsEventListener }>>({})
 // NOTE: Clusterer disabled - uncomment to re-enable marker clustering
 // const clusterer = ref<MarkerClusterer | null>(null)
 const poiPointMarkers = ref<google.maps.Marker[]>([])
@@ -42,16 +42,11 @@ const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
 let lastDrawingManagerOverlay: google.maps.Polygon | null = null
 let overlaycompleteListener: google.maps.MapsEventListener | null = null
 let idleListener: google.maps.MapsEventListener | null = null
-let mapClickListener: google.maps.MapsEventListener | null = null
 const IDLE_DEBOUNCE_MS = 350
 let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const DEBUG_POLYGON = true // set false to disable polygon overlay debug logs
-// Click radius in pixels; converted to meters using current zoom so hit area is consistent on screen
-const CLICK_MAX_RADIUS_PX = 40
-// Buildings within this many meters of the nearest are "same position" (multi-building picker)
+// Buildings within this many meters are "same position" (multi-building picker)
 const SAME_POSITION_EPSILON_METERS = 100
-// Fallback max radius in meters when map/container not ready
-const FALLBACK_MAX_RADIUS_METERS = 1000
 
 const mappingStore = useMappingStore()
 
@@ -124,30 +119,6 @@ onMounted(async () => {
       }
     })
 
-    // Single map-level click: resolve latLng to building(s) and emit or show picker
-    mapClickListener = google.maps.event.addListener(map.value, 'click', (event: google.maps.MapMouseEvent) => {
-      if (!event.latLng) {
-        console.log('[MapView] map click: no latLng')
-        return
-      }
-      const clickLat = event.latLng.lat()
-      const clickLng = event.latLng.lng()
-      const maxRadiusMeters = getClickRadiusMeters()
-      console.log('[MapView] map click:', { lat: clickLat, lng: clickLng, maxRadiusMeters: maxRadiusMeters.toFixed(0), zoom: map.value?.getZoom?.() })
-      const candidates = findBuildingAtClick(event.latLng, maxRadiusMeters)
-      if (candidates.length === 0) {
-        console.log('[MapView] no building at click (max radius:', maxRadiusMeters.toFixed(0), 'm)')
-      }
-      else if (candidates.length === 1) {
-        console.log('[MapView] building at click:', candidates[0].id, candidates[0].building_name)
-        emit('markerClick', candidates[0])
-      }
-      else {
-        buildingPickerCandidates.value = candidates
-        showBuildingPicker.value = true
-      }
-    })
-
     // Drawing Manager for polygon filter (mode toggled via drawPolygonActive)
     drawingManager.value = new google.maps.drawing.DrawingManager({
       drawingMode: null,
@@ -213,10 +184,10 @@ onMounted(async () => {
   }
 })
 
-// Update markers when buildings change
-watch(() => props.buildings, async () => {
+// Update markers when buildings change (create new markers for accumulated, set visibility from current response)
+watch(() => props.buildings, () => {
   if (isMapLoaded.value) {
-    await updateMarkers()
+    updateMarkers()
   }
 })
 
@@ -255,58 +226,22 @@ watch(() => filterPolygon.value, () => {
   }
 }, { deep: true })
 
-/** Max click radius in meters from current zoom and map size (fixed pixel radius → meters). */
-function getClickRadiusMeters(): number {
-  if (!map.value || !mapContainer.value) {
-    return FALLBACK_MAX_RADIUS_METERS
-  }
-  const bounds = map.value.getBounds()
-  if (!bounds) {
-    return FALLBACK_MAX_RADIUS_METERS
-  }
-  const sw = bounds.getSouthWest()
-  const ne = bounds.getNorthEast()
-  const horizontalSpanMeters = google.maps.geometry.spherical.computeDistanceBetween(
-    sw,
-    new google.maps.LatLng(sw.lat(), ne.lng()),
-  )
-  const widthPx = mapContainer.value.offsetWidth || 256
-  const metersPerPixel = horizontalSpanMeters / widthPx
-  const radiusMeters = CLICK_MAX_RADIUS_PX * metersPerPixel
-  return radiusMeters
-}
-
-/** Resolve map click to all buildings at the same position (nearest within max radius in meters). */
-function findBuildingAtClick(latLng: google.maps.LatLng, maxRadiusMeters: number): MappingBuilding[] {
+/** All visible buildings at or near the given building's position (for multi-building picker). */
+function getBuildingsAtPosition(building: MappingBuilding): MappingBuilding[] {
   const buildings = props.buildings || []
-  console.log('[MapView] findBuildingAtClick: buildings count =', buildings.length, 'maxRadiusMeters =', maxRadiusMeters)
-  let dMinMeters = Infinity
-  for (const b of buildings) {
-    const lat = b.coordinates?.lat ?? b.latitude
-    const lng = b.coordinates?.lng ?? b.longitude
-    const buildingLatLng = new google.maps.LatLng(lat, lng)
-    const distMeters = google.maps.geometry.spherical.computeDistanceBetween(latLng, buildingLatLng)
-    if (distMeters < dMinMeters) {
-      dMinMeters = distMeters
-    }
-  }
-  if (dMinMeters > maxRadiusMeters) {
-    if (buildings.length > 0) {
-      console.log('[MapView] findBuildingAtClick: no match, closest ~', dMinMeters.toFixed(0), 'm away (max:', maxRadiusMeters.toFixed(0), 'm)')
-    }
-    return []
-  }
+  const lat = building.coordinates?.lat ?? building.latitude
+  const lng = building.coordinates?.lng ?? building.longitude
+  const refLatLng = new google.maps.LatLng(lat, lng)
   const samePosition: MappingBuilding[] = []
   for (const b of buildings) {
-    const lat = b.coordinates?.lat ?? b.latitude
-    const lng = b.coordinates?.lng ?? b.longitude
-    const buildingLatLng = new google.maps.LatLng(lat, lng)
-    const distMeters = google.maps.geometry.spherical.computeDistanceBetween(latLng, buildingLatLng)
-    if (distMeters <= dMinMeters + SAME_POSITION_EPSILON_METERS) {
+    const bLat = b.coordinates?.lat ?? b.latitude
+    const bLng = b.coordinates?.lng ?? b.longitude
+    const buildingLatLng = new google.maps.LatLng(bLat, bLng)
+    const distMeters = google.maps.geometry.spherical.computeDistanceBetween(refLatLng, buildingLatLng)
+    if (distMeters <= SAME_POSITION_EPSILON_METERS) {
       samePosition.push(b)
     }
   }
-  console.log('[MapView] findBuildingAtClick: match count =', samePosition.length, '~', dMinMeters.toFixed(0), 'm away')
   return samePosition
 }
 
@@ -320,81 +255,58 @@ function selectBuildingFromPicker(building: MappingBuilding) {
   closeBuildingPicker()
 }
 
-async function updateMarkers() {
+function updateMarkers() {
   if (!map.value) {
     return
   }
 
-  // Step 1: AGGRESSIVELY clear ALL existing markers
-  const oldMarkers = [...markers.value]
-  
-  // Immediately clear the markers array so no references remain
-  markers.value = []
-  
-  // Remove each old marker completely
-  for (const marker of oldMarkers) {
-    try {
-      // Hide the marker immediately
-      marker.setVisible(false)
-      // Remove from map
-      marker.setMap(null)
-    }
-    catch (error) {
-      console.error('Error removing marker:', error)
-    }
-  }
-
-  // Step 2: Wait for Vue's next tick AND give Google Maps time to process
-  await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 100))
-
-  // Step 3: If no buildings, we're done
-  if (!props.buildings || props.buildings.length === 0) {
-    return
-  }
-
-  // Step 4: Create ALL new markers first (without adding to map)
+  const visibleIds = new Set((props.buildings || []).map(b => String(b.id)))
+  const accumulated = mappingStore.buildingsAccumulatedList
   const installation = props.filters.installation || []
-  const newMarkers: google.maps.Marker[] = []
-  
-  for (const building of props.buildings) {
-    const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false)
 
-    if (!iconConfig) {
-      continue
+  for (const building of accumulated) {
+    const id = String(building.id)
+    let entry = markersByBuildingId.value[id]
+
+    if (!entry) {
+      const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false)
+      if (!iconConfig) {
+        continue
+      }
+      try {
+        const marker = new google.maps.Marker({
+          position: {
+            lat: building.coordinates.lat,
+            lng: building.coordinates.lng,
+          },
+          icon: iconConfig,
+          title: building.building_name,
+          visible: false,
+          optimized: false,
+          clickable: true,
+        })
+        marker.setMap(map.value)
+        const clickListener = google.maps.event.addListener(marker, 'click', () => {
+          const candidates = getBuildingsAtPosition(building)
+          if (candidates.length > 1) {
+            buildingPickerCandidates.value = candidates
+            showBuildingPicker.value = true
+          }
+          else {
+            emit('markerClick', building)
+          }
+        })
+        entry = { marker, building, clickListener }
+        markersByBuildingId.value[id] = entry
+      }
+      catch (error) {
+        console.error('Error creating marker:', error)
+        continue
+      }
     }
 
-    try {
-      // Create marker but don't add to map yet
-      const marker = new google.maps.Marker({
-        position: {
-          lat: building.coordinates.lat,
-          lng: building.coordinates.lng,
-        },
-        icon: iconConfig,
-        title: building.building_name,
-        visible: false, // Start hidden
-        optimized: false, // Disable optimization to force re-render
-        clickable: false, // Clicks pass through to map; single map-level listener resolves building
-      })
-
-      newMarkers.push(marker)
-    }
-    catch (error) {
-      console.error('Error creating marker:', error)
-    }
+    entry.marker.setVisible(visibleIds.has(id))
   }
-  
-  // Step 5: Now add all markers to map at once and make visible
-  for (const marker of newMarkers) {
-    marker.setMap(map.value)
-    marker.setVisible(true)
-  }
-  
-  // Step 6: Update our markers reference
-  markers.value = newMarkers
-
-  // NOTE: Marker clustering disabled
 }
 
 function updatePOIMarkers() {
@@ -552,10 +464,6 @@ onBeforeUnmount(() => {
     google.maps.event.removeListener(idleListener)
     idleListener = null
   }
-  if (mapClickListener) {
-    google.maps.event.removeListener(mapClickListener)
-    mapClickListener = null
-  }
   if (overlaycompleteListener) {
     google.maps.event.removeListener(overlaycompleteListener)
     overlaycompleteListener = null
@@ -572,7 +480,13 @@ onBeforeUnmount(() => {
     lastDrawingManagerOverlay.setMap(null)
     lastDrawingManagerOverlay = null
   }
-  markers.value.forEach(marker => marker.setMap(null))
+  Object.values(markersByBuildingId.value).forEach((entry) => {
+    if (entry.clickListener) {
+      google.maps.event.removeListener(entry.clickListener)
+    }
+    entry.marker.setMap(null)
+  })
+  markersByBuildingId.value = {}
   poiPointMarkers.value.forEach(marker => marker.setMap(null))
 })
 </script>
