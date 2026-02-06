@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { INSTALLATION_STATUS } from '@/utils/mappingConstants'
 import type { InstallationStatus } from '@/types/mapping'
 
@@ -14,24 +15,35 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const items = [
-  { name: 'Complete', value: INSTALLATION_STATUS.COMPLETE },
-  { name: 'Incomplete', value: INSTALLATION_STATUS.INCOMPLETE },
-  { name: 'Need Request', value: INSTALLATION_STATUS.NEED_REQUEST },
+  { title: 'Complete', value: INSTALLATION_STATUS.COMPLETE },
+  { title: 'Incomplete', value: INSTALLATION_STATUS.INCOMPLETE },
+  { title: 'Need Request', value: INSTALLATION_STATUS.NEED_REQUEST },
 ]
 
 const selected = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  get: () => props.modelValue ?? [],
+  set: (value: InstallationStatus[]) => emit('update:modelValue', value ?? []),
 })
 </script>
 
 <template>
-  <FilterGroup
-    label="Installation"
-    :items="items"
-    :model-value="selected"
-    :badge-count="selected.length"
-    @update:model-value="selected = $event"
-  />
+  <VDivider />
+  <VSubheader>Installation</VSubheader>
+  <div class="pa-3">
+    <VAutocomplete
+      v-model="selected"
+      :items="items"
+      item-title="title"
+      item-value="value"
+      label="Select installation status(es)"
+      placeholder="Choose status(es)..."
+      clearable
+      multiple
+      chips
+      closable-chips
+      variant="outlined"
+      density="compact"
+    />
+  </div>
 </template>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useBuildingStore } from '@/stores/building'
 
 interface Props {
@@ -22,32 +22,42 @@ onMounted(async () => {
   }
 })
 
-// Transform backend grade_resource array to component format
+// Transform backend grade_resource array to autocomplete format
 const items = computed(() => {
   const backendGrades = buildingStore.filterOptions?.grade_resource || []
   
-  // Map backend values to component format
+  // Map backend values to autocomplete format
   // Backend returns array of strings like ['Premium', 'Grade A', 'Grade B', ...]
   return backendGrades.map(grade => ({
-    name: grade,
+    title: grade,
     value: grade,
   }))
 })
 
 const selected = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  get: () => props.modelValue ?? [],
+  set: (value: string[]) => emit('update:modelValue', value ?? []),
 })
 </script>
 
 <template>
-  <FilterGroup
-    label="Building Grade"
-    :items="items"
-    :model-value="selected"
-    :badge-count="selected.length"
-    :max-visible="4"
-    @update:model-value="selected = $event"
-  />
+  <VDivider />
+  <VSubheader>Building Grade</VSubheader>
+  <div class="pa-3">
+    <VAutocomplete
+      v-model="selected"
+      :items="items"
+      item-title="title"
+      item-value="value"
+      label="Select building grade(s)"
+      placeholder="Choose grade(s)..."
+      clearable
+      multiple
+      chips
+      closable-chips
+      variant="outlined"
+      density="compact"
+    />
+  </div>
 </template>
 

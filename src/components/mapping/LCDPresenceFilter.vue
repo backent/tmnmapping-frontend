@@ -13,24 +13,35 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const items = [
-  { name: 'TMN', value: 'TMN' },
-  { name: 'Competitor', value: 'Competitor' },
-  { name: 'CoExist', value: 'CoExist' },
-  { name: 'Opportunity', value: 'Opportunity' },
+  { title: 'TMN', value: 'TMN' },
+  { title: 'Competitor', value: 'Competitor' },
+  { title: 'CoExist', value: 'CoExist' },
+  { title: 'Opportunity', value: 'Opportunity' },
 ]
 
 const selected = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+  get: () => props.modelValue ?? [],
+  set: (value: string[]) => emit('update:modelValue', value ?? []),
 })
 </script>
 
 <template>
-  <FilterGroup
-    label="LCD Presence"
-    :items="items"
-    :model-value="selected"
-    :badge-count="selected.length"
-    @update:model-value="selected = $event"
-  />
+  <VDivider />
+  <VSubheader>LCD Presence</VSubheader>
+  <div class="pa-3">
+    <VAutocomplete
+      v-model="selected"
+      :items="items"
+      item-title="title"
+      item-value="value"
+      label="Select LCD presence status(es)"
+      placeholder="Choose status(es)..."
+      clearable
+      multiple
+      chips
+      closable-chips
+      variant="outlined"
+      density="compact"
+    />
+  </div>
 </template>

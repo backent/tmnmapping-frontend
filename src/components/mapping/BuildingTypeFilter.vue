@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useBuildingStore } from '@/stores/building'
 import type { BuildingType } from '@/types/mapping'
 
@@ -23,31 +23,42 @@ onMounted(async () => {
   }
 })
 
-// Transform backend building_type array to component format
+// Transform backend building_type array to autocomplete format
 const items = computed(() => {
   const backendTypes = buildingStore.filterOptions?.building_type || []
   
-  // Map backend values to component format
+  // Map backend values to autocomplete format
   // Backend returns array of strings like ['Apartment', 'Office', 'Hotel', ...]
   return backendTypes.map(type => ({
-    name: type,
+    title: type,
     value: type as BuildingType,
   }))
 })
 
 const selected = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  get: () => props.modelValue ?? [],
+  set: (value: BuildingType[]) => emit('update:modelValue', value ?? []),
 })
 </script>
 
 <template>
-  <FilterGroup
-    label="Building Type"
-    :items="items"
-    :model-value="selected"
-    :badge-count="selected.length"
-    @update:model-value="selected = $event"
-  />
+  <VDivider />
+  <VSubheader>Building Type</VSubheader>
+  <div class="pa-3">
+    <VAutocomplete
+      v-model="selected"
+      :items="items"
+      item-title="title"
+      item-value="value"
+      label="Select building type(s)"
+      placeholder="Choose type(s)..."
+      clearable
+      multiple
+      chips
+      closable-chips
+      variant="outlined"
+      density="compact"
+    />
+  </div>
 </template>
 
