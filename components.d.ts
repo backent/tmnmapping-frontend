@@ -31,6 +31,7 @@ declare module 'vue' {
     RadiusFilter: typeof import('./src/components/mapping/RadiusFilter.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SalesPackageFilter: typeof import('./src/components/mapping/SalesPackageFilter.vue')['default']
     ScreenTypeFilter: typeof import('./src/components/mapping/ScreenTypeFilter.vue')['default']
     SellableFilter: typeof import('./src/components/mapping/SellableFilter.vue')['default']
     ThemeSwitcher: typeof import('./src/@core/components/ThemeSwitcher.vue')['default']

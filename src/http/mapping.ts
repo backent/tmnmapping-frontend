@@ -68,6 +68,9 @@ function buildFilterParams(
   if (filters.connectivity?.length) {
     params['filter[connectivity]'] = filters.connectivity.join(',')
   }
+  if (filters.sales_package_ids?.length) {
+    params['filter[sales_package_ids]'] = filters.sales_package_ids.join(',')
+  }
   if (filters.year) {
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
   }
