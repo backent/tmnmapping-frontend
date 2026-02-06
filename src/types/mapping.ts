@@ -102,6 +102,7 @@ export interface MappingFilters {
   poi_id?: number // Selected POI ID for radius filtering
   polygon?: { lat: number; lng: number }[] // User-drawn polygon for spatial filter
   sales_package_ids?: number[] // Selected sales package IDs
+  building_restriction_ids?: number[] // Selected building restriction IDs (exclusion filter)
 
   // Map viewport bounds (optional) – when set, backend returns only buildings in view
   bounds?: { minLat: number; minLng: number; maxLat: number; maxLng: number }

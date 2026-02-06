@@ -40,5 +40,12 @@ export const apiConfig = {
     sales_packages_create: '/sales-packages',
     sales_packages_update: '/sales-packages/:id',
     sales_packages_delete: '/sales-packages/:id',
+
+    // Building restrictions
+    building_restrictions_list: '/building-restrictions',
+    building_restrictions_get: '/building-restrictions/:id',
+    building_restrictions_create: '/building-restrictions',
+    building_restrictions_update: '/building-restrictions/:id',
+    building_restrictions_delete: '/building-restrictions/:id',
   },
 }

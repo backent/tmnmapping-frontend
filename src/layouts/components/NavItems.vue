@@ -61,4 +61,18 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/sales-packages',
     }"
   />
+
+  <!-- Restrictions -->
+  <VerticalNavSectionTitle
+    :item="{
+      heading: 'Restrictions',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Building Restrictions',
+      icon: 'ri-shield-line',
+      to: '/building-restrictions',
+    }"
+  />
 </template>

@@ -101,6 +101,7 @@ export const useMappingStore = defineStore('mapping', {
         filters.sellable?.length ||
         filters.connectivity?.length ||
         filters.sales_package_ids?.length ||
+        filters.building_restriction_ids?.length ||
         filters.year ||
         filters.radius ||
         filters.places_id ||

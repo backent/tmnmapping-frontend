@@ -53,6 +53,21 @@ export const routes = [
         name: 'sales-package-edit',
         component: () => import('@/pages/sales-package-form.vue'),
       },
+      {
+        path: 'building-restrictions',
+        name: 'building-restrictions',
+        component: () => import('@/pages/building-restrictions.vue'),
+      },
+      {
+        path: 'building-restrictions/new',
+        name: 'building-restriction-new',
+        component: () => import('@/pages/building-restriction-form.vue'),
+      },
+      {
+        path: 'building-restrictions/:id/edit',
+        name: 'building-restriction-edit',
+        component: () => import('@/pages/building-restriction-form.vue'),
+      },
     ],
   },
   {

@@ -14,6 +14,7 @@ import BuildingGradeFilter from './BuildingGradeFilter.vue'
 import SellableFilter from './SellableFilter.vue'
 import ConnectivityFilter from './ConnectivityFilter.vue'
 import SalesPackageFilter from './SalesPackageFilter.vue'
+import BuildingRestrictionFilter from './BuildingRestrictionFilter.vue'
 import YearRangeFilter from './YearRangeFilter.vue'
 import RadiusFilter from './RadiusFilter.vue'
 import LocationFilter from './LocationFilter.vue'
@@ -337,6 +338,13 @@ const buildingTypeTotals = computed(() => {
                 v-if="!isReporting"
                 :model-value="mappingStore.filters.sales_package_ids || []"
                 @update:model-value="mappingStore.filters.sales_package_ids = $event"
+              />
+
+              <!-- Building Restriction -->
+              <BuildingRestrictionFilter
+                v-if="!isReporting"
+                :model-value="mappingStore.filters.building_restriction_ids || []"
+                @update:model-value="mappingStore.filters.building_restriction_ids = $event"
               />
             </div>
 

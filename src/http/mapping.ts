@@ -71,6 +71,9 @@ function buildFilterParams(
   if (filters.sales_package_ids?.length) {
     params['filter[sales_package_ids]'] = filters.sales_package_ids.join(',')
   }
+  if (filters.building_restriction_ids?.length) {
+    params['filter[building_restriction_ids]'] = filters.building_restriction_ids.join(',')
+  }
   if (filters.year) {
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
   }
