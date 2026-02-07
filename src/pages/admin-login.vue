@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
-import tmnLogo from '@images/tmn-logo-medium.png'
+// import tmnLogo from '@images/tmn-logo-medium.png'
+const tmnLogo = '/images/defaultimage.jpeg'
 import { useAuthStore } from '@/stores/auth'
 
 import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png'
@@ -74,7 +75,8 @@ const handleLogin = async () => {
           class="d-flex align-center gap-3"
         >
           <img
-              :src="tmnLogo"
+              <!-- :src="tmnLogo" tmnLogo
+              const defaultImage = '/images/defaultimage.jpeg'
               alt="TMN Logo"
               class="tmn-logo"
               style="height: 4rem;width: auto;"

@@ -53,12 +53,14 @@ watch(
   { deep: true },
 )
 
-async function deletePolygon(polygon: SavedPolygon, e: Event) {
+async function deletePolygon(id: number, e: Event) {
   e.stopPropagation()
+  const polygon = savedPolygonStore.savedPolygons.find(p => p.id === id)
+  if (!polygon) return
   if (!confirm(`Delete saved polygon "${polygon.name}"?`)) return
   try {
-    await savedPolygonStore.deleteSavedPolygon(polygon.id)
-    if (selectedId.value === polygon.id) {
+    await savedPolygonStore.deleteSavedPolygon(id)
+    if (selectedId.value === id) {
       selectedId.value = null
       mappingStore.setPolygon(null)
     }
@@ -93,7 +95,7 @@ async function deletePolygon(polygon: SavedPolygon, e: Event) {
               size="x-small"
               variant="text"
               color="error"
-              @click="deletePolygon(item.raw, $event)"
+              @click="deletePolygon(item.value, $event)"
             >
               <VIcon icon="ri-delete-bin-line" />
             </VBtn>
