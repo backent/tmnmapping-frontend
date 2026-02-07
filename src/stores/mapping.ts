@@ -48,6 +48,8 @@ interface MappingState {
   regionSearchResults: RegionSearchResponse | null
   selectedPOI: POI | null
   drawPolygonActive: boolean
+  /** When true, MapView should fit bounds to the current polygon once then clear this flag */
+  fitBoundsToPolygon: boolean
 }
 
 export const useMappingStore = defineStore('mapping', {
@@ -74,6 +76,7 @@ export const useMappingStore = defineStore('mapping', {
     regionSearchResults: null,
     selectedPOI: null,
     drawPolygonActive: false,
+    fitBoundsToPolygon: false,
   }),
 
   getters: {
@@ -257,6 +260,13 @@ export const useMappingStore = defineStore('mapping', {
      */
     setDrawPolygonActive(active: boolean) {
       this.drawPolygonActive = active
+    },
+
+    /**
+     * Request that the map fit bounds to the current polygon (e.g. after loading a saved polygon).
+     */
+    setFitBoundsToPolygon(value: boolean) {
+      this.fitBoundsToPolygon = value
     },
 
     /**

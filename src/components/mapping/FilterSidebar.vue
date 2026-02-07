@@ -20,6 +20,8 @@ import RadiusFilter from './RadiusFilter.vue'
 import LocationFilter from './LocationFilter.vue'
 import POIFilter from './POIFilter.vue'
 import BuildingDetail from './BuildingDetail.vue'
+import SavePolygonDialog from './SavePolygonDialog.vue'
+import SavedPolygonFilter from './SavedPolygonFilter.vue'
 
 interface Props {
   reporting?: boolean
@@ -43,6 +45,7 @@ const authStore = useAuthStore()
 const showInner = ref(true)
 const showSingle = ref(false)
 const showMulti = ref(false)
+const savePolygonDialogOpen = ref(false)
 
 const isReporting = computed(() => {
   return props.reporting || authStore.currentUser?.role === 12
@@ -268,6 +271,15 @@ const buildingTypeTotals = computed(() => {
                   <VBtn
                     size="small"
                     variant="outlined"
+                    block
+                    class="mb-2"
+                    @click="savePolygonDialogOpen = true"
+                  >
+                    Save polygon
+                  </VBtn>
+                  <VBtn
+                    size="small"
+                    variant="outlined"
                     color="error"
                     block
                     @click="mappingStore.setPolygon(null)"
@@ -276,7 +288,12 @@ const buildingTypeTotals = computed(() => {
                   </VBtn>
                 </template>
               </div>
-               <!-- POI Filter -->
+              <SavePolygonDialog
+                v-model="savePolygonDialogOpen"
+                :polygon="mappingStore.filters.polygon"
+              />
+              <SavedPolygonFilter v-if="!isReporting" />
+              <!-- POI Filter -->
               <POIFilter
                 :model-value="mappingStore.filters.poi_id"
                 @update:model-value="mappingStore.setSelectedPOI($event)"

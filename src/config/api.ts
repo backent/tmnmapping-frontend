@@ -47,5 +47,12 @@ export const apiConfig = {
     building_restrictions_create: '/building-restrictions',
     building_restrictions_update: '/building-restrictions/:id',
     building_restrictions_delete: '/building-restrictions/:id',
+
+    // Saved polygons
+    saved_polygons_list: '/saved-polygons',
+    saved_polygons_get: '/saved-polygons/:id',
+    saved_polygons_create: '/saved-polygons',
+    saved_polygons_update: '/saved-polygons/:id',
+    saved_polygons_delete: '/saved-polygons/:id',
   },
 }

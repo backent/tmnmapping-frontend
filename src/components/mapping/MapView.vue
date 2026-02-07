@@ -226,6 +226,22 @@ watch(() => filterPolygon.value, () => {
   }
 }, { deep: true })
 
+// When a saved polygon is loaded, fit map bounds to it once
+watch(
+  () => mappingStore.fitBoundsToPolygon && filterPolygon.value && filterPolygon.value.length >= 3,
+  shouldFit => {
+    if (!shouldFit || !map.value || !filterPolygon.value?.length) {
+      return
+    }
+    const bounds = new google.maps.LatLngBounds()
+    for (const p of filterPolygon.value)
+      bounds.extend({ lat: p.lat, lng: p.lng })
+    if (!bounds.isEmpty())
+      map.value.fitBounds(bounds, 50)
+    mappingStore.setFitBoundsToPolygon(false)
+  },
+)
+
 /** All visible buildings at or near the given building's position (for multi-building picker). */
 function getBuildingsAtPosition(building: MappingBuilding): MappingBuilding[] {
   const buildings = props.buildings || []

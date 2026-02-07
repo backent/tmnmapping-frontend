@@ -33,6 +33,8 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SalesPackageFilter: typeof import('./src/components/mapping/SalesPackageFilter.vue')['default']
+    SavedPolygonFilter: typeof import('./src/components/mapping/SavedPolygonFilter.vue')['default']
+    SavePolygonDialog: typeof import('./src/components/mapping/SavePolygonDialog.vue')['default']
     ScreenTypeFilter: typeof import('./src/components/mapping/ScreenTypeFilter.vue')['default']
     SellableFilter: typeof import('./src/components/mapping/SellableFilter.vue')['default']
     ThemeSwitcher: typeof import('./src/@core/components/ThemeSwitcher.vue')['default']
