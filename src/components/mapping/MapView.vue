@@ -57,6 +57,11 @@ const selectedPOI = computed(() => mappingStore.selectedPOI)
 const drawPolygonActive = computed(() => mappingStore.drawPolygonActive)
 const filterPolygon = computed(() => mappingStore.filters.polygon)
 
+/** Center marker only when radius > 0 (read from store so visibility updates when radius is set to 0) */
+const showCenterMarker = computed(
+  () => (Number(mappingStore.radius) || 0) > 0 && !mappingStore.selectedPOI,
+)
+
 /** When POI is cleared we keep showing circles with radius 0 (don't unmount) so they can't reappear on zoom */
 const lastPOIPoints = ref<{ lat: number; lng: number }[]>([])
 watch(selectedPOI, () => {
@@ -325,47 +330,65 @@ function updateMarkers() {
   }
 }
 
+/**
+ * POI point markers: pool is never cleared; we hide with setVisible(false) when no POI
+ * so they don't reappear on zoom (same pattern as center marker and radius circle).
+ */
 function updatePOIMarkers() {
   if (!map.value) {
     return
   }
 
-  // Clear existing POI markers
-  poiPointMarkers.value.forEach(marker => {
-    google.maps.event.clearInstanceListeners(marker)
-    marker.setMap(null)
-  })
-  poiPointMarkers.value = []
+  const points = selectedPOI.value?.points ?? []
+  const poiColor = selectedPOI.value?.color ?? '#ff0000'
+  const poiName = selectedPOI.value?.name ?? ''
+  const needCount = points.length
 
-  // If POI is selected, create markers for each POI point
-  if (selectedPOI.value && selectedPOI.value.points.length > 0) {
-    const poiColor = selectedPOI.value.color
+  // Ensure pool has enough markers; create new ones only when needed
+  while (poiPointMarkers.value.length < needCount) {
+    try {
+      const marker = new google.maps.Marker({
+        position: { lat: 0, lng: 0 },
+        map: map.value,
+        visible: false,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: poiColor,
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: '#000',
+        },
+        title: '',
+        zIndex: 999,
+      })
+      poiPointMarkers.value.push(marker)
+    }
+    catch (error) {
+      console.error('Error creating POI point marker:', error)
+      break
+    }
+  }
 
-    for (const point of selectedPOI.value.points) {
-      try {
-        const marker = new google.maps.Marker({
-          position: {
-            lat: point.latitude,
-            lng: point.longitude,
-          },
-          map: map.value,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: poiColor,
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#000',
-          },
-          title: `${selectedPOI.value.name} - ${point.place_name}`,
-          zIndex: 999,
-        })
-
-        poiPointMarkers.value.push(marker)
-      }
-      catch (error) {
-        console.error('Error creating POI point marker:', error)
-      }
+  // Update each marker: position, icon color, title, and visibility
+  for (let i = 0; i < poiPointMarkers.value.length; i++) {
+    const marker = poiPointMarkers.value[i]
+    if (i < needCount) {
+      const point = points[i]
+      marker.setPosition({ lat: point.latitude, lng: point.longitude })
+      marker.setIcon({
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: poiColor,
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: '#000',
+      })
+      marker.setTitle(`${poiName} - ${point.place_name ?? ''}`)
+      marker.setVisible(true)
+    }
+    else {
+      marker.setVisible(false)
     }
   }
 }
@@ -520,10 +543,12 @@ onBeforeUnmount(() => {
       :center="props.center"
       :radius-km="props.radius"
     />
+    <!-- Center point: always mounted when no POI (like circle); hide when radius 0 -->
     <MapCenterMarker
-      v-if="map && props.radius > 0 && !selectedPOI"
+      v-if="map && !selectedPOI"
       :map="map"
       :position="props.center"
+      :visible="showCenterMarker"
     />
     <!-- POI radius circles: when POI selected show circles; when POI cleared keep same circles with radius 0 (don't unmount) -->
     <template v-if="map && poiCircleData.centers.length">

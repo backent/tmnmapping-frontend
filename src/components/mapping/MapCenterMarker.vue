@@ -1,14 +1,19 @@
 <script setup lang="ts">
 /**
  * Declarative center marker overlay for single-location radius mode.
- * Only mounts when map and position are set; marker is created on mount and destroyed on unmount.
+ * Stays mounted when no POI (like MapRadiusCircle); visibility toggled when radius is 0.
+ * We hide the marker with setVisible(false) instead of removing it, so it never sticks on screen.
  */
 interface Props {
   map: google.maps.Map | null
   position: { lat: number; lng: number }
+  /** When false, marker is hidden (e.g. radius set to 0 km) */
+  visible?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  visible: true,
+})
 
 const markerInstance = ref<google.maps.Marker | null>(null)
 
@@ -17,6 +22,7 @@ function createMarker() {
   markerInstance.value = new google.maps.Marker({
     position: props.position,
     map: props.map,
+    visible: props.visible,
     icon: {
       path: google.maps.SymbolPath.CIRCLE,
       scale: 8,
@@ -37,6 +43,16 @@ watch(
     }
   },
   { deep: true },
+)
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (markerInstance.value) {
+      markerInstance.value.setVisible(visible)
+    }
+  },
+  { immediate: true },
 )
 
 onMounted(() => {

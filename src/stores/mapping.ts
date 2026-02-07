@@ -199,11 +199,13 @@ export const useMappingStore = defineStore('mapping', {
     },
 
     /**
-     * Set radius
+     * Set radius (km). Normalize so 0 / undefined / NaN clears the radius and hides the center marker.
      */
     setRadius(radius: number) {
-      this.radius = radius
-      this.filters.radius = radius
+      const value = Number(radius)
+      const normalized = Number.isFinite(value) && value >= 0 ? value : 0
+      this.radius = normalized
+      this.filters.radius = normalized > 0 ? normalized : undefined
     },
 
     /**
