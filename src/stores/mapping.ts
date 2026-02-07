@@ -58,7 +58,7 @@ export const useMappingStore = defineStore('mapping', {
     buildingsAccumulated: {},
     filterOptions: null,
     filters: {
-      lcd_presence: [], // Empty array shows all LCD presence statuses
+      lcd_presence: ["TMN"], // Empty array shows all LCD presence statuses
     },
     isLoading: false,
     isSearching: false,
@@ -169,7 +169,7 @@ export const useMappingStore = defineStore('mapping', {
      */
     async resetFilters() {
       this.filters = {
-        lcd_presence: [], // Empty array shows all LCD presence statuses
+        lcd_presence: ["TMN"], // Empty array shows all LCD presence statuses
       }
       this.mapCenter = {
         lat: -6.2,

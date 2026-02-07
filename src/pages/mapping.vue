@@ -82,7 +82,7 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
         class="float-button ma-2 white--text"
         color="primary"
         fab
-        @click="drawer = true"
+        @click="drawer = !drawer"
       >
         <VIcon dark>mdi-magnify</VIcon>
       </VBtn>

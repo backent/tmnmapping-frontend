@@ -104,9 +104,9 @@ onMounted(async () => {
 
     map.value = new google.maps.Map(mapContainer.value, {
       center: props.center,
-      zoom: 12,
+      zoom: 15,
       disableDoubleClickZoom: true,
-      clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.)
+      clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.),
     })
 
     // Handle double click
