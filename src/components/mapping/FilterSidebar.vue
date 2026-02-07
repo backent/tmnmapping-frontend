@@ -46,6 +46,10 @@ const showInner = ref(true)
 const showSingle = ref(false)
 const showMulti = ref(false)
 const savePolygonDialogOpen = ref(false)
+const isExporting = ref(false)
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref<'success' | 'error'>('success')
 
 const isReporting = computed(() => {
   return props.reporting || authStore.currentUser?.role === 12
@@ -83,12 +87,27 @@ const handleReset = async () => {
 }
 
 const handleExport = async () => {
+  if (mappingStore.totalBuildings === 0) {
+    snackbarMessage.value = 'No data to export'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+    return
+  }
+  isExporting.value = true
   try {
     const blob = await mappingStore.exportData()
     exportMappingData(blob)
+    snackbarMessage.value = 'Report downloaded successfully'
+    snackbarColor.value = 'success'
+    snackbar.value = true
   }
-  catch (error) {
-    console.error('Error exporting data:', error)
+  catch (error: any) {
+    snackbarMessage.value = error?.message || 'Failed to download report'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+  finally {
+    isExporting.value = false
   }
 }
 
@@ -394,6 +413,8 @@ const buildingTypeTotals = computed(() => {
           color="success"
           depressed
           block
+          :loading="isExporting"
+          :disabled="isExporting"
           @click="handleExport"
         >
           download report
@@ -440,6 +461,8 @@ const buildingTypeTotals = computed(() => {
           color="success"
           depressed
           block
+          :loading="isExporting"
+          :disabled="isExporting"
           @click="handleExport"
         >
           download report
@@ -470,6 +493,14 @@ const buildingTypeTotals = computed(() => {
         </VBtn>
       </div>
     </div>
+
+    <VSnackbar
+      v-model="snackbar"
+      :color="snackbarColor"
+      location="bottom"
+    >
+      {{ snackbarMessage }}
+    </VSnackbar>
   </div>
 </template>
 

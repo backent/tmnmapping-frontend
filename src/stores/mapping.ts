@@ -8,7 +8,8 @@ import {
   getYearList,
   getPotentialClients,
   getPotentialClientById,
-  exportMappingData,
+  buildExportPayload,
+  exportMappingDataByFilters,
 } from '@/http/mapping'
 import { usePOIStore } from '@/stores/poi'
 import type {
@@ -404,12 +405,12 @@ export const useMappingStore = defineStore('mapping', {
     },
 
     /**
-     * Export mapping data
+     * Export mapping data (all buildings matching current filters; bounds always null).
      */
     async exportData() {
-      const ids = this.buildings.map(b => b.id)
+      const payload = buildExportPayload(this.filters, this.mapCenter)
       try {
-        const blob = await exportMappingData(ids)
+        const blob = await exportMappingDataByFilters(payload)
         return blob
       }
       catch (error) {

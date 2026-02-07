@@ -262,11 +262,80 @@ export function getBuildingDetailForMapping(
   )
 }
 
+/** Export request body: filters + map_center, bounds always null (export all matching) */
+export interface ExportMappingByFilterPayload {
+  filters: {
+    district_subdistrict?: string[]
+    building_type?: string[]
+    building_grade?: string[]
+    progress?: string[]
+    lcd_presence?: string[]
+    sellable?: string[]
+    connectivity?: string[]
+    year?: [number, number]
+    sales_package_ids?: number[]
+    building_restriction_ids?: number[]
+    lat?: number
+    lng?: number
+    radius?: number
+    poi_id?: number
+    polygon?: { lat: number; lng: number }[]
+  }
+  map_center: { lat: number; lng: number }
+  bounds: null
+}
+
 /**
- * Export mapping data
+ * Build export payload from current filters and map center (bounds always null).
  */
-export async function exportMappingData(
-  buildingIds: number[],
+export function buildExportPayload(
+  filters: MappingFilters,
+  mapCenter: { lat: number; lng: number },
+): ExportMappingByFilterPayload {
+  const f = filters
+  const payload: ExportMappingByFilterPayload = {
+    filters: {},
+    map_center: { ...mapCenter },
+    bounds: null,
+  }
+  if (f.district_subdistrict?.length)
+    payload.filters.district_subdistrict = f.district_subdistrict
+  if (f.building_type?.length)
+    payload.filters.building_type = f.building_type as string[]
+  if (f.building_grade?.length)
+    payload.filters.building_grade = f.building_grade
+  if (f.progress?.length)
+    payload.filters.progress = f.progress
+  if (f.lcd_presence?.length)
+    payload.filters.lcd_presence = f.lcd_presence
+  if (f.sellable?.length)
+    payload.filters.sellable = f.sellable
+  if (f.connectivity?.length)
+    payload.filters.connectivity = f.connectivity
+  if (f.year?.length === 2)
+    payload.filters.year = [f.year[0], f.year[1]]
+  if (f.sales_package_ids?.length)
+    payload.filters.sales_package_ids = f.sales_package_ids
+  if (f.building_restriction_ids?.length)
+    payload.filters.building_restriction_ids = f.building_restriction_ids
+  if (f.lat != null)
+    payload.filters.lat = f.lat
+  if (f.lng != null)
+    payload.filters.lng = f.lng
+  if (f.radius != null && f.radius > 0)
+    payload.filters.radius = f.radius
+  if (f.poi_id != null)
+    payload.filters.poi_id = f.poi_id
+  if (f.polygon && f.polygon.length >= 3)
+    payload.filters.polygon = f.polygon
+  return payload
+}
+
+/**
+ * Export mapping data by filters (all buildings matching filters; bounds always null).
+ */
+export async function exportMappingDataByFilters(
+  payload: ExportMappingByFilterPayload,
 ): Promise<Blob> {
   const response = await fetch(
     `${apiConfig.baseUrl}${apiConfig.endpoints.mapping_export}`.replace(':id', ''),
@@ -276,7 +345,7 @@ export async function exportMappingData(
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({ ids: buildingIds }),
+      body: JSON.stringify(payload),
     },
   )
 
