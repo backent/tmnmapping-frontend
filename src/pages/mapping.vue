@@ -84,7 +84,7 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
         fab
         @click="drawer = !drawer"
       >
-        <VIcon dark>mdi-magnify</VIcon>
+        <VIcon icon="ri-filter-line" />
       </VBtn>
     </VMain>
   </VApp>
