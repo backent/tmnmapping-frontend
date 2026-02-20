@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useMappingStore } from '@/stores/mapping'
 import { useBuildingStore } from '@/stores/building'
 import { useAuthStore } from '@/stores/auth'
@@ -16,6 +16,10 @@ const showMultiLocation = ref(false)
 
 const isReporting = computed(() => {
   return authStore.currentUser?.role === 12
+})
+
+onUnmounted(() => {
+  mappingStore.$reset()
 })
 
 // Initialize data
