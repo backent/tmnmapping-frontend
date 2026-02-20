@@ -6,6 +6,18 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
+# Accept build arguments
+ARG VITE_API_BASE_URL=/api
+ARG VITE_GOOGLE_MAPS_API_KEY
+ARG VITE_ENABLE_MARKER_CLUSTERING=false
+ARG VITE_CLUSTER_BY_TYPE=false
+
+# Set as environment variables for Vite to pick up
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
+ENV VITE_ENABLE_MARKER_CLUSTERING=${VITE_ENABLE_MARKER_CLUSTERING}
+ENV VITE_CLUSTER_BY_TYPE=${VITE_CLUSTER_BY_TYPE}
+
 # Copy all files (needed for postinstall script)
 COPY . .
 
