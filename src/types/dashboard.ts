@@ -22,5 +22,6 @@ export interface DashboardReport {
 
 export interface DashboardFilters {
   pic: string
+  year: string
   month: string
 }

@@ -12,7 +12,7 @@ function defaultResourceState(): ResourceState {
   return {
     report: null,
     isLoading: false,
-    filters: { pic: '', month: '' },
+    filters: { pic: '', year: '', month: '' },
   }
 }
 

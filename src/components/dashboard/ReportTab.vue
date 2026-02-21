@@ -15,13 +15,36 @@ const emit = defineEmits<{
 
 const localPic = computed({
   get: () => props.filters.pic,
-  set: (val: string) => emit('filter-change', { ...props.filters, pic: val }),
+  set: (val: string) => emit('filter-change', { ...props.filters, pic: val ?? '' }),
+})
+
+const localYear = computed({
+  get: () => props.filters.year,
+  set: (val: string) => emit('filter-change', { ...props.filters, year: val ?? '' }),
 })
 
 const localMonth = computed({
   get: () => props.filters.month,
-  set: (val: string) => emit('filter-change', { ...props.filters, month: val }),
+  set: (val: string) => emit('filter-change', { ...props.filters, month: val ?? '' }),
 })
+
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: currentYear - 2019 }, (_, i) => String(2020 + i)).reverse()
+
+const monthOptions = [
+  { title: 'January', value: '1' },
+  { title: 'February', value: '2' },
+  { title: 'March', value: '3' },
+  { title: 'April', value: '4' },
+  { title: 'May', value: '5' },
+  { title: 'June', value: '6' },
+  { title: 'July', value: '7' },
+  { title: 'August', value: '8' },
+  { title: 'September', value: '9' },
+  { title: 'October', value: '10' },
+  { title: 'November', value: '11' },
+  { title: 'December', value: '12' },
+]
 
 // Stat cards
 const statCards = computed(() => {
@@ -133,14 +156,28 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
           placeholder="All PICs"
         />
       </VCol>
-      <VCol cols="12" md="3">
-        <VTextField
-          v-model="localMonth"
-          label="Filter by Month"
-          type="month"
+      <VCol cols="12" md="2">
+        <VSelect
+          v-model="localYear"
+          :items="yearOptions"
+          label="Year"
           clearable
           density="compact"
           hide-details
+          placeholder="All Years"
+        />
+      </VCol>
+      <VCol cols="12" md="2">
+        <VSelect
+          v-model="localMonth"
+          :items="monthOptions"
+          item-title="title"
+          item-value="value"
+          label="Month"
+          clearable
+          density="compact"
+          hide-details
+          placeholder="All Months"
         />
       </VCol>
     </VRow>
