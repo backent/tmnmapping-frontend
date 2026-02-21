@@ -59,13 +59,28 @@ const barChartOptions = computed(() => ({
 }))
 
 // Horizontal stacked bar — persons × workflow_state
-const statusColors: Record<string, string> = {
+const knownStatusColors: Record<string, string> = {
   'LOI Signed': '#4CAF50',
   'On Negotiation': '#FFC107',
-  Rejected: '#F44336',
-  Submitted: '#2196F3',
-  Cancelled: '#9E9E9E',
+  'Rejected': '#F44336',
+  'Submitted': '#2196F3',
+  'Cancelled': '#9E9E9E',
+  'LOI Sent': '#9C27B0',
+  'Approved': '#00BCD4',
+  'Review': '#FF9800',
+  'Draft': '#607D8B',
 }
+
+const fallbackPalette = [
+  '#E91E63',
+  '#673AB7',
+  '#3F51B5',
+  '#009688',
+  '#CDDC39',
+  '#795548',
+  '#FF5722',
+  '#03A9F4',
+]
 
 const stackedBarSeries = computed(() => {
   if (!props.report?.by_person_status?.length) return []
@@ -81,14 +96,22 @@ const stackedBarCategories = computed(() =>
   props.report?.by_person_status?.map(p => p.person) || [],
 )
 
+const stackedBarColors = computed(() => {
+  let fallbackIdx = 0
+
+  return stackedBarSeries.value.map(
+    s => knownStatusColors[s.name] || fallbackPalette[fallbackIdx++ % fallbackPalette.length],
+  )
+})
+
 const stackedBarOptions = computed(() => ({
   chart: { type: 'bar', stacked: true, toolbar: { show: false } },
   plotOptions: { bar: { horizontal: true, barHeight: '60%' } },
-  xaxis: { title: { text: 'Count' } },
-  yaxis: { categories: stackedBarCategories.value },
+  xaxis: { categories: stackedBarCategories.value, title: { text: 'Count' } },
+  yaxis: {},
   legend: { position: 'top' },
   dataLabels: { enabled: false },
-  colors: stackedBarSeries.value.map(s => statusColors[s.name] || '#607D8B'),
+  colors: stackedBarColors.value,
 }))
 
 const hasBuildingTypeData = computed(() => barChartSeries.value.length > 0)
