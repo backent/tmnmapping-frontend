@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import NavItems from '@/layouts/components/NavItems.vue'
-import tmnLogo from '@images/tmn-logo-medium.png'
+import tmnLogo from '/images/defaultimage.jpeg'
 import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
 
 // Components
