@@ -30,6 +30,7 @@ declare module 'vue' {
     PointList: typeof import('./src/components/poi/PointList.vue')['default']
     ProgressFilter: typeof import('./src/components/mapping/ProgressFilter.vue')['default']
     RadiusFilter: typeof import('./src/components/mapping/RadiusFilter.vue')['default']
+    ReportTab: typeof import('./src/components/dashboard/ReportTab.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SalesPackageFilter: typeof import('./src/components/mapping/SalesPackageFilter.vue')['default']

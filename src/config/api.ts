@@ -54,5 +54,10 @@ export const apiConfig = {
     saved_polygons_create: '/saved-polygons',
     saved_polygons_update: '/saved-polygons/:id',
     saved_polygons_delete: '/saved-polygons/:id',
+
+    // Dashboard report endpoints
+    dashboard_acquisition: '/dashboard/acquisition',
+    dashboard_building_proposal: '/dashboard/building-proposal',
+    dashboard_loi: '/dashboard/loi',
   },
 }
