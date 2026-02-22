@@ -25,3 +25,21 @@ export interface DashboardFilters {
   year: string
   month: string
 }
+
+export interface LCDPresenceCitySummary {
+  citytown: string
+  total: number
+  by_status: Record<string, number>
+  percentages: Record<string, number>
+}
+
+export interface LCDPresenceTotals {
+  total: number
+  by_status: Record<string, number>
+  percentages: Record<string, number>
+}
+
+export interface LCDPresenceSummaryResponse {
+  data: LCDPresenceCitySummary[]
+  totals: LCDPresenceTotals
+}

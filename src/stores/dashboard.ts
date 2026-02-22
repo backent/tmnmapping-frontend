@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { getAcquisitionReport, getBuildingProposalReport, getLOIReport } from '@/http/dashboard'
-import type { DashboardReport, DashboardFilters } from '@/types/dashboard'
+import { getAcquisitionReport, getBuildingProposalReport, getLOIReport, getBuildingLCDPresenceSummary } from '@/http/dashboard'
+import type { DashboardReport, DashboardFilters, LCDPresenceSummaryResponse } from '@/types/dashboard'
 
 interface ResourceState {
   report: DashboardReport | null
@@ -20,6 +20,10 @@ interface DashboardState {
   acquisition: ResourceState
   buildingProposal: ResourceState
   loi: ResourceState
+  buildingLCDPresence: {
+    data: LCDPresenceSummaryResponse | null
+    isLoading: boolean
+  }
 }
 
 export const useDashboardStore = defineStore('dashboard', {
@@ -27,6 +31,10 @@ export const useDashboardStore = defineStore('dashboard', {
     acquisition: defaultResourceState(),
     buildingProposal: defaultResourceState(),
     loi: defaultResourceState(),
+    buildingLCDPresence: {
+      data: null,
+      isLoading: false,
+    },
   }),
 
   actions: {
@@ -75,11 +83,27 @@ export const useDashboardStore = defineStore('dashboard', {
       }
     },
 
+    async fetchBuildingLCDPresenceSummary() {
+      this.buildingLCDPresence.isLoading = true
+      try {
+        const response = await getBuildingLCDPresenceSummary()
+        this.buildingLCDPresence.data = response.data || null
+      }
+      catch (error) {
+        console.error('Error fetching building LCD presence summary:', error)
+        throw error
+      }
+      finally {
+        this.buildingLCDPresence.isLoading = false
+      }
+    },
+
     async fetchAllReports() {
       await Promise.all([
         this.fetchAcquisitionReport(),
         this.fetchBuildingProposalReport(),
         this.fetchLOIReport(),
+        this.fetchBuildingLCDPresenceSummary(),
       ])
     },
   },
