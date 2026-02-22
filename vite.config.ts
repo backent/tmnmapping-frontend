@@ -53,7 +53,17 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 5000,
+    chunkSizeWarningLimit: 500,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-apexcharts': ['apexcharts', 'vue3-apexcharts'],
+          'vendor-xlsx': ['xlsx'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     exclude: ['vuetify'],

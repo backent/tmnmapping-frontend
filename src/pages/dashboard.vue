@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -48,10 +47,11 @@ function getPct(percentages: Record<string, number>, status: string): string {
   return v != null ? `${v}%` : '0%'
 }
 
-function downloadLCDPresenceExcel() {
+async function downloadLCDPresenceExcel() {
   const summary = lcdSummary.value
   if (!summary) return
 
+  const XLSX = await import('xlsx')
   const wb = XLSX.utils.book_new()
 
   // ── Section 1 header: All Occupied + Market Exclusivity
