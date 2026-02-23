@@ -58,6 +58,13 @@ export interface PaginationParams {
   building_type?: string
 }
 
+// Lightweight building option for dropdown use
+export interface BuildingDropdownOption {
+  id: number
+  name: string
+  building_type: string
+}
+
 // Filter options from backend
 export interface FilterOptions {
   building_status: string[]

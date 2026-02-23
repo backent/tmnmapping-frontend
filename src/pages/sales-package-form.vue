@@ -3,7 +3,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import { useBuildingStore } from '@/stores/building'
 import type { CreateSalesPackageRequest } from '@/types/salespackage'
-import type { PaginationParams } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,7 +26,7 @@ const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
 const buildingItems = computed(() =>
-  buildingStore.buildings.map(b => ({
+  buildingStore.buildingDropdownOptions.map(b => ({
     id: b.id,
     name: b.name,
     building_type: b.building_type,
@@ -56,13 +55,7 @@ const fetchPackage = async () => {
 }
 
 onMounted(async () => {
-  const params: PaginationParams = {
-    take: 500,
-    skip: 0,
-    orderBy: 'name',
-    orderDirection: 'ASC',
-  }
-  await buildingStore.fetchBuildings(params)
+  await buildingStore.fetchBuildingDropdownOptions()
   if (isEdit.value) {
     await fetchPackage()
   }

@@ -12,6 +12,7 @@ export const apiConfig = {
     buildings_update: '/buildings/:id',
     buildings_sync: '/buildings/sync',
     buildings_filter_options: '/building-filter-options',
+    buildings_dropdown: '/building-dropdown',
 
     // Mapping endpoints
     mapping_buildings: '/mapping-buildings',

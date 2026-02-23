@@ -1,7 +1,7 @@
 import { getApi, postApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingUpdateData, PaginationParams, FilterOptions } from '@/types/building'
+import type { Building, BuildingUpdateData, PaginationParams, FilterOptions, BuildingDropdownOption } from '@/types/building'
 
 // GET /buildings - List all buildings with optional pagination
 export function getBuildings(params?: PaginationParams): Promise<ApiResponse<Building[]>> {
@@ -41,5 +41,12 @@ export function syncBuildings(): Promise<ApiResponse<string>> {
 export function getFilterOptions(): Promise<ApiResponse<FilterOptions>> {
   return getApi<ApiResponse<FilterOptions>>(
     apiConfig.endpoints.buildings_filter_options,
+  )
+}
+
+// GET /building-dropdown - Get lightweight building list for dropdown selection
+export function getBuildingDropdownOptions(): Promise<ApiResponse<BuildingDropdownOption[]>> {
+  return getApi<ApiResponse<BuildingDropdownOption[]>>(
+    apiConfig.endpoints.buildings_dropdown,
   )
 }

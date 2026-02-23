@@ -5,11 +5,13 @@ import {
   putBuilding,
   syncBuildings,
   getFilterOptions,
+  getBuildingDropdownOptions,
 } from '@/http/building'
-import type { Building, BuildingUpdateData, PaginationParams, FilterOptions } from '@/types/building'
+import type { Building, BuildingUpdateData, PaginationParams, FilterOptions, BuildingDropdownOption } from '@/types/building'
 
 interface BuildingState {
   buildings: Building[]
+  buildingDropdownOptions: BuildingDropdownOption[]
   currentBuilding: Building | null
   isLoading: boolean
   isSyncing: boolean
@@ -25,6 +27,7 @@ interface BuildingState {
 export const useBuildingStore = defineStore('building', {
   state: (): BuildingState => ({
     buildings: [],
+    buildingDropdownOptions: [],
     currentBuilding: null,
     isLoading: false,
     isSyncing: false,
@@ -184,6 +187,23 @@ export const useBuildingStore = defineStore('building', {
       catch (error) {
         console.error('Error fetching filter options:', error)
         throw error
+      }
+    },
+
+    // Fetch lightweight building list for dropdown selection
+    async fetchBuildingDropdownOptions() {
+      this.isLoading = true
+      try {
+        const response = await getBuildingDropdownOptions()
+        this.buildingDropdownOptions = response.data || []
+        return response
+      }
+      catch (error) {
+        console.error('Error fetching building dropdown options:', error)
+        throw error
+      }
+      finally {
+        this.isLoading = false
       }
     },
   },
