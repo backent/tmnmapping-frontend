@@ -8,14 +8,22 @@ export default defineComponent({
     const isLayoutOverlayVisible = ref(false)
     const toggleIsOverlayNavActive = useToggle(isOverlayNavActive)
     const route = useRoute()
+    const { mdAndDown } = useDisplay()
     const isNavCollapsed = ref(route.path.startsWith('/mapping'))
     const toggleNavCollapsed = () => { isNavCollapsed.value = !isNavCollapsed.value }
+
+    // Unified toggle: overlay on mobile, collapse on desktop
+    const toggleNav = () => {
+      if (mdAndDown.value)
+        toggleIsOverlayNavActive(true)
+      else
+        toggleNavCollapsed()
+    }
 
     watch(() => route.path, path => {
       if (path.startsWith('/mapping'))
         isNavCollapsed.value = true
     })
-    const { mdAndDown } = useDisplay()
 
     // ℹ️ This is alternative to below two commented watcher
     // We want to show overlay if overlay nav is visible and want to hide overlay if overlay is hidden and vice versa.
@@ -45,6 +53,7 @@ export default defineComponent({
             slots.navbar?.({
               toggleVerticalOverlayNavActive: toggleIsOverlayNavActive,
               toggleNavCollapsed,
+              toggleNav,
             }),
           ),
         ],
@@ -185,9 +194,11 @@ export default defineComponent({
     }
   }
 
-  // Adjust right column pl when vertical nav is collapsed
-  &.layout-vertical-nav-collapsed .layout-content-wrapper {
-    padding-inline-start: variables.$layout-vertical-nav-collapsed-width;
+  // Adjust right column pl when vertical nav is collapsed (desktop only)
+  @media screen and (min-width: 1280px) {
+    &.layout-vertical-nav-collapsed .layout-content-wrapper {
+      padding-inline-start: variables.$layout-vertical-nav-collapsed-width;
+    }
   }
 
   // 👉 Content height fixed

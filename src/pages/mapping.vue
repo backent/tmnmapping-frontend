@@ -96,8 +96,9 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
 
 <style scoped>
 .float-button {
-  position: absolute;
-  bottom: 0;
+  position: fixed;
+  bottom: 1rem;
+  inset-inline-start: 1rem;
   z-index: 1000;
 }
 </style>

@@ -11,20 +11,12 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 <template>
   <VerticalNavLayout>
     <!-- 👉 navbar -->
-    <template #navbar="{ toggleVerticalOverlayNavActive, toggleNavCollapsed }">
+    <template #navbar="{ toggleNav }">
       <div class="d-flex h-100 align-center">
-        <!-- 👉 Vertical nav toggle in overlay mode (mobile) -->
+        <!-- 👉 Nav toggle: overlay on mobile, collapse on desktop -->
         <IconBtn
-          class="ms-n3 d-lg-none"
-          @click="toggleVerticalOverlayNavActive(true)"
-        >
-          <VIcon icon="ri-menu-line" />
-        </IconBtn>
-
-        <!-- 👉 Sidebar collapse toggle (desktop) -->
-        <IconBtn
-          class="ms-n3 d-none d-lg-flex"
-          @click="toggleNavCollapsed"
+          class="ms-n3"
+          @click="toggleNav"
         >
           <VIcon icon="ri-menu-fold-line" />
         </IconBtn>
