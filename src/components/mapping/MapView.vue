@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+const ZOOM_LEVEL = 14
 const mapContainer = ref<HTMLDivElement>()
 const map = ref<google.maps.Map | null>(null)
 /** Marker pool by building id; markers are never destroyed on filter/pan, only visibility is updated */
@@ -109,7 +110,7 @@ onMounted(async () => {
 
     map.value = new google.maps.Map(mapContainer.value, {
       center: props.center,
-      zoom: 15,
+      zoom: ZOOM_LEVEL,
       disableDoubleClickZoom: true,
       clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.),
     })
