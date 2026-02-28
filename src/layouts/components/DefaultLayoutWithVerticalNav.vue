@@ -11,14 +11,22 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 <template>
   <VerticalNavLayout>
     <!-- 👉 navbar -->
-    <template #navbar="{ toggleVerticalOverlayNavActive }">
+    <template #navbar="{ toggleVerticalOverlayNavActive, toggleNavCollapsed }">
       <div class="d-flex h-100 align-center">
-        <!-- 👉 Vertical nav toggle in overlay mode -->
+        <!-- 👉 Vertical nav toggle in overlay mode (mobile) -->
         <IconBtn
           class="ms-n3 d-lg-none"
           @click="toggleVerticalOverlayNavActive(true)"
         >
           <VIcon icon="ri-menu-line" />
+        </IconBtn>
+
+        <!-- 👉 Sidebar collapse toggle (desktop) -->
+        <IconBtn
+          class="ms-n3 d-none d-lg-flex"
+          @click="toggleNavCollapsed"
+        >
+          <VIcon icon="ri-menu-fold-line" />
         </IconBtn>
 
         <VSpacer />
@@ -64,6 +72,18 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
     </template>
   </VerticalNavLayout>
 </template>
+
+<style lang="scss">
+// Reduce topbar height (64px → 48px)
+.layout-navbar .navbar-content-container {
+  block-size: 48px !important;
+}
+
+// Reduce footer height (54px → 36px)
+.layout-footer .footer-content-container {
+  block-size: 36px !important;
+}
+</style>
 
 <style lang="scss" scoped>
 .app-logo {

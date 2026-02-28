@@ -30,6 +30,7 @@ watch(
     props.toggleIsOverlayNavActive(false)
   })
 
+const isHovered = ref(false)
 const isVerticalNavScrolled = ref(false)
 const updateIsVerticalNavScrolled = (val: boolean) => isVerticalNavScrolled.value = val
 
@@ -50,8 +51,11 @@ const handleNavScroll = (evt: Event) => {
         'visible': isOverlayNavActive,
         'scrolled': isVerticalNavScrolled,
         'overlay-nav': mdAndDown,
+        'hovered': isHovered,
       },
     ]"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <!-- 👉 Header -->
     <div class="nav-header">
@@ -163,6 +167,38 @@ const handleNavScroll = (evt: Event) => {
     &:not(.hovered) {
       inline-size: variables.$layout-vertical-nav-collapsed-width;
     }
+  }
+}
+
+// 👉 Mini mode: hide text/badge/arrow when collapsed and not hovered
+#{variables.$selector-vertical-nav-mini} {
+  .nav-item-title,
+  .nav-item-badge,
+  .nav-group-arrow {
+    opacity: 0;
+    max-inline-size: 0;
+    overflow: hidden;
+  }
+
+  .nav-section-title {
+    opacity: 0;
+    max-block-size: 0;
+    overflow: hidden;
+    padding-block: 0;
+    margin-block: 0;
+  }
+}
+
+// Smooth transitions for collapseable elements
+.layout-vertical-nav {
+  .nav-item-title,
+  .nav-item-badge,
+  .nav-group-arrow {
+    transition: opacity 0.25s ease-in-out, max-inline-size 0.25s ease-in-out;
+  }
+
+  .nav-section-title {
+    transition: opacity 0.25s ease-in-out, max-block-size 0.25s ease-in-out, padding-block 0.25s ease-in-out, margin-block 0.25s ease-in-out;
   }
 }
 

@@ -24,6 +24,19 @@ const parseQueryParam = (value: any, defaultValue: any, parser?: (val: string) =
   return parser ? parser(String(str)) : String(str)
 }
 
+// Helper function to parse query parameter as array (comma-separated)
+const parseQueryParamArray = (value: any): string[] => {
+  if (value === null || value === undefined)
+    return []
+
+  const str = Array.isArray(value) ? value[0] : value
+
+  if (!str || str === '')
+    return []
+
+  return String(str).split(',').map(v => v.trim()).filter(v => v !== '')
+}
+
 // Initialize state from URL query parameters
 const currentPage = ref(parseQueryParam(route.query.page, 1, val => Number.parseInt(val, 10)))
 const itemsPerPage = ref(parseQueryParam(route.query.perPage, 10, val => Number.parseInt(val, 10)))
@@ -38,22 +51,22 @@ const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
 const searchQuery = ref(parseQueryParam(route.query.search, ''))
 const searchDebounce = ref<NodeJS.Timeout | null>(null)
 
-// Filter state
-const filterBuildingStatus = ref<string | null>(parseQueryParam(route.query.building_status, null))
-const filterSellable = ref<string | null>(parseQueryParam(route.query.sellable, null))
-const filterConnectivity = ref<string | null>(parseQueryParam(route.query.connectivity, null))
-const filterResourceType = ref<string | null>(parseQueryParam(route.query.resource_type, null))
+// Filter state (multi-select: string arrays)
+const filterBuildingStatus = ref<string[]>(parseQueryParamArray(route.query.building_status))
+const filterSellable = ref<string[]>(parseQueryParamArray(route.query.sellable))
+const filterConnectivity = ref<string[]>(parseQueryParamArray(route.query.connectivity))
+const filterResourceType = ref<string[]>(parseQueryParamArray(route.query.resource_type))
 const filterCompetitorLocation = ref<boolean | null>(
   route.query.competitor_location === undefined
     ? null
     : parseQueryParam(route.query.competitor_location, null, val => val === 'true'),
 )
-const filterCbdArea = ref<string | null>(parseQueryParam(route.query.cbd_area, null))
-const filterSubdistrict = ref<string | null>(parseQueryParam(route.query.subdistrict, null))
-const filterCitytown = ref<string | null>(parseQueryParam(route.query.citytown, null))
-const filterProvince = ref<string | null>(parseQueryParam(route.query.province, null))
-const filterGradeResource = ref<string | null>(parseQueryParam(route.query.grade_resource, null))
-const filterBuildingType = ref<string | null>(parseQueryParam(route.query.building_type, null))
+const filterCbdArea = ref<string[]>(parseQueryParamArray(route.query.cbd_area))
+const filterSubdistrict = ref<string[]>(parseQueryParamArray(route.query.subdistrict))
+const filterCitytown = ref<string[]>(parseQueryParamArray(route.query.citytown))
+const filterProvince = ref<string[]>(parseQueryParamArray(route.query.province))
+const filterGradeResource = ref<string[]>(parseQueryParamArray(route.query.grade_resource))
+const filterBuildingType = ref<string[]>(parseQueryParamArray(route.query.building_type))
 
 // Computed properties
 const buildings = computed(() => buildingStore.buildings)
@@ -78,38 +91,38 @@ const updateURL = () => {
     query.search = searchQuery.value.trim()
 
   // Add filters
-  if (filterBuildingStatus.value)
-    query.building_status = filterBuildingStatus.value
+  if (filterBuildingStatus.value.length > 0)
+    query.building_status = filterBuildingStatus.value.join(',')
 
-  if (filterSellable.value)
-    query.sellable = filterSellable.value
+  if (filterSellable.value.length > 0)
+    query.sellable = filterSellable.value.join(',')
 
-  if (filterConnectivity.value)
-    query.connectivity = filterConnectivity.value
+  if (filterConnectivity.value.length > 0)
+    query.connectivity = filterConnectivity.value.join(',')
 
-  if (filterResourceType.value)
-    query.resource_type = filterResourceType.value
+  if (filterResourceType.value.length > 0)
+    query.resource_type = filterResourceType.value.join(',')
 
   if (filterCompetitorLocation.value !== null)
     query.competitor_location = filterCompetitorLocation.value ? 'true' : 'false'
 
-  if (filterCbdArea.value)
-    query.cbd_area = filterCbdArea.value
+  if (filterCbdArea.value.length > 0)
+    query.cbd_area = filterCbdArea.value.join(',')
 
-  if (filterSubdistrict.value)
-    query.subdistrict = filterSubdistrict.value
+  if (filterSubdistrict.value.length > 0)
+    query.subdistrict = filterSubdistrict.value.join(',')
 
-  if (filterCitytown.value)
-    query.citytown = filterCitytown.value
+  if (filterCitytown.value.length > 0)
+    query.citytown = filterCitytown.value.join(',')
 
-  if (filterProvince.value)
-    query.province = filterProvince.value
+  if (filterProvince.value.length > 0)
+    query.province = filterProvince.value.join(',')
 
-  if (filterGradeResource.value)
-    query.grade_resource = filterGradeResource.value
+  if (filterGradeResource.value.length > 0)
+    query.grade_resource = filterGradeResource.value.join(',')
 
-  if (filterBuildingType.value)
-    query.building_type = filterBuildingType.value
+  if (filterBuildingType.value.length > 0)
+    query.building_type = filterBuildingType.value.join(',')
 
   // Add sorting
   if (sortBy.value.length > 0) {
@@ -142,38 +155,38 @@ const fetchBuildings = async () => {
     }
 
     // Add filters if present
-    if (filterBuildingStatus.value) {
-      params.building_status = filterBuildingStatus.value
+    if (filterBuildingStatus.value.length > 0) {
+      params.building_status = filterBuildingStatus.value.join(',')
     }
-    if (filterSellable.value) {
-      params.sellable = filterSellable.value
+    if (filterSellable.value.length > 0) {
+      params.sellable = filterSellable.value.join(',')
     }
-    if (filterConnectivity.value) {
-      params.connectivity = filterConnectivity.value
+    if (filterConnectivity.value.length > 0) {
+      params.connectivity = filterConnectivity.value.join(',')
     }
-    if (filterResourceType.value) {
-      params.resource_type = filterResourceType.value
+    if (filterResourceType.value.length > 0) {
+      params.resource_type = filterResourceType.value.join(',')
     }
     if (filterCompetitorLocation.value !== null) {
       params.competitor_location = filterCompetitorLocation.value
     }
-    if (filterCbdArea.value) {
-      params.cbd_area = filterCbdArea.value
+    if (filterCbdArea.value.length > 0) {
+      params.cbd_area = filterCbdArea.value.join(',')
     }
-    if (filterSubdistrict.value) {
-      params.subdistrict = filterSubdistrict.value
+    if (filterSubdistrict.value.length > 0) {
+      params.subdistrict = filterSubdistrict.value.join(',')
     }
-    if (filterCitytown.value) {
-      params.citytown = filterCitytown.value
+    if (filterCitytown.value.length > 0) {
+      params.citytown = filterCitytown.value.join(',')
     }
-    if (filterProvince.value) {
-      params.province = filterProvince.value
+    if (filterProvince.value.length > 0) {
+      params.province = filterProvince.value.join(',')
     }
-    if (filterGradeResource.value) {
-      params.grade_resource = filterGradeResource.value
+    if (filterGradeResource.value.length > 0) {
+      params.grade_resource = filterGradeResource.value.join(',')
     }
-    if (filterBuildingType.value) {
-      params.building_type = filterBuildingType.value
+    if (filterBuildingType.value.length > 0) {
+      params.building_type = filterBuildingType.value.join(',')
     }
 
     // Add sorting if present
@@ -252,17 +265,17 @@ const formatDate = (dateString: string) => {
 }
 
 const clearFilters = () => {
-  filterBuildingStatus.value = null
-  filterSellable.value = null
-  filterConnectivity.value = null
-  filterResourceType.value = null
+  filterBuildingStatus.value = []
+  filterSellable.value = []
+  filterConnectivity.value = []
+  filterResourceType.value = []
   filterCompetitorLocation.value = null
-  filterCbdArea.value = null
-  filterSubdistrict.value = null
-  filterCitytown.value = null
-  filterProvince.value = null
-  filterGradeResource.value = null
-  filterBuildingType.value = null
+  filterCbdArea.value = []
+  filterSubdistrict.value = []
+  filterCitytown.value = []
+  filterProvince.value = []
+  filterGradeResource.value = []
+  filterBuildingType.value = []
   searchQuery.value = ''
   currentPage.value = 1
   updateURL()
@@ -306,6 +319,7 @@ onMounted(async () => {
                 :items="filterOptions?.building_status || []"
                 label="Status"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -317,6 +331,7 @@ onMounted(async () => {
                 :items="filterOptions?.sellable || []"
                 label="Sellable"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -328,6 +343,7 @@ onMounted(async () => {
                 :items="filterOptions?.connectivity || []"
                 label="Connectivity"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -339,6 +355,7 @@ onMounted(async () => {
                 :items="filterOptions?.resource_type || []"
                 label="Resource Type"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -363,6 +380,7 @@ onMounted(async () => {
                 :items="filterOptions?.cbd_area || []"
                 label="CBD Area"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -374,6 +392,7 @@ onMounted(async () => {
                 :items="filterOptions?.subdistrict || []"
                 label="Subdistrict"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -385,6 +404,7 @@ onMounted(async () => {
                 :items="filterOptions?.citytown || []"
                 label="City/Town"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -396,6 +416,7 @@ onMounted(async () => {
                 :items="filterOptions?.province || []"
                 label="Province"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -407,6 +428,7 @@ onMounted(async () => {
                 :items="filterOptions?.grade_resource || []"
                 label="Grade Resource"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details
@@ -418,6 +440,7 @@ onMounted(async () => {
                 :items="filterOptions?.building_type || []"
                 label="Building Type"
                 placeholder="All"
+                multiple
                 clearable
                 density="compact"
                 hide-details

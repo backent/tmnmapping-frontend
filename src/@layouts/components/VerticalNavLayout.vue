@@ -7,8 +7,14 @@ export default defineComponent({
     const isOverlayNavActive = ref(false)
     const isLayoutOverlayVisible = ref(false)
     const toggleIsOverlayNavActive = useToggle(isOverlayNavActive)
-
     const route = useRoute()
+    const isNavCollapsed = ref(route.path.startsWith('/mapping'))
+    const toggleNavCollapsed = () => { isNavCollapsed.value = !isNavCollapsed.value }
+
+    watch(() => route.path, path => {
+      if (path.startsWith('/mapping'))
+        isNavCollapsed.value = true
+    })
     const { mdAndDown } = useDisplay()
 
     // ℹ️ This is alternative to below two commented watcher
@@ -38,6 +44,7 @@ export default defineComponent({
             { class: 'navbar-content-container' },
             slots.navbar?.({
               toggleVerticalOverlayNavActive: toggleIsOverlayNavActive,
+              toggleNavCollapsed,
             }),
           ),
         ],
@@ -77,6 +84,7 @@ export default defineComponent({
           class: [
             'layout-wrapper layout-nav-type-vertical layout-navbar-static layout-footer-static layout-content-width-fluid',
             mdAndDown.value && 'layout-overlay-nav',
+            isNavCollapsed.value && 'layout-vertical-nav-collapsed',
             route.meta.layoutWrapperClasses,
           ],
         },
