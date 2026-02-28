@@ -83,6 +83,35 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 .layout-footer .footer-content-container {
   block-size: 36px !important;
 }
+
+// Mapping page: full-bleed, no scroll, no footer
+.layout-mapping-page {
+  // Hide footer
+  .layout-footer {
+    display: none !important;
+  }
+
+  // Lock the content wrapper to viewport height so nothing scrolls
+  .layout-content-wrapper {
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow: hidden;
+  }
+
+  // Page content fills the remaining space below the 48px topbar
+  .layout-page-content {
+    padding: 0 !important;
+    max-inline-size: 100% !important;
+    flex: 1 1 0;
+    min-block-size: 0;
+    overflow: hidden;
+
+    .page-content-container {
+      block-size: 100%;
+      overflow: hidden;
+    }
+  }
+}
 </style>
 
 <style lang="scss" scoped>

@@ -113,6 +113,7 @@ onMounted(async () => {
       zoom: ZOOM_LEVEL,
       disableDoubleClickZoom: true,
       clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.),
+      streetViewControl: false
     })
 
     // Handle double click
@@ -630,7 +631,7 @@ onBeforeUnmount(() => {
 
 .map-container {
   width: 100%;
-  height: 100%;
+  height: 92%;
   min-height: 600px;
 }
 

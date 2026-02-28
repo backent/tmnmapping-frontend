@@ -22,6 +22,7 @@ export const routes = [
         path: 'mapping',
         name: 'mapping',
         component: () => import('@/pages/mapping.vue'),
+        meta: { layoutWrapperClasses: 'layout-mapping-page' },
       },
       {
         path: 'pois',
