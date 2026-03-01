@@ -177,7 +177,7 @@ async function downloadLCDPresenceExcel() {
     <!-- LCD Presence Summary -->
     <VCol cols="12">
       <VCard>
-        <VCardTitle class="pa-4 pb-0 d-flex align-center justify-space-between">
+        <VCardTitle class="pa-4 pb-0 mb-5 d-flex align-center justify-space-between">
           <h2 class="text-h5">
             Building LCD Presence Summary
           </h2>

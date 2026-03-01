@@ -250,7 +250,7 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
       <!-- Charts -->
       <VRow>
         <!-- Grouped bar: by person × building type -->
-        <VCol cols="12" md="6">
+        <VCol cols="12">
           <VCard>
             <VCardTitle class="text-body-1 font-weight-medium pa-4 pb-0">
               By Person & Building Type
@@ -259,14 +259,14 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
               <VueApexCharts
                 v-if="hasBuildingTypeData"
                 type="bar"
-                height="320"
+                height="420"
                 :series="barChartSeries"
                 :options="barChartOptions"
               />
               <div
                 v-else
                 class="d-flex align-center justify-center"
-                style="height: 320px;"
+                style="height: 420px;"
               >
                 <span class="text-medium-emphasis">No data available</span>
               </div>
@@ -275,7 +275,7 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
         </VCol>
 
         <!-- Horizontal stacked bar: by person × status -->
-        <VCol cols="12" md="6">
+        <VCol cols="12">
           <VCard>
             <VCardTitle class="text-body-1 font-weight-medium pa-4 pb-0">
               By Person & Status
@@ -284,14 +284,14 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
               <VueApexCharts
                 v-if="hasStatusData"
                 type="bar"
-                height="320"
+                height="420"
                 :series="stackedBarSeries"
                 :options="stackedBarOptions"
               />
               <div
                 v-else
                 class="d-flex align-center justify-center"
-                style="height: 320px;"
+                style="height: 420px;"
               >
                 <span class="text-medium-emphasis">No data available</span>
               </div>
