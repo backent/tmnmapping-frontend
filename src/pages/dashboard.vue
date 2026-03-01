@@ -260,7 +260,7 @@ async function downloadLCDPresenceExcel() {
                   </tr>
                 </tbody>
                 <tfoot>
-                  <tr class="font-weight-bold ">
+                  <tr class="font-weight-bold bg-secondary text-white">
                     <td>Total</td>
                     <td class="text-right">
                       {{ lcdSummary.totals.total.toLocaleString() }}
