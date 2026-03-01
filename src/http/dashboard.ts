@@ -3,24 +3,32 @@ import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
 import type { DashboardReport, DashboardFilters, LCDPresenceSummaryResponse } from '@/types/dashboard'
 
+function toQueryParams(filters: Partial<DashboardFilters>): QueryParams {
+  return {
+    pic: filters.pics || [],
+    date_from: filters.date_from || '',
+    date_to: filters.date_to || '',
+  }
+}
+
 export function getAcquisitionReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
   return getApi<ApiResponse<DashboardReport>>(
     apiConfig.endpoints.dashboard_acquisition,
-    (filters || {}) as QueryParams,
+    toQueryParams(filters || {}),
   )
 }
 
 export function getBuildingProposalReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
   return getApi<ApiResponse<DashboardReport>>(
     apiConfig.endpoints.dashboard_building_proposal,
-    (filters || {}) as QueryParams,
+    toQueryParams(filters || {}),
   )
 }
 
 export function getLOIReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
   return getApi<ApiResponse<DashboardReport>>(
     apiConfig.endpoints.dashboard_loi,
-    (filters || {}) as QueryParams,
+    toQueryParams(filters || {}),
   )
 }
 

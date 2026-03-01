@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
 import type { DashboardReport, DashboardFilters } from '@/types/dashboard'
 
@@ -13,38 +13,37 @@ const emit = defineEmits<{
   (e: 'filter-change', filters: DashboardFilters): void
 }>()
 
-const localPic = computed({
-  get: () => props.filters.pic,
-  set: (val: string) => emit('filter-change', { ...props.filters, pic: val ?? '' }),
+const localPics = computed({
+  get: () => props.filters.pics,
+  set: (val: string[]) => emit('filter-change', { ...props.filters, pics: val ?? [] }),
 })
 
-const localYear = computed({
-  get: () => props.filters.year,
-  set: (val: string) => emit('filter-change', { ...props.filters, year: val ?? '' }),
+const dateFromMenu = ref(false)
+const dateToMenu = ref(false)
+
+function toISODate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// VDatePicker requires Date | null; text field shows the plain YYYY-MM-DD string from filters
+const pickerDateFrom = computed<Date | null>({
+  get: () => props.filters.date_from ? new Date(`${props.filters.date_from}T00:00:00`) : null,
+  set: (val: Date | null) => {
+    emit('filter-change', { ...props.filters, date_from: val ? toISODate(val) : '' })
+    dateFromMenu.value = false
+  },
 })
 
-const localMonth = computed({
-  get: () => props.filters.month,
-  set: (val: string) => emit('filter-change', { ...props.filters, month: val ?? '' }),
+const pickerDateTo = computed<Date | null>({
+  get: () => props.filters.date_to ? new Date(`${props.filters.date_to}T00:00:00`) : null,
+  set: (val: Date | null) => {
+    emit('filter-change', { ...props.filters, date_to: val ? toISODate(val) : '' })
+    dateToMenu.value = false
+  },
 })
-
-const currentYear = new Date().getFullYear()
-const yearOptions = Array.from({ length: currentYear - 2019 }, (_, i) => String(2020 + i)).reverse()
-
-const monthOptions = [
-  { title: 'January', value: '1' },
-  { title: 'February', value: '2' },
-  { title: 'March', value: '3' },
-  { title: 'April', value: '4' },
-  { title: 'May', value: '5' },
-  { title: 'June', value: '6' },
-  { title: 'July', value: '7' },
-  { title: 'August', value: '8' },
-  { title: 'September', value: '9' },
-  { title: 'October', value: '10' },
-  { title: 'November', value: '11' },
-  { title: 'December', value: '12' },
-]
 
 // Stat cards
 const statCards = computed(() => {
@@ -147,38 +146,65 @@ const hasStatusData = computed(() => stackedBarSeries.value.length > 0)
     <VRow class="mb-4 mt-2">
       <VCol cols="12" md="4">
         <VAutocomplete
-          v-model="localPic"
+          v-model="localPics"
           :items="report?.pics || []"
           label="Filter by PIC"
+          multiple
+          chips
+          closable-chips
           clearable
           density="compact"
           hide-details
           placeholder="All PICs"
         />
       </VCol>
-      <VCol cols="12" md="2">
-        <VSelect
-          v-model="localYear"
-          :items="yearOptions"
-          label="Year"
-          clearable
-          density="compact"
-          hide-details
-          placeholder="All Years"
-        />
+      <VCol cols="12" md="3">
+        <VMenu
+          v-model="dateFromMenu"
+          :close-on-content-click="false"
+        >
+          <template #activator="{ props: menuProps }">
+            <VTextField
+              v-bind="menuProps"
+              :model-value="filters.date_from"
+              label="Start Date"
+              prepend-inner-icon="ri-calendar-line"
+              clearable
+              density="compact"
+              hide-details
+              readonly
+              @click:clear="emit('filter-change', { ...filters, date_from: '' })"
+            />
+          </template>
+          <VDatePicker
+            v-model="pickerDateFrom"
+            show-adjacent-months
+          />
+        </VMenu>
       </VCol>
-      <VCol cols="12" md="2">
-        <VSelect
-          v-model="localMonth"
-          :items="monthOptions"
-          item-title="title"
-          item-value="value"
-          label="Month"
-          clearable
-          density="compact"
-          hide-details
-          placeholder="All Months"
-        />
+      <VCol cols="12" md="3">
+        <VMenu
+          v-model="dateToMenu"
+          :close-on-content-click="false"
+        >
+          <template #activator="{ props: menuProps }">
+            <VTextField
+              v-bind="menuProps"
+              :model-value="filters.date_to"
+              label="End Date"
+              prepend-inner-icon="ri-calendar-line"
+              clearable
+              density="compact"
+              hide-details
+              readonly
+              @click:clear="emit('filter-change', { ...filters, date_to: '' })"
+            />
+          </template>
+          <VDatePicker
+            v-model="pickerDateTo"
+            show-adjacent-months
+          />
+        </VMenu>
       </VCol>
     </VRow>
 

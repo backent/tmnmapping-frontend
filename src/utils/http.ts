@@ -34,11 +34,19 @@ function _objectToQueryString(obj: QueryParams, prefix?: string): string {
       const v = obj[p]
       
       if (v !== undefined && v !== null) {
-        str.push(
-          (v !== null && typeof v === 'object')
-            ? _objectToQueryString(v as QueryParams, k)
-            : `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`,
-        )
+        if (Array.isArray(v)) {
+          v.forEach(item => {
+            if (item !== undefined && item !== null)
+              str.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(item))}`)
+          })
+        }
+        else {
+          str.push(
+            (typeof v === 'object')
+              ? _objectToQueryString(v as QueryParams, k)
+              : `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`,
+          )
+        }
       }
     }
   }

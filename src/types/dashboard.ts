@@ -21,9 +21,9 @@ export interface DashboardReport {
 }
 
 export interface DashboardFilters {
-  pic: string
-  year: string
-  month: string
+  pics: string[]
+  date_from: string
+  date_to: string
 }
 
 export interface LCDPresenceCitySummary {

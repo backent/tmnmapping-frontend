@@ -8,11 +8,19 @@ interface ResourceState {
   filters: DashboardFilters
 }
 
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function defaultResourceState(): ResourceState {
+  const today = new Date()
+  const weekAgo = new Date(today)
+  weekAgo.setDate(today.getDate() - 7)
+
   return {
     report: null,
     isLoading: false,
-    filters: { pic: '', year: '', month: '' },
+    filters: { pics: [], date_from: toISODate(weekAgo), date_to: toISODate(today) },
   }
 }
 
