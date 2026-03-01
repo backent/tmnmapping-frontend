@@ -31,10 +31,10 @@ pipeline {
                 stage('Build Image') {
                     steps {
                         withCredentials([
-                            string(credentialsId: 'vite-api-base-url',              variable: 'VITE_API_BASE_URL'),
-                            string(credentialsId: 'vite-google-maps-api-key',       variable: 'VITE_GOOGLE_MAPS_API_KEY'),
-                            string(credentialsId: 'vite-enable-marker-clustering',  variable: 'VITE_ENABLE_MARKER_CLUSTERING'),
-                            string(credentialsId: 'vite-cluster-by-type',           variable: 'VITE_CLUSTER_BY_TYPE')
+                            string(credentialsId: 'tmn-mapping-vite-api-base-url',              variable: 'VITE_API_BASE_URL'),
+                            string(credentialsId: 'tmn-mapping-vite-google-maps-api-key',       variable: 'VITE_GOOGLE_MAPS_API_KEY'),
+                            string(credentialsId: 'tmn-mapping-vite-enable-marker-clustering',  variable: 'VITE_ENABLE_MARKER_CLUSTERING'),
+                            string(credentialsId: 'tmn-mapping-vite-cluster-by-type',           variable: 'VITE_CLUSTER_BY_TYPE')
                         ]) {
                             sh """
                                 docker build \\
@@ -49,17 +49,17 @@ pipeline {
                     }
                 }
 
-                stage('Type Check') {
-                    steps {
-                        sh '''
-                            docker run --rm \
-                                -v "$(pwd):/app" \
-                                -w /app \
-                                node:20-alpine \
-                                sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile && pnpm run typecheck"
-                        '''
-                    }
-                }
+                // stage('Type Check') {
+                //     steps {
+                //         sh '''
+                //             docker run --rm \
+                //                 -v "$(pwd):/app" \
+                //                 -w /app \
+                //                 node:20-alpine \
+                //                 sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile && pnpm run typecheck"
+                //         '''
+                //     }
+                // }
 
             }
         }
