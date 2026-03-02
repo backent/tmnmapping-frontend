@@ -49,7 +49,7 @@ pipeline {
                     }
                 }
 
-                stage('Type Check') {
+                stage('Test') {
                     steps {
                         sh '''
                             docker run --rm \
