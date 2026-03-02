@@ -10,7 +10,10 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . -c .eslintrc.cjs --fix --ext .ts,.js,.cjs,.vue,.tsx,.jsx",
     "build:icons": "tsx src/plugins/iconify/build-icons.ts",
-    "postinstall": "npm run build:icons"
+    "postinstall": "npm run build:icons",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@floating-ui/dom": "1.6.8",
@@ -51,6 +54,8 @@
     "@typescript-eslint/parser": "^7.18.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -62,6 +67,7 @@
     "eslint-plugin-sonarjs": "^0.24.0",
     "eslint-plugin-unicorn": "^51.0.1",
     "eslint-plugin-vue": "^9.32.0",
+    "jsdom": "^28.1.0",
     "postcss-html": "^1.7.0",
     "postcss-scss": "^4.0.9",
     "sass": "~1.76.0",
@@ -79,6 +85,7 @@
     "vite-plugin-vue-layouts": "^0.11.0",
     "vite-plugin-vuetify": "2.0.3",
     "vite-svg-loader": "^5.1.0",
+    "vitest": "^4.0.18",
     "vue-tsc": "^2.1.10"
   },
   "resolutions": {
