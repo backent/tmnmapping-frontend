@@ -37,6 +37,8 @@ const markersByBuildingId = ref<Record<string, { marker: google.maps.Marker; bui
 // NOTE: Clusterer disabled - uncomment to re-enable marker clustering
 // const clusterer = ref<MarkerClusterer | null>(null)
 const poiPointMarkers = ref<google.maps.Marker[]>([])
+/** Imperative pool of POI radius circles; never destroyed, only repositioned/hidden (prevents zoom reappear) */
+const poiCirclePool: google.maps.Circle[] = []
 const drawingManager = ref<google.maps.drawing.DrawingManager | null>(null)
 const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
 /** Drawing Manager's completed overlay; kept so we can remove it again if it reappears on zoom */
@@ -63,28 +65,6 @@ const showCenterMarker = computed(
   () => (Number(mappingStore.radius) || 0) > 0 && !mappingStore.selectedPOI,
 )
 
-/** When POI is cleared we keep showing circles with radius 0 (don't unmount) so they can't reappear on zoom */
-const lastPOIPoints = ref<{ lat: number; lng: number }[]>([])
-watch(selectedPOI, () => {
-  if (selectedPOI.value?.points?.length) {
-    lastPOIPoints.value = selectedPOI.value.points.map(p => ({ lat: p.latitude, lng: p.longitude }))
-  }
-}, { immediate: true })
-
-const poiCircleData = computed(() => {
-  if (selectedPOI.value?.points?.length) {
-    return {
-      centers: selectedPOI.value.points.map(p => ({ lat: p.latitude, lng: p.longitude })),
-      radiusKm: props.radius,
-      color: selectedPOI.value.color,
-    }
-  }
-  return {
-    centers: lastPOIPoints.value,
-    radiusKm: 0,
-    color: '#ff0000',
-  }
-})
 
 // Initialize Google Maps
 onMounted(async () => {
@@ -184,6 +164,7 @@ onMounted(async () => {
     isMapLoaded.value = true
     updateMarkers()
     updatePOIMarkers()
+    updatePOICircles()
     updateFilterPolygonOverlay()
   }
   catch (error) {
@@ -205,11 +186,19 @@ watch(() => props.center, () => {
   }
 })
 
-// Watch selected POI (radius circles are declarative components; no imperative update)
+// Watch selected POI: update dot markers, circles, and fit bounds
 watch(() => selectedPOI.value, () => {
   if (isMapLoaded.value) {
     updatePOIMarkers()
+    updatePOICircles()
     fitPOIBounds()
+  }
+})
+
+// Watch radius changes to update POI circles
+watch(() => props.radius, () => {
+  if (isMapLoaded.value) {
+    updatePOICircles()
   }
 })
 
@@ -395,6 +384,57 @@ function updatePOIMarkers() {
   }
 }
 
+/**
+ * POI radius circles: imperative pool, never destroyed on POI switch so they can't reappear on zoom.
+ * When POI changes or radius changes, circles are repositioned/resized or hidden.
+ */
+function updatePOICircles() {
+  if (!map.value)
+    return
+
+  const points = selectedPOI.value?.points ?? []
+  const color = selectedPOI.value?.color ?? '#ff0000'
+  const radiusMeters = (selectedPOI.value && props.radius > 0) ? props.radius * 1000 : 0
+
+  // Grow pool if needed
+  while (poiCirclePool.length < points.length) {
+    try {
+      const circle = new google.maps.Circle({
+        map: map.value,
+        center: { lat: 0, lng: 0 },
+        radius: 0,
+        fillColor: color,
+        fillOpacity: 0.2,
+        strokeWeight: 1,
+        strokeOpacity: 1,
+        strokeColor: color,
+        visible: false,
+      })
+      poiCirclePool.push(circle)
+    }
+    catch (error) {
+      console.error('Error creating POI circle:', error)
+      break
+    }
+  }
+
+  // Update each circle: position, radius, color, visibility
+  for (let i = 0; i < poiCirclePool.length; i++) {
+    const circle = poiCirclePool[i]
+    if (i < points.length) {
+      const point = points[i]
+      circle.setCenter({ lat: point.latitude, lng: point.longitude })
+      circle.setRadius(radiusMeters)
+      circle.setOptions({ fillColor: color, strokeColor: color })
+      circle.setVisible(true)
+    }
+    else {
+      circle.setVisible(false)
+      circle.setRadius(0)
+    }
+  }
+}
+
 function updateFilterPolygonOverlay() {
   if (!map.value) {
     return
@@ -529,6 +569,8 @@ onBeforeUnmount(() => {
   })
   markersByBuildingId.value = {}
   poiPointMarkers.value.forEach(marker => marker.setMap(null))
+  poiCirclePool.forEach(circle => circle.setMap(null))
+  poiCirclePool.length = 0
 })
 </script>
 
@@ -552,18 +594,7 @@ onBeforeUnmount(() => {
       :position="props.center"
       :visible="showCenterMarker"
     />
-    <!-- POI radius circles: when POI selected show circles; when POI cleared keep same circles with radius 0 (don't unmount) -->
-    <template v-if="map && poiCircleData.centers.length">
-      <MapRadiusCircle
-        v-for="(circleCenter, i) in poiCircleData.centers"
-        :key="`poi-circle-${i}-${circleCenter.lat}-${circleCenter.lng}`"
-        :map="map"
-        :center="circleCenter"
-        :radius-km="poiCircleData.radiusKm"
-        :fill-color="poiCircleData.color"
-        :stroke-color="poiCircleData.color"
-      />
-    </template>
+
     <!-- Loading Overlay -->
     <div
       v-if="mappingStore.isLoading"
