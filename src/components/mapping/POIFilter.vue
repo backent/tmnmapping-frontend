@@ -51,7 +51,7 @@ const selected = computed({
     <VAutocomplete
       v-model="selected"
       :items="items"
-      label="Select POI"
+      label="Select POI(s)"
       placeholder="Choose a POI..."
       multiple
       clearable
