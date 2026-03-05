@@ -343,7 +343,7 @@ function updatePOIMarkers() {
 
   const points = selectedPOI.value?.points ?? []
   const poiColor = selectedPOI.value?.color ?? '#ff0000'
-  const poiName = selectedPOI.value?.name ?? ''
+  const poiName = selectedPOI.value?.brand ?? ''
   const needCount = points.length
 
   // Ensure pool has enough markers; create new ones only when needed
@@ -386,7 +386,7 @@ function updatePOIMarkers() {
         strokeWeight: 2,
         strokeColor: '#000',
       })
-      marker.setTitle(`${poiName} - ${point.place_name ?? ''}`)
+      marker.setTitle(`${poiName} - ${point.poi_name ?? ''}`)
       marker.setVisible(true)
     }
     else {

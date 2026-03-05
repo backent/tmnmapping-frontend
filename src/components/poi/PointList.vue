@@ -7,6 +7,7 @@ interface Props {
 
 interface Emits {
   (e: 'remove', index: number): void
+  (e: 'edit', index: number): void
 }
 
 const props = defineProps<Props>()
@@ -14,6 +15,10 @@ const emit = defineEmits<Emits>()
 
 const handleRemove = (index: number) => {
   emit('remove', index)
+}
+
+const handleEdit = (index: number) => {
+  emit('edit', index)
 }
 </script>
 
@@ -32,7 +37,7 @@ const handleRemove = (index: number) => {
         :key="index"
       >
         <VListItemTitle>
-          <strong>{{ point.place_name || 'Unnamed Place' }}</strong>
+          <strong>{{ point.poi_name || 'Unnamed Place' }}</strong>
         </VListItemTitle>
         <VListItemSubtitle>
           {{ point.address }}
@@ -40,8 +45,24 @@ const handleRemove = (index: number) => {
         <VListItemSubtitle>
           Lat: {{ point.latitude.toFixed(6) }}, Lng: {{ point.longitude.toFixed(6) }}
         </VListItemSubtitle>
+        <VListItemSubtitle v-if="point.category || point.sub_category || point.mother_brand || point.branch">
+          <span v-if="point.category">Category: {{ point.category }}</span>
+          <span v-if="point.sub_category" class="ms-2">Sub-Category: {{ point.sub_category }}</span>
+          <span v-if="point.mother_brand" class="ms-2">Mother Brand: {{ point.mother_brand }}</span>
+          <span v-if="point.branch" class="ms-2">Branch: {{ point.branch }}</span>
+        </VListItemSubtitle>
 
         <template #append>
+          <VBtn
+            icon
+            size="small"
+            color="primary"
+            variant="text"
+            @click="handleEdit(index)"
+          >
+            <VIcon icon="ri-edit-line" />
+            <VTooltip activator="parent" location="top">Edit</VTooltip>
+          </VBtn>
           <VBtn
             icon
             size="small"
@@ -49,7 +70,8 @@ const handleRemove = (index: number) => {
             variant="text"
             @click="handleRemove(index)"
           >
-            <VIcon>mdi-delete</VIcon>
+            <VIcon icon="ri-delete-bin-line" />
+            <VTooltip activator="parent" location="top">Delete</VTooltip>
           </VBtn>
         </template>
       </VListItem>

@@ -19,6 +19,7 @@ const predictions = ref<google.maps.places.AutocompletePrediction[]>([])
 const showPredictions = ref(false)
 const selectedIndex = ref(-1)
 const isLoading = ref(false)
+const justSelected = ref(false)
 
 let autocompleteService: google.maps.places.AutocompleteService | null = null
 let placesService: google.maps.places.PlacesService | null = null
@@ -119,19 +120,26 @@ watch(() => locationSearchText.value, newValue => {
     predictions.value = []
     showPredictions.value = false
     selectedIndex.value = -1
+    justSelected.value = false
+    return
   }
-  else {
-    // Ensure services are ready before getting predictions
-    if (!autocompleteService && typeof google !== 'undefined' && google.maps?.places) {
-      try {
-        autocompleteService = new google.maps.places.AutocompleteService()
-      }
-      catch (error) {
-        console.error('Error creating AutocompleteService in watch:', error)
-      }
+
+  // Suppress prediction fetch immediately after a place is selected
+  if (justSelected.value) {
+    justSelected.value = false
+    return
+  }
+
+  // Ensure services are ready before getting predictions
+  if (!autocompleteService && typeof google !== 'undefined' && google.maps?.places) {
+    try {
+      autocompleteService = new google.maps.places.AutocompleteService()
     }
-    getPredictions(newValue)
+    catch (error) {
+      console.error('Error creating AutocompleteService in watch:', error)
+    }
   }
+  getPredictions(newValue)
 })
 
 // Handle place selection
@@ -166,8 +174,10 @@ const selectPlace = async (prediction: google.maps.places.AutocompletePrediction
             longitude: lng,
           })
 
-          // Update input with selected place name
+          // Update input with selected place name (flag prevents watcher re-triggering predictions)
+          justSelected.value = true
           locationSearchText.value = placeName || address
+          predictions.value = []
 
           // Create a new session token for the next search session
           createSessionToken()
@@ -256,7 +266,7 @@ onUnmounted(() => {
       hide-details
       clearable
       @keydown="handleKeydown"
-      @focus="() => { if (locationSearchText) getPredictions(locationSearchText) }"
+      @focus="() => { if (locationSearchText && !justSelected) getPredictions(locationSearchText) }"
     >
       <template #append-inner>
         <VProgressCircular

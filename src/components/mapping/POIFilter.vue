@@ -32,7 +32,7 @@ onMounted(async () => {
 // Transform POIs to autocomplete items
 const items = computed(() => {
   return poiStore.pois.map(poi => ({
-    title: poi.name,
+    title: poi.brand,
     value: poi.id,
     color: poi.color,
   }))

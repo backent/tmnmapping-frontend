@@ -5,9 +5,13 @@ import {
   createPOI,
   updatePOI,
   deletePOI,
+  importPOIs,
+  exportPOIs,
 } from '@/http/poi'
 import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
 import type { PaginationParams } from '@/types/api'
+import { saveAs } from 'file-saver'
+import dayjs from 'dayjs'
 
 interface POIState {
   pois: POI[]
@@ -39,22 +43,18 @@ export const usePOIStore = defineStore('poi', {
   },
 
   actions: {
-    /**
-     * Fetch all POIs with pagination
-     */
     async fetchPOIs(params?: PaginationParams) {
       this.isLoading = true
       try {
         const response = await getPOIs(params)
-        
+
         this.pois = response.data || []
-        
-        // Check if response has pagination metadata (extras)
+
         if (response.extras) {
           const take = response.extras.take || 10
           const skip = response.extras.skip || 0
           const total = response.extras.total || 0
-          
+
           this.pagination = {
             currentPage: Math.floor(skip / take) + 1,
             lastPage: Math.ceil(total / take) || 1,
@@ -63,7 +63,6 @@ export const usePOIStore = defineStore('poi', {
           }
         }
         else {
-          // If no pagination metadata, fallback
           this.pagination.total = response.data?.length || 0
           this.pagination.currentPage = params?.skip
             ? Math.floor((params.skip / (params.take || 10)) + 1)
@@ -71,7 +70,7 @@ export const usePOIStore = defineStore('poi', {
           this.pagination.perPage = params?.take || 10
           this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
         }
-        
+
         return response
       }
       catch (error) {
@@ -83,9 +82,6 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    /**
-     * Fetch POI by ID
-     */
     async fetchPOIById(id: number) {
       this.isLoading = true
       try {
@@ -102,14 +98,10 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    /**
-     * Create POI
-     */
     async createPOI(data: CreatePOIRequest) {
       this.isLoading = true
       try {
         const response = await createPOI(data)
-        // Add to list
         if (response.data) {
           this.pois.push(response.data)
         }
@@ -124,20 +116,15 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    /**
-     * Update POI
-     */
     async updatePOI(id: number, data: UpdatePOIRequest) {
       this.isLoading = true
       try {
         const response = await updatePOI(id, data)
-        // Update in list
         if (response.data) {
           const index = this.pois.findIndex(p => p.id === id)
           if (index !== -1) {
             this.pois[index] = response.data
           }
-          // Update current if it's the same
           if (this.currentPOI?.id === id) {
             this.currentPOI = response.data
           }
@@ -153,16 +140,11 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    /**
-     * Delete POI
-     */
     async deletePOI(id: number) {
       this.isLoading = true
       try {
         await deletePOI(id)
-        // Remove from list
         this.pois = this.pois.filter(p => p.id !== id)
-        // Clear current if it's the same
         if (this.currentPOI?.id === id) {
           this.currentPOI = null
         }
@@ -176,9 +158,33 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    /**
-     * Clear current POI
-     */
+    async importPOIs(file: File) {
+      this.isLoading = true
+      try {
+        const response = await importPOIs(file)
+        return response
+      }
+      catch (error) {
+        console.error('Error importing POIs:', error)
+        throw error
+      }
+      finally {
+        this.isLoading = false
+      }
+    },
+
+    async exportPOIs(search?: string) {
+      try {
+        const blob = await exportPOIs(search)
+        const filename = `POI_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
+        saveAs(blob, filename)
+      }
+      catch (error) {
+        console.error('Error exporting POIs:', error)
+        throw error
+      }
+    },
+
     clearCurrentPOI() {
       this.currentPOI = null
     },

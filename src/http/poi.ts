@@ -1,13 +1,13 @@
-import { getApi, postApi, putApi, deleteApi } from '@/utils/http'
+import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
 
-// GET /pois - List all POIs with pagination
+// GET /pois - List all POIs with pagination and optional search
 export function getPOIs(params?: PaginationParams): Promise<ApiResponse<POI[]>> {
   return getApi<ApiResponse<POI[]>>(
     apiConfig.endpoints.pois_list,
-    params || {},
+    (params || {}) as Record<string, string | number | boolean | undefined | null>,
   )
 }
 
@@ -44,4 +44,34 @@ export function deletePOI(id: number): Promise<ApiResponse<string>> {
     {},
     { id },
   )
+}
+
+// POST /pois/import - Import POIs from xlsx/csv
+export function importPOIs(file: File): Promise<ApiResponse<POI[]>> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return postFormApi<ApiResponse<POI[]>>(
+    apiConfig.endpoints.pois_import,
+    formData,
+  )
+}
+
+// GET /pois/export - Export POIs as xlsx
+export async function exportPOIs(search?: string): Promise<Blob> {
+  const params = new URLSearchParams()
+  if (search)
+    params.set('search', search)
+
+  const queryString = params.toString()
+  const url = `${apiConfig.baseUrl}${apiConfig.endpoints.pois_export}${queryString ? `?${queryString}` : ''}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok)
+    throw new Error(`HTTP error! Status: ${response.status}`)
+
+  return response.blob()
 }

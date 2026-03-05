@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePOIStore } from '@/stores/poi'
 import PlaceAutocomplete from '@/components/poi/PlaceAutocomplete.vue'
 import PointList from '@/components/poi/PointList.vue'
-import type { POIPoint, CreatePOIRequest } from '@/types/poi'
+import type { CreatePOIRequest } from '@/types/poi'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,7 +16,7 @@ const poiId = computed(() => isEdit.value ? Number(route.params.id) : null)
 
 // Form state
 const form = ref<CreatePOIRequest>({
-  name: '',
+  brand: '',
   color: '#1976D2',
   points: [],
 })
@@ -24,16 +24,12 @@ const form = ref<CreatePOIRequest>({
 // Ensure color always has # prefix and is in hex format
 watch(() => form.value.color, (newColor) => {
   if (newColor) {
-    // Handle different color formats from VColorPicker
     if (typeof newColor === 'string') {
-      // If it's already a hex string, ensure it has #
       if (!newColor.startsWith('#')) {
         form.value.color = `#${newColor}`
       }
     }
     else if (typeof newColor === 'object' && newColor !== null) {
-      // If VColorPicker returns an object (RGBA/HSLA), convert to hex
-      // This shouldn't happen with mode="hex" but just in case
       if ('hex' in newColor) {
         form.value.color = newColor.hex
       }
@@ -42,11 +38,19 @@ watch(() => form.value.color, (newColor) => {
 })
 
 const selectedPlace = ref<{
-  place_name: string
+  poi_name: string
   address: string
   latitude: number
   longitude: number
 } | null>(null)
+
+// Per-point metadata fields
+const pointMeta = ref({
+  category: '',
+  sub_category: '',
+  mother_brand: '',
+  branch: '',
+})
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -61,7 +65,6 @@ const snackbarColor = ref<'success' | 'error'>('success')
 
 // Load Google Maps API
 onMounted(async () => {
-  // Load Google Maps if not already loaded
   if (typeof google === 'undefined' || !google.maps) {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
     if (apiKey) {
@@ -105,13 +108,17 @@ const fetchPOI = async () => {
     const poi = poiStore.currentPOI
     if (poi) {
       form.value = {
-        name: poi.name,
+        brand: poi.brand,
         color: poi.color,
         points: poi.points.map(p => ({
-          place_name: p.place_name,
+          poi_name: p.poi_name,
           address: p.address,
           latitude: p.latitude,
           longitude: p.longitude,
+          category: p.category,
+          sub_category: p.sub_category,
+          mother_brand: p.mother_brand,
+          branch: p.branch,
         })),
       }
     }
@@ -132,7 +139,12 @@ const handlePlaceSelected = (place: {
   latitude: number
   longitude: number
 }) => {
-  selectedPlace.value = place
+  selectedPlace.value = {
+    poi_name: place.place_name,
+    address: place.address,
+    latitude: place.latitude,
+    longitude: place.longitude,
+  }
 }
 
 // Add point to form
@@ -141,13 +153,18 @@ const addPoint = () => {
     return
 
   form.value.points.push({
-    place_name: selectedPlace.value.place_name,
+    poi_name: selectedPlace.value.poi_name,
     address: selectedPlace.value.address,
     latitude: selectedPlace.value.latitude,
     longitude: selectedPlace.value.longitude,
+    category: pointMeta.value.category || undefined,
+    sub_category: pointMeta.value.sub_category || undefined,
+    mother_brand: pointMeta.value.mother_brand || undefined,
+    branch: pointMeta.value.branch || undefined,
   })
 
   selectedPlace.value = null
+  pointMeta.value = { category: '', sub_category: '', mother_brand: '', branch: '' }
 }
 
 // Remove point from form
@@ -155,13 +172,73 @@ const removePoint = (index: number) => {
   form.value.points.splice(index, 1)
 }
 
+// Edit point dialog
+const editPointDialog = ref(false)
+const editPointIndex = ref<number | null>(null)
+const editPointForm = ref({
+  poi_name: '',
+  address: '',
+  latitude: 0,
+  longitude: 0,
+  category: '',
+  sub_category: '',
+  mother_brand: '',
+  branch: '',
+})
+
+const openEditPoint = (index: number) => {
+  const point = form.value.points[index]
+  editPointIndex.value = index
+  editPointForm.value = {
+    poi_name: point.poi_name,
+    address: point.address,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    category: point.category || '',
+    sub_category: point.sub_category || '',
+    mother_brand: point.mother_brand || '',
+    branch: point.branch || '',
+  }
+  editPointDialog.value = true
+}
+
+const handleEditPlaceSelected = (place: {
+  place_name: string
+  address: string
+  latitude: number
+  longitude: number
+}) => {
+  editPointForm.value.poi_name = place.place_name
+  editPointForm.value.address = place.address
+  editPointForm.value.latitude = place.latitude
+  editPointForm.value.longitude = place.longitude
+}
+
+const saveEditPoint = () => {
+  if (editPointIndex.value === null)
+    return
+
+  form.value.points[editPointIndex.value] = {
+    poi_name: editPointForm.value.poi_name,
+    address: editPointForm.value.address,
+    latitude: editPointForm.value.latitude,
+    longitude: editPointForm.value.longitude,
+    category: editPointForm.value.category || undefined,
+    sub_category: editPointForm.value.sub_category || undefined,
+    mother_brand: editPointForm.value.mother_brand || undefined,
+    branch: editPointForm.value.branch || undefined,
+  }
+
+  editPointDialog.value = false
+  editPointIndex.value = null
+}
+
 // Submit form
 const submit = async () => {
   errorMessage.value = ''
 
-  // Validation
-  if (!form.value.name.trim()) {
-    errorMessage.value = 'POI name is required'
+  if (!form.value.brand.trim()) {
+    errorMessage.value = 'Brand is required'
     return
   }
 
@@ -180,26 +257,22 @@ const submit = async () => {
   try {
     if (isEdit.value && poiId.value) {
       await poiStore.updatePOI(poiId.value, form.value)
-      
-      // Show success message
+
       snackbarMessage.value = 'POI updated successfully'
       snackbarColor.value = 'success'
       snackbar.value = true
-      
-      // Navigate after brief delay to show message
+
       setTimeout(() => {
         router.push({ name: 'pois' })
       }, 1000)
     }
     else {
       await poiStore.createPOI(form.value)
-      
-      // Show success message
+
       snackbarMessage.value = 'POI created successfully'
       snackbarColor.value = 'success'
       snackbar.value = true
-      
-      // Navigate after brief delay to show message
+
       setTimeout(() => {
         router.push({ name: 'pois' })
       }, 1000)
@@ -209,8 +282,7 @@ const submit = async () => {
     console.error('Save error:', error)
     const errorMsg = error?.details?.message || error?.details || 'Failed to save POI'
     errorMessage.value = errorMsg
-    
-    // Also show error in snackbar
+
     snackbarMessage.value = errorMsg
     snackbarColor.value = 'error'
     snackbar.value = true
@@ -222,7 +294,6 @@ const submit = async () => {
 const cancel = () => {
   router.push({ name: 'pois' })
 }
-
 
 // Cleanup
 onUnmounted(() => {
@@ -266,20 +337,26 @@ onUnmounted(() => {
 
         <VForm @submit.prevent="submit">
           <VRow>
-            <!-- POI Name -->
-            <VCol cols="12" md="6">
+            <!-- Brand -->
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VTextField
-                v-model="form.name"
-                label="POI Name"
-                placeholder="Enter POI name"
+                v-model="form.brand"
+                label="Brand"
+                placeholder="Enter brand name"
                 required
                 variant="outlined"
-                :rules="[v => !!v || 'POI name is required']"
+                :rules="[v => !!v || 'Brand is required']"
               />
             </VCol>
 
             <!-- Color Picker -->
-            <VCol cols="12" md="6">
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VTextField
                 v-model="form.color"
                 label="Color"
@@ -358,8 +435,63 @@ onUnmounted(() => {
                 Loading Google Maps...
               </VAlert>
 
+              <!-- Point metadata fields -->
+              <VRow class="mb-2">
+                <VCol
+                  cols="12"
+                  md="3"
+                >
+                  <VTextField
+                    v-model="pointMeta.category"
+                    label="Category"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="3"
+                >
+                  <VTextField
+                    v-model="pointMeta.sub_category"
+                    label="Sub-Category"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="3"
+                >
+                  <VTextField
+                    v-model="pointMeta.mother_brand"
+                    label="Mother Brand"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="3"
+                >
+                  <VTextField
+                    v-model="pointMeta.branch"
+                    label="Branch"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                  />
+                </VCol>
+              </VRow>
+
               <VRow>
-                <VCol cols="12" md="10">
+                <VCol
+                  cols="12"
+                  md="10"
+                >
                   <PlaceAutocomplete
                     v-if="isGoogleMapsLoaded"
                     @place-selected="handlePlaceSelected"
@@ -371,7 +503,10 @@ onUnmounted(() => {
                     variant="outlined"
                   />
                 </VCol>
-                <VCol cols="12" md="2">
+                <VCol
+                  cols="12"
+                  md="2"
+                >
                   <VBtn
                     block
                     color="primary"
@@ -390,8 +525,10 @@ onUnmounted(() => {
                 variant="outlined"
               >
                 <VCardText>
-                  <div><strong>{{ selectedPlace.place_name }}</strong></div>
-                  <div class="text-caption">{{ selectedPlace.address }}</div>
+                  <div><strong>{{ selectedPlace.poi_name }}</strong></div>
+                  <div class="text-caption">
+                    {{ selectedPlace.address }}
+                  </div>
                   <div class="text-caption">
                     Lat: {{ selectedPlace.latitude.toFixed(6) }}, Lng: {{ selectedPlace.longitude.toFixed(6) }}
                   </div>
@@ -408,13 +545,17 @@ onUnmounted(() => {
               <PointList
                 :points="form.points"
                 @remove="removePoint"
+                @edit="openEditPoint"
               />
             </VCol>
           </VRow>
 
           <!-- Actions -->
           <VRow class="mt-4">
-            <VCol cols="12" class="d-flex gap-2">
+            <VCol
+              cols="12"
+              class="d-flex gap-2"
+            >
               <VBtn
                 type="submit"
                 color="primary"
@@ -434,6 +575,127 @@ onUnmounted(() => {
         </VForm>
       </VCardText>
     </VCard>
+
+    <!-- Edit Point Dialog -->
+    <VDialog
+      v-model="editPointDialog"
+      max-width="600"
+    >
+      <VCard>
+        <VCardTitle>Edit Point</VCardTitle>
+        <VDivider />
+        <VCardText>
+          <VRow>
+            <!-- Metadata fields -->
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="editPointForm.category"
+                label="Category"
+                variant="outlined"
+                density="compact"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="editPointForm.sub_category"
+                label="Sub-Category"
+                variant="outlined"
+                density="compact"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="editPointForm.mother_brand"
+                label="Mother Brand"
+                variant="outlined"
+                density="compact"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="editPointForm.branch"
+                label="Branch"
+                variant="outlined"
+                density="compact"
+              />
+            </VCol>
+
+            <!-- Location search -->
+            <VCol cols="12">
+              <VDivider class="my-2" />
+              <div class="text-subtitle-2 mb-2">
+                Location
+              </div>
+              <PlaceAutocomplete
+                v-if="isGoogleMapsLoaded"
+                @place-selected="handleEditPlaceSelected"
+              />
+              <VTextField
+                v-else
+                disabled
+                placeholder="Loading Google Maps..."
+                variant="outlined"
+              />
+            </VCol>
+
+            <!-- Current / selected location preview -->
+            <VCol cols="12">
+              <VCard
+                variant="tonal"
+                color="primary"
+                density="compact"
+              >
+                <VCardText class="py-2">
+                  <div class="font-weight-medium">
+                    {{ editPointForm.poi_name || 'No location selected' }}
+                  </div>
+                  <div
+                    v-if="editPointForm.address"
+                    class="text-caption"
+                  >
+                    {{ editPointForm.address }}
+                  </div>
+                  <div
+                    v-if="editPointForm.latitude && editPointForm.longitude"
+                    class="text-caption"
+                  >
+                    Lat: {{ editPointForm.latitude.toFixed(6) }}, Lng: {{ editPointForm.longitude.toFixed(6) }}
+                  </div>
+                </VCardText>
+              </VCard>
+            </VCol>
+          </VRow>
+        </VCardText>
+        <VDivider />
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            variant="outlined"
+            @click="editPointDialog = false"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            color="primary"
+            @click="saveEditPoint"
+          >
+            Save
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <!-- Snackbar for feedback -->
     <VSnackbar
