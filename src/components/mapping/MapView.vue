@@ -56,13 +56,13 @@ const mappingStore = useMappingStore()
 const isMapLoaded = ref(false)
 const showBuildingPicker = ref(false)
 const buildingPickerCandidates = ref<MappingBuilding[]>([])
-const selectedPOI = computed(() => mappingStore.selectedPOI)
+const selectedPOIs = computed(() => mappingStore.selectedPOIs)
 const drawPolygonActive = computed(() => mappingStore.drawPolygonActive)
 const filterPolygon = computed(() => mappingStore.filters.polygon)
 
-/** Center marker only when radius > 0 (read from store so visibility updates when radius is set to 0) */
+/** Center marker only when radius > 0 and no POIs selected */
 const showCenterMarker = computed(
-  () => (Number(mappingStore.radius) || 0) > 0 && !mappingStore.selectedPOI,
+  () => (Number(mappingStore.radius) || 0) > 0 && mappingStore.selectedPOIs.length === 0,
 )
 
 
@@ -186,14 +186,14 @@ watch(() => props.center, () => {
   }
 })
 
-// Watch selected POI: update dot markers, circles, and fit bounds
-watch(() => selectedPOI.value, () => {
+// Watch selected POIs: update dot markers, circles, and fit bounds
+watch(() => selectedPOIs.value, () => {
   if (isMapLoaded.value) {
     updatePOIMarkers()
     updatePOICircles()
     fitPOIBounds()
   }
-})
+}, { deep: true })
 
 // Watch radius changes to update POI circles
 watch(() => props.radius, () => {
@@ -322,20 +322,29 @@ function updateMarkers() {
 }
 
 /**
- * POI point markers: pool is never cleared; we hide with setVisible(false) when no POI
- * so they don't reappear on zoom (same pattern as center marker and radius circle).
+ * POI point markers: pool is never cleared; we hide with setVisible(false) when no POIs.
+ * Flattens all selected POIs' points preserving per-POI color.
  */
 function updatePOIMarkers() {
-  if (!map.value) {
+  if (!map.value)
     return
+
+  // Flatten all POI points with per-POI color
+  type FlatPoint = { lat: number; lng: number; color: string; label: string }
+  const allPoints: FlatPoint[] = []
+  for (const poi of selectedPOIs.value) {
+    for (const point of poi.points) {
+      allPoints.push({
+        lat: point.latitude,
+        lng: point.longitude,
+        color: poi.color,
+        label: `${poi.brand} - ${point.poi_name ?? ''}`,
+      })
+    }
   }
+  const needCount = allPoints.length
 
-  const points = selectedPOI.value?.points ?? []
-  const poiColor = selectedPOI.value?.color ?? '#ff0000'
-  const poiName = selectedPOI.value?.brand ?? ''
-  const needCount = points.length
-
-  // Ensure pool has enough markers; create new ones only when needed
+  // Grow pool if needed
   while (poiPointMarkers.value.length < needCount) {
     try {
       const marker = new google.maps.Marker({
@@ -345,7 +354,7 @@ function updatePOIMarkers() {
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 10,
-          fillColor: poiColor,
+          fillColor: '#ff0000',
           fillOpacity: 1,
           strokeWeight: 2,
           strokeColor: '#000',
@@ -361,21 +370,21 @@ function updatePOIMarkers() {
     }
   }
 
-  // Update each marker: position, icon color, title, and visibility
+  // Update each marker: position, color, title, visibility
   for (let i = 0; i < poiPointMarkers.value.length; i++) {
     const marker = poiPointMarkers.value[i]
     if (i < needCount) {
-      const point = points[i]
-      marker.setPosition({ lat: point.latitude, lng: point.longitude })
+      const p = allPoints[i]
+      marker.setPosition({ lat: p.lat, lng: p.lng })
       marker.setIcon({
         path: google.maps.SymbolPath.CIRCLE,
         scale: 10,
-        fillColor: poiColor,
+        fillColor: p.color,
         fillOpacity: 1,
         strokeWeight: 2,
         strokeColor: '#000',
       })
-      marker.setTitle(`${poiName} - ${point.poi_name ?? ''}`)
+      marker.setTitle(p.label)
       marker.setVisible(true)
     }
     else {
@@ -386,28 +395,35 @@ function updatePOIMarkers() {
 
 /**
  * POI radius circles: imperative pool, never destroyed on POI switch so they can't reappear on zoom.
- * When POI changes or radius changes, circles are repositioned/resized or hidden.
+ * Flattens all selected POIs' points preserving per-POI color.
  */
 function updatePOICircles() {
   if (!map.value)
     return
 
-  const points = selectedPOI.value?.points ?? []
-  const color = selectedPOI.value?.color ?? '#ff0000'
-  const radiusMeters = (selectedPOI.value && props.radius > 0) ? props.radius * 1000 : 0
+  const radiusMeters = (selectedPOIs.value.length > 0 && props.radius > 0) ? props.radius * 1000 : 0
+
+  // Flatten all POI points with per-POI color
+  type FlatCircle = { lat: number; lng: number; color: string }
+  const allPoints: FlatCircle[] = []
+  for (const poi of selectedPOIs.value) {
+    for (const point of poi.points) {
+      allPoints.push({ lat: point.latitude, lng: point.longitude, color: poi.color })
+    }
+  }
 
   // Grow pool if needed
-  while (poiCirclePool.length < points.length) {
+  while (poiCirclePool.length < allPoints.length) {
     try {
       const circle = new google.maps.Circle({
         map: map.value,
         center: { lat: 0, lng: 0 },
         radius: 0,
-        fillColor: color,
+        fillColor: '#ff0000',
         fillOpacity: 0.2,
         strokeWeight: 1,
         strokeOpacity: 1,
-        strokeColor: color,
+        strokeColor: '#ff0000',
         visible: false,
       })
       poiCirclePool.push(circle)
@@ -421,11 +437,11 @@ function updatePOICircles() {
   // Update each circle: position, radius, color, visibility
   for (let i = 0; i < poiCirclePool.length; i++) {
     const circle = poiCirclePool[i]
-    if (i < points.length) {
-      const point = points[i]
-      circle.setCenter({ lat: point.latitude, lng: point.longitude })
+    if (i < allPoints.length) {
+      const p = allPoints[i]
+      circle.setCenter({ lat: p.lat, lng: p.lng })
       circle.setRadius(radiusMeters)
-      circle.setOptions({ fillColor: color, strokeColor: color })
+      circle.setOptions({ fillColor: p.color, strokeColor: p.color })
       circle.setVisible(true)
     }
     else {
@@ -502,17 +518,19 @@ function updateFilterPolygonOverlay() {
 }
 
 function fitPOIBounds() {
-  if (!map.value || !selectedPOI.value || selectedPOI.value.points.length === 0) {
+  if (!map.value || selectedPOIs.value.length === 0)
     return
-  }
+
+  const allPoints = selectedPOIs.value.flatMap(poi => poi.points)
+  if (allPoints.length === 0)
+    return
 
   try {
     const bounds = new google.maps.LatLngBounds()
     const radiusMeters = props.radius > 0 ? props.radius * 1000 : 0
-    // ~111320 m per degree at equator; lng scale varies by cos(lat)
     const metersPerDegreeLat = 111320
 
-    for (const point of selectedPOI.value.points) {
+    for (const point of allPoints) {
       const lat = point.latitude
       const lng = point.longitude
       bounds.extend({ lat, lng })
@@ -526,10 +544,8 @@ function fitPOIBounds() {
       }
     }
 
-    if (!bounds.isEmpty()) {
-      const padding = 50
-      map.value.fitBounds(bounds, padding)
-    }
+    if (!bounds.isEmpty())
+      map.value.fitBounds(bounds, 50)
   }
   catch (error) {
     console.error('Error fitting POI bounds:', error)
@@ -582,14 +598,14 @@ onBeforeUnmount(() => {
     />
     <!-- Single-location radius circle (always mounted when no POI; radius 0 = invisible, like oldmapping) -->
     <MapRadiusCircle
-      v-if="map && !selectedPOI"
+      v-if="map && selectedPOIs.length === 0"
       :map="map"
       :center="props.center"
       :radius-km="props.radius"
     />
     <!-- Center point: always mounted when no POI (like circle); hide when radius 0 -->
     <MapCenterMarker
-      v-if="map && !selectedPOI"
+      v-if="map && selectedPOIs.length === 0"
       :map="map"
       :position="props.center"
       :visible="showCenterMarker"

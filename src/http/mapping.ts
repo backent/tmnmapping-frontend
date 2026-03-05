@@ -83,8 +83,8 @@ function buildFilterParams(
     params['filter[polygon]'] = JSON.stringify(filters.polygon)
   } else {
     // POI filter handling
-    if (filters.poi_id) {
-      params['filter[poi_id]'] = filters.poi_id
+    if (filters.poi_ids?.length) {
+      params['filter[poi_id]'] = filters.poi_ids.join(',')
       if (filters.radius) {
         params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
       }
@@ -278,7 +278,7 @@ export interface ExportMappingByFilterPayload {
     lat?: number
     lng?: number
     radius?: number
-    poi_id?: number
+    poi_ids?: number[]
     polygon?: { lat: number; lng: number }[]
   }
   map_center: { lat: number; lng: number }
@@ -324,8 +324,8 @@ export function buildExportPayload(
     payload.filters.lng = f.lng
   if (f.radius != null && f.radius > 0)
     payload.filters.radius = f.radius
-  if (f.poi_id != null)
-    payload.filters.poi_id = f.poi_id
+  if (f.poi_ids?.length)
+    payload.filters.poi_ids = f.poi_ids
   if (f.polygon && f.polygon.length >= 3)
     payload.filters.polygon = f.polygon
   return payload

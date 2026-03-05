@@ -47,7 +47,7 @@ interface MappingState {
   selectedPotentialClient: PotentialClient | null
   screenTypes: ScreenTypeOption[]
   regionSearchResults: RegionSearchResponse | null
-  selectedPOI: POI | null
+  selectedPOIs: POI[]
   drawPolygonActive: boolean
   /** When true, MapView should fit bounds to the current polygon once then clear this flag */
   fitBoundsToPolygon: boolean
@@ -75,7 +75,7 @@ export const useMappingStore = defineStore('mapping', {
     selectedPotentialClient: null,
     screenTypes: [],
     regionSearchResults: null,
-    selectedPOI: null,
+    selectedPOIs: [],
     drawPolygonActive: false,
     fitBoundsToPolygon: false,
   }),
@@ -109,7 +109,7 @@ export const useMappingStore = defineStore('mapping', {
         filters.year ||
         filters.radius ||
         filters.places_id ||
-        filters.poi_id ||
+        filters.poi_ids?.length ||
         (filters.polygon && filters.polygon.length >= 3)
       )
     },
@@ -177,7 +177,7 @@ export const useMappingStore = defineStore('mapping', {
         lng: 106.816666,
       }
       this.radius = 0
-      this.selectedPOI = null
+      this.selectedPOIs = []
       this.drawPolygonActive = false
       await this.fetchBuildings()
     },
@@ -209,13 +209,12 @@ export const useMappingStore = defineStore('mapping', {
     },
 
     /**
-     * Set selected POI
+     * Set selected POIs (multi-select). Pass empty array to clear.
      */
-    async setSelectedPOI(poiId: number | null) {
-      if (poiId === null) {
-        this.selectedPOI = null
-        this.filters.poi_id = undefined
-        // Clear radius and lat/lng when POI is cleared
+    async setSelectedPOIs(poiIds: number[]) {
+      if (poiIds.length === 0) {
+        this.selectedPOIs = []
+        this.filters.poi_ids = undefined
         this.filters.radius = undefined
         this.filters.lat = undefined
         this.filters.lng = undefined
@@ -226,23 +225,26 @@ export const useMappingStore = defineStore('mapping', {
 
       try {
         const poiStore = usePOIStore()
-        await poiStore.fetchPOIById(poiId)
-        
-        if (poiStore.currentPOI) {
-          this.selectedPOI = poiStore.currentPOI
-          this.filters.poi_id = poiId
-          // Clear map center radius filter when POI is selected
-          this.filters.radius = undefined
-          this.filters.lat = undefined
-          this.filters.lng = undefined
-          this.radius = 0
-          await this.fetchBuildings()
+        // Ensure POI list is loaded
+        if (poiStore.pois.length === 0) {
+          await poiStore.fetchPOIs({ take: 1000, skip: 0 })
         }
+        const selectedPOIs = poiIds
+          .map(id => poiStore.pois.find(p => p.id === id))
+          .filter((p): p is POI => p !== undefined)
+
+        this.selectedPOIs = selectedPOIs
+        this.filters.poi_ids = selectedPOIs.map(p => p.id)
+        this.filters.radius = undefined
+        this.filters.lat = undefined
+        this.filters.lng = undefined
+        this.radius = 0
+        await this.fetchBuildings()
       }
       catch (error) {
-        console.error('Error fetching POI:', error)
-        this.selectedPOI = null
-        this.filters.poi_id = undefined
+        console.error('Error setting selected POIs:', error)
+        this.selectedPOIs = []
+        this.filters.poi_ids = undefined
       }
     },
 
@@ -273,11 +275,11 @@ export const useMappingStore = defineStore('mapping', {
     },
 
     /**
-     * Clear selected POI
+     * Clear selected POIs
      */
-    clearSelectedPOI() {
-      this.selectedPOI = null
-      this.filters.poi_id = undefined
+    clearSelectedPOIs() {
+      this.selectedPOIs = []
+      this.filters.poi_ids = undefined
       this.filters.radius = undefined
       this.filters.lat = undefined
       this.filters.lng = undefined
