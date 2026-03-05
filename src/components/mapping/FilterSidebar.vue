@@ -60,11 +60,11 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
   await mappingStore.fetchBuildings()
 }, 1000)
 
-// Watch filters and update (exclude poi_id and polygon so they don't double-fetch;
-// setSelectedPOI and setPolygon already call fetchBuildings() when those change)
+// Watch filters and update (exclude poi_ids and polygon so they don't double-fetch;
+// setSelectedPOIs and setPolygon already call fetchBuildings() when those change)
 watch(
   () => {
-    const { poi_id: _poi, polygon: _polygon, ...rest } = mappingStore.filters
+    const { poi_ids: _poi, polygon: _polygon, ...rest } = mappingStore.filters
     return JSON.stringify(rest)
   },
   () => {
@@ -314,8 +314,8 @@ const buildingTypeTotals = computed(() => {
               <SavedPolygonFilter v-if="!isReporting" />
               <!-- POI Filter -->
               <POIFilter
-                :model-value="mappingStore.filters.poi_id"
-                @update:model-value="mappingStore.setSelectedPOI($event)"
+                :model-value="mappingStore.filters.poi_ids"
+                @update:model-value="mappingStore.setSelectedPOIs($event)"
               />
 
                 <!-- Building Type -->
