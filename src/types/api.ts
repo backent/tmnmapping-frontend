@@ -35,6 +35,7 @@ export interface ApiError {
 }
 
 export interface PaginationParams {
+  [key: string]: string | number | boolean | undefined | null
   page?: number
   limit?: number
   per_page?: number
@@ -50,5 +51,5 @@ export interface PaginationParams {
   building_type_id?: number
 }
 
-export type QueryParams = Record<string, string | number | boolean | undefined | null>
+export type QueryParams = Record<string, string | string[] | number | boolean | undefined | null>
 
