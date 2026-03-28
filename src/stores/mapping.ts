@@ -65,6 +65,7 @@ export const useMappingStore = defineStore('mapping', {
     isSearching: false,
     totals: {},
     selectedBuilding: null,
+    mapBounds: null,
     mapCenter: {
       lat: -6.2,
       lng: 106.816666,
