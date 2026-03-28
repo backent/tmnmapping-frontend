@@ -14,6 +14,15 @@ const snackbarColor = ref<'success' | 'error'>('success')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
+// Search state
+const searchQuery = ref('')
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Import state
+const fileInput = ref<HTMLInputElement | null>(null)
+const isImporting = ref(false)
+const isExporting = ref(false)
+
 const packages = computed(() => salesPackageStore.packages)
 const isLoading = computed(() => salesPackageStore.isLoading)
 const totalRecords = computed(() => salesPackageStore.pagination.total)
@@ -22,12 +31,15 @@ const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.va
 const fetchPackages = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
-    const params: PaginationParams = {
+    const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
       orderBy: 'created_at',
       orderDirection: 'DESC',
     }
+    if (searchQuery.value.trim())
+      params.search = searchQuery.value.trim()
+
     await salesPackageStore.fetchSalesPackages(params)
   }
   catch (error: any) {
@@ -35,6 +47,16 @@ const fetchPackages = async () => {
     snackbarColor.value = 'error'
     snackbar.value = true
   }
+}
+
+// Debounced search
+const handleSearch = () => {
+  if (searchTimeout)
+    clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1
+    fetchPackages()
+  }, 300)
 }
 
 onMounted(async () => {
@@ -75,6 +97,57 @@ const handleDelete = async (pkg: SalesPackage) => {
 const handleCreate = () => {
   router.push({ name: 'sales-package-new' })
 }
+
+// Handle import
+const handleImportClick = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file)
+    return
+
+  isImporting.value = true
+  try {
+    const response = await salesPackageStore.importSalesPackages(file)
+    const count = response.data?.length || 0
+    snackbarMessage.value = `Successfully imported ${count} sales package(s)`
+    snackbarColor.value = 'success'
+    snackbar.value = true
+    currentPage.value = 1
+    await fetchPackages()
+  }
+  catch (error: any) {
+    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import sales packages'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+  finally {
+    isImporting.value = false
+    input.value = ''
+  }
+}
+
+// Handle export
+const handleExport = async () => {
+  isExporting.value = true
+  try {
+    await salesPackageStore.exportSalesPackages(searchQuery.value.trim() || undefined)
+    snackbarMessage.value = 'Export downloaded successfully'
+    snackbarColor.value = 'success'
+    snackbar.value = true
+  }
+  catch (error: any) {
+    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export sales packages'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+  finally {
+    isExporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -83,19 +156,69 @@ const handleCreate = () => {
       <VCard>
         <VCardTitle class="d-flex align-center justify-space-between">
           <span>Sales Packages</span>
-          <VBtn
-            color="primary"
-            @click="handleCreate"
-          >
-            <VIcon
-              icon="ri-add-line"
-              class="me-1"
-            />
-            Create Sales Package
-          </VBtn>
+          <div class="d-flex gap-2">
+            <VBtn
+              color="secondary"
+              variant="outlined"
+              :loading="isExporting"
+              @click="handleExport"
+            >
+              <VIcon
+                icon="ri-download-line"
+                class="me-1"
+              />
+              Export
+            </VBtn>
+            <VBtn
+              color="secondary"
+              variant="outlined"
+              :loading="isImporting"
+              @click="handleImportClick"
+            >
+              <VIcon
+                icon="ri-upload-line"
+                class="me-1"
+              />
+              Import
+            </VBtn>
+            <VBtn
+              color="primary"
+              @click="handleCreate"
+            >
+              <VIcon
+                icon="ri-add-line"
+                class="me-1"
+              />
+              Create Sales Package
+            </VBtn>
+          </div>
         </VCardTitle>
 
         <VCardText>
+          <!-- Search -->
+          <VTextField
+            v-model="searchQuery"
+            label="Search by name"
+            placeholder="Type to search..."
+            prepend-inner-icon="ri-search-line"
+            variant="outlined"
+            density="compact"
+            clearable
+            class="mb-4"
+            style="max-width: 400px"
+            @input="handleSearch"
+            @click:clear="searchQuery = ''; handleSearch()"
+          />
+
+          <!-- Hidden file input for import -->
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".xlsx,.csv"
+            style="display: none"
+            @change="handleFileSelected"
+          >
+
           <div
             v-if="isLoading"
             class="d-flex justify-center align-center py-8"

@@ -5,9 +5,13 @@ import {
   createBuildingRestriction,
   updateBuildingRestriction,
   deleteBuildingRestriction,
+  importBuildingRestrictions,
+  exportBuildingRestrictions,
 } from '@/http/buildingrestriction'
 import type { BuildingRestriction, CreateBuildingRestrictionRequest, UpdateBuildingRestrictionRequest } from '@/types/buildingrestriction'
 import type { PaginationParams } from '@/types/api'
+import { saveAs } from 'file-saver'
+import dayjs from 'dayjs'
 
 interface BuildingRestrictionState {
   restrictions: BuildingRestriction[]
@@ -142,6 +146,33 @@ export const useBuildingRestrictionStore = defineStore('buildingrestriction', {
       }
       finally {
         this.isLoading = false
+      }
+    },
+
+    async importBuildingRestrictions(file: File) {
+      this.isLoading = true
+      try {
+        const response = await importBuildingRestrictions(file)
+        return response
+      }
+      catch (error) {
+        console.error('Error importing building restrictions:', error)
+        throw error
+      }
+      finally {
+        this.isLoading = false
+      }
+    },
+
+    async exportBuildingRestrictions(search?: string) {
+      try {
+        const blob = await exportBuildingRestrictions(search)
+        const filename = `BuildingRestriction_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
+        saveAs(blob, filename)
+      }
+      catch (error) {
+        console.error('Error exporting building restrictions:', error)
+        throw error
       }
     },
 

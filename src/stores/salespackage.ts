@@ -5,9 +5,13 @@ import {
   createSalesPackage,
   updateSalesPackage,
   deleteSalesPackage,
+  importSalesPackages,
+  exportSalesPackages,
 } from '@/http/salespackage'
 import type { SalesPackage, CreateSalesPackageRequest, UpdateSalesPackageRequest } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
+import { saveAs } from 'file-saver'
+import dayjs from 'dayjs'
 
 interface SalesPackageState {
   packages: SalesPackage[]
@@ -142,6 +146,33 @@ export const useSalesPackageStore = defineStore('salespackage', {
       }
       finally {
         this.isLoading = false
+      }
+    },
+
+    async importSalesPackages(file: File) {
+      this.isLoading = true
+      try {
+        const response = await importSalesPackages(file)
+        return response
+      }
+      catch (error) {
+        console.error('Error importing sales packages:', error)
+        throw error
+      }
+      finally {
+        this.isLoading = false
+      }
+    },
+
+    async exportSalesPackages(search?: string) {
+      try {
+        const blob = await exportSalesPackages(search)
+        const filename = `SalesPackage_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
+        saveAs(blob, filename)
+      }
+      catch (error) {
+        console.error('Error exporting sales packages:', error)
+        throw error
       }
     },
 

@@ -27,24 +27,13 @@ interface Props {
   reporting?: boolean
 }
 
-interface Emits {
-  (e: 'update:showSingle', value: boolean): void
-  (e: 'update:showMulti', value: boolean): void
-}
-
 const props = withDefaults(defineProps<Props>(), {
   reporting: false,
 })
 
-const emit = defineEmits<Emits>()
-
 const mappingStore = useMappingStore()
 const buildingStore = useBuildingStore()
 const authStore = useAuthStore()
-
-const showInner = ref(true)
-const showSingle = ref(false)
-const showMulti = ref(false)
 const savePolygonDialogOpen = ref(false)
 const isExporting = ref(false)
 const snackbar = ref(false)
@@ -71,16 +60,6 @@ watch(
     debouncedUpdateFilters()
   },
 )
-
-// Automatically activate Single Location mode when a building is selected
-watch(() => mappingStore.selectedBuilding, (building) => {
-  if (building && !showSingle.value && !showMulti.value) {
-    showSingle.value = true
-    showInner.value = false
-    emit('update:showSingle', true)
-    emit('update:showMulti', false)
-  }
-})
 
 const handleReset = async () => {
   await mappingStore.resetFilters()
@@ -109,22 +88,6 @@ const handleExport = async () => {
   finally {
     isExporting.value = false
   }
-}
-
-const handleSingleLocationClick = () => {
-  showSingle.value = true
-  showMulti.value = false
-  showInner.value = false
-  emit('update:showSingle', true)
-  emit('update:showMulti', false)
-}
-
-const handleMultiLocationClick = () => {
-  showSingle.value = false
-  showMulti.value = true
-  showInner.value = false
-  emit('update:showSingle', false)
-  emit('update:showMulti', true)
 }
 
 // Helper function to generate initial from building type name
@@ -205,49 +168,8 @@ const buildingTypeTotals = computed(() => {
 
     <VDivider />
 
-    <!-- Initial Mode Selection -->
-    <div v-if="showInner">
-      <div class="mb-5 inner-type text-center">
-        <h3 style="font-weight: bold">
-          Choose filter type:
-        </h3>
-      </div>
-
-      <div class="text-center mt-5 mb-4">
-        <VBtn
-          small
-          @click="handleSingleLocationClick"
-        >
-          Single Location
-        </VBtn>
-      </div>
-
-      <div
-        v-if="!isReporting"
-        class="text-center mt-4 mb-3"
-      >
-        <h4>OR</h4>
-      </div>
-
-      <div
-        v-if="!isReporting"
-        class="text-center mt-3 mb-4"
-      >
-        <VBtn
-          small
-          color="primary"
-          @click="handleMultiLocationClick"
-        >
-          Multi Location
-        </VBtn>
-      </div>
-    </div>
-
     <!-- Single Location Mode -->
-    <div
-      v-if="showSingle"
-      class="pl-4 pr-4 pt-4 pb-4"
-    >
+    <div class="pl-4 pr-4 pt-4 pb-4">
       <VForm>
         <VList>
           <!-- Location Filter -->
@@ -433,67 +355,6 @@ const buildingTypeTotals = computed(() => {
       </VForm>
     </div>
 
-    <!-- Multi Location Mode -->
-    <div
-      v-if="showMulti"
-      class="pl-4 pr-4 pt-5 pb-4"
-    >
-      <!-- Building Detail -->
-      <BuildingDetail
-        v-if="mappingStore.selectedBuilding"
-        :building="mappingStore.selectedBuilding"
-        :reporting="isReporting"
-        @close="mappingStore.setSelectedBuilding(null)"
-      />
-
-      <!-- Location Filter -->
-      <LocationFilter
-        :model-value="mappingStore.filters.district_subdistrict || []"
-        mode="multi"
-        @update:model-value="mappingStore.filters.district_subdistrict = $event"
-      />
-
-      <!-- Export Button -->
-      <div class="pt-4">
-        <VBtn
-          v-if="!isReporting"
-          class="mb-2"
-          color="success"
-          depressed
-          block
-          :loading="isExporting"
-          :disabled="isExporting"
-          @click="handleExport"
-        >
-          download report
-        </VBtn>
-
-        <!-- Reset Button -->
-        <VBtn
-          color="primary"
-          depressed
-          block
-          @click="handleReset"
-        >
-          reset
-        </VBtn>
-      </div>
-    </div>
-
-    <!-- Bottom Buttons -->
-    <div
-      v-if="showInner"
-      class="btn-bottom text-center"
-    >
-      <VDivider />
-      <div class="pt-5">
-        <VBtn @click="$router.push('/dashboard')">
-          <VIcon>mdi-login-variant</VIcon>
-          Back to Dashboard
-        </VBtn>
-      </div>
-    </div>
-
     <VSnackbar
       v-model="snackbar"
       :color="snackbarColor"
@@ -512,12 +373,5 @@ const buildingTypeTotals = computed(() => {
   overflow-x: hidden;
 }
 
-.inner-type {
-  margin-top: 60px;
-}
-
-.btn-bottom {
-  margin-top: 64px;
-}
 </style>
 

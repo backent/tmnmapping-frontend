@@ -11,8 +11,6 @@ const buildingStore = useBuildingStore()
 const authStore = useAuthStore()
 
 const drawer = ref(true)
-const showSingleLocation = ref(false)
-const showMultiLocation = ref(false)
 
 const isReporting = computed(() => {
   return authStore.currentUser?.role === '12'
@@ -64,8 +62,6 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
     >
       <FilterSidebar
         :reporting="isReporting"
-        @update:show-single="showSingleLocation = $event"
-        @update:show-multi="showMultiLocation = $event"
       />
     </VNavigationDrawer>
 

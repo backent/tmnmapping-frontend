@@ -43,6 +43,8 @@ export const apiConfig = {
     sales_packages_create: '/sales-packages',
     sales_packages_update: '/sales-packages/:id',
     sales_packages_delete: '/sales-packages/:id',
+    sales_packages_import: '/sales-packages-import',
+    sales_packages_export: '/sales-packages-export',
 
     // Building restrictions
     building_restrictions_list: '/building-restrictions',
@@ -50,6 +52,8 @@ export const apiConfig = {
     building_restrictions_create: '/building-restrictions',
     building_restrictions_update: '/building-restrictions/:id',
     building_restrictions_delete: '/building-restrictions/:id',
+    building_restrictions_import: '/building-restrictions-import',
+    building_restrictions_export: '/building-restrictions-export',
 
     // Saved polygons
     saved_polygons_list: '/saved-polygons',

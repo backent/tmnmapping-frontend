@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi, deleteApi } from '@/utils/http'
+import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { SalesPackage, CreateSalesPackageRequest, UpdateSalesPackageRequest } from '@/types/salespackage'
@@ -39,4 +39,32 @@ export function deleteSalesPackage(id: number): Promise<ApiResponse<string>> {
     {},
     { id },
   )
+}
+
+export function importSalesPackages(file: File): Promise<ApiResponse<SalesPackage[]>> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return postFormApi<ApiResponse<SalesPackage[]>>(
+    apiConfig.endpoints.sales_packages_import,
+    formData,
+  )
+}
+
+export async function exportSalesPackages(search?: string): Promise<Blob> {
+  const params = new URLSearchParams()
+  if (search)
+    params.set('search', search)
+
+  const queryString = params.toString()
+  const url = `${apiConfig.baseUrl}${apiConfig.endpoints.sales_packages_export}${queryString ? `?${queryString}` : ''}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok)
+    throw new Error(`HTTP error! Status: ${response.status}`)
+
+  return response.blob()
 }
