@@ -52,7 +52,7 @@ const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
 const isReporting = computed(() => {
-  return props.reporting || authStore.currentUser?.role === 12
+  return props.reporting || authStore.currentUser?.role === '12'
 })
 
 // Debounced filter update

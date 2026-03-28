@@ -15,7 +15,7 @@ const showSingleLocation = ref(false)
 const showMultiLocation = ref(false)
 
 const isReporting = computed(() => {
-  return authStore.currentUser?.role === 12
+  return authStore.currentUser?.role === '12'
 })
 
 onUnmounted(() => {

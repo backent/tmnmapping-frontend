@@ -120,7 +120,7 @@ onMounted(async () => {
           return
         }
         const path: { lat: number; lng: number }[] = []
-        e.overlay.getPath().forEach((latLng: google.maps.LatLng) => {
+        ;(e.overlay as google.maps.Polygon).getPath().forEach((latLng: google.maps.LatLng) => {
           path.push({ lat: latLng.lat(), lng: latLng.lng() })
         })
         lastDrawingManagerOverlay = e.overlay as google.maps.Polygon

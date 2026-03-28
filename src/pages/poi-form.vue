@@ -23,16 +23,15 @@ const form = ref<CreatePOIRequest>({
 
 // Ensure color always has # prefix and is in hex format
 watch(() => form.value.color, (newColor) => {
-  if (newColor) {
-    if (typeof newColor === 'string') {
-      if (!newColor.startsWith('#')) {
-        form.value.color = `#${newColor}`
+  const color: unknown = newColor
+  if (color) {
+    if (typeof color === 'string') {
+      if (!color.startsWith('#')) {
+        form.value.color = `#${color}`
       }
     }
-    else if (typeof newColor === 'object' && newColor !== null) {
-      if ('hex' in newColor) {
-        form.value.color = newColor.hex
-      }
+    else if (typeof color === 'object' && color !== null && 'hex' in color) {
+      form.value.color = (color as { hex: string }).hex
     }
   }
 })

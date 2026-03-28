@@ -102,7 +102,7 @@ watch(() => props.building, async (building) => {
 }, { immediate: true })
 
 const hasPhotos = computed(() => {
-  return buildingDetail.value?.photos?.data?.length > 0
+  return (buildingDetail.value?.photos?.data?.length ?? 0) > 0
 })
 
 const defaultImage = '/images/defaultimage.jpeg'
