@@ -47,6 +47,13 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/pois',
     }"
   />
+  <VerticalNavLink
+    :item="{
+      title: 'Points',
+      icon: 'ri-map-pin-2-line',
+      to: '/poi-points',
+    }"
+  />
 
   <!-- Sales packages -->
   <VerticalNavSectionTitle

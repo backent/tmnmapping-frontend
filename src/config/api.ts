@@ -37,6 +37,17 @@ export const apiConfig = {
     pois_import: '/pois-import',
     pois_export: '/pois-export',
 
+    // POI Point endpoints
+    poi_points_list: '/poi-points',
+    poi_points_get: '/poi-points/:id',
+    poi_points_create: '/poi-points',
+    poi_points_update: '/poi-points/:id',
+    poi_points_delete: '/poi-points/:id',
+    poi_points_usage: '/poi-points/:id/usage',
+    poi_points_dropdown: '/poi-points-dropdown',
+    poi_points_import: '/poi-points-import',
+    poi_points_export: '/poi-points-export',
+
     // Sales packages
     sales_packages_list: '/sales-packages',
     sales_packages_get: '/sales-packages/:id',

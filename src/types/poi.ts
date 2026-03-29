@@ -1,5 +1,5 @@
 export interface POIPoint {
-  id?: number
+  id: number
   poi_name: string
   address: string
   latitude: number
@@ -9,6 +9,7 @@ export interface POIPoint {
   mother_brand?: string
   branch?: string
   created_at?: string
+  updated_at?: string
 }
 
 export interface POI {
@@ -23,16 +24,7 @@ export interface POI {
 export interface CreatePOIRequest {
   brand: string
   color: string
-  points: Array<{
-    poi_name: string
-    address: string
-    latitude: number
-    longitude: number
-    category?: string
-    sub_category?: string
-    mother_brand?: string
-    branch?: string
-  }>
+  point_ids: number[]
 }
 
 export interface UpdatePOIRequest extends CreatePOIRequest {}
