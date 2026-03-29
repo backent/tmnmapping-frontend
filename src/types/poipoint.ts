@@ -13,6 +13,10 @@ export interface POIPoint {
   sub_category?: string
   mother_brand?: string
   branch?: string
+  category_id?: number | null
+  sub_category_id?: number | null
+  mother_brand_id?: number | null
+  branch_id?: number | null
   pois: POIRef[]
   created_at: string
   updated_at: string
@@ -23,10 +27,10 @@ export interface CreatePOIPointRequest {
   address: string
   latitude: number
   longitude: number
-  category?: string
-  sub_category?: string
-  mother_brand?: string
-  branch?: string
+  category_id?: number | null
+  sub_category_id?: number | null
+  mother_brand_id?: number | null
+  branch_id?: number | null
 }
 
 export interface UpdatePOIPointRequest extends CreatePOIPointRequest {}

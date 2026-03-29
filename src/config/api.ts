@@ -73,6 +73,46 @@ export const apiConfig = {
     saved_polygons_update: '/saved-polygons/:id',
     saved_polygons_delete: '/saved-polygons/:id',
 
+    // Categories
+    categories_list: '/categories',
+    categories_get: '/categories/:id',
+    categories_create: '/categories',
+    categories_update: '/categories/:id',
+    categories_delete: '/categories/:id',
+    categories_dropdown: '/categories-dropdown',
+    categories_import: '/categories-import',
+    categories_export: '/categories-export',
+
+    // Sub Categories
+    sub_categories_list: '/sub-categories',
+    sub_categories_get: '/sub-categories/:id',
+    sub_categories_create: '/sub-categories',
+    sub_categories_update: '/sub-categories/:id',
+    sub_categories_delete: '/sub-categories/:id',
+    sub_categories_dropdown: '/sub-categories-dropdown',
+    sub_categories_import: '/sub-categories-import',
+    sub_categories_export: '/sub-categories-export',
+
+    // Mother Brands
+    mother_brands_list: '/mother-brands',
+    mother_brands_get: '/mother-brands/:id',
+    mother_brands_create: '/mother-brands',
+    mother_brands_update: '/mother-brands/:id',
+    mother_brands_delete: '/mother-brands/:id',
+    mother_brands_dropdown: '/mother-brands-dropdown',
+    mother_brands_import: '/mother-brands-import',
+    mother_brands_export: '/mother-brands-export',
+
+    // Branches
+    branches_list: '/branches',
+    branches_get: '/branches/:id',
+    branches_create: '/branches',
+    branches_update: '/branches/:id',
+    branches_delete: '/branches/:id',
+    branches_dropdown: '/branches-dropdown',
+    branches_import: '/branches-import',
+    branches_export: '/branches-export',
+
     // Dashboard report endpoints
     dashboard_acquisition: '/dashboard/acquisition',
     dashboard_building_proposal: '/dashboard/building-proposal',

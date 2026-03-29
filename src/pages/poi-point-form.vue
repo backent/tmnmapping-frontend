@@ -2,12 +2,20 @@
 import { Loader } from '@googlemaps/js-api-loader'
 import { useRoute, useRouter } from 'vue-router'
 import { usePOIPointStore } from '@/stores/poipoint'
+import { useCategoryStore } from '@/stores/category'
+import { useSubCategoryStore } from '@/stores/subcategory'
+import { useMotherBrandStore } from '@/stores/motherbrand'
+import { useBranchStore } from '@/stores/branch'
 import PlaceAutocomplete from '@/components/poi/PlaceAutocomplete.vue'
 import type { CreatePOIPointRequest } from '@/types/poipoint'
 
 const route = useRoute()
 const router = useRouter()
 const poiPointStore = usePOIPointStore()
+const categoryStore = useCategoryStore()
+const subCategoryStore = useSubCategoryStore()
+const motherBrandStore = useMotherBrandStore()
+const branchStore = useBranchStore()
 
 const isEdit = computed(() => !!route.params.id)
 const pointId = computed(() => isEdit.value ? Number(route.params.id) : null)
@@ -17,10 +25,10 @@ const form = ref<CreatePOIPointRequest>({
   address: '',
   latitude: 0,
   longitude: 0,
-  category: '',
-  sub_category: '',
-  mother_brand: '',
-  branch: '',
+  category_id: null,
+  sub_category_id: null,
+  mother_brand_id: null,
+  branch_id: null,
 })
 
 const isLoading = ref(false)
@@ -33,6 +41,14 @@ const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
 onMounted(async () => {
+  // Load dropdowns
+  await Promise.all([
+    categoryStore.fetchDropdown(),
+    subCategoryStore.fetchDropdown(),
+    motherBrandStore.fetchDropdown(),
+    branchStore.fetchDropdown(),
+  ])
+
   if (typeof google === 'undefined' || !google.maps) {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
     if (apiKey) {
@@ -78,10 +94,10 @@ const fetchPoint = async () => {
         address: point.address,
         latitude: point.latitude,
         longitude: point.longitude,
-        category: point.category || '',
-        sub_category: point.sub_category || '',
-        mother_brand: point.mother_brand || '',
-        branch: point.branch || '',
+        category_id: point.category_id ?? null,
+        sub_category_id: point.sub_category_id ?? null,
+        mother_brand_id: point.mother_brand_id ?? null,
+        branch_id: point.branch_id ?? null,
       }
     }
   }
@@ -126,10 +142,10 @@ const submit = async () => {
       address: form.value.address,
       latitude: form.value.latitude,
       longitude: form.value.longitude,
-      category: form.value.category || undefined,
-      sub_category: form.value.sub_category || undefined,
-      mother_brand: form.value.mother_brand || undefined,
-      branch: form.value.branch || undefined,
+      category_id: form.value.category_id || null,
+      sub_category_id: form.value.sub_category_id || null,
+      mother_brand_id: form.value.mother_brand_id || null,
+      branch_id: form.value.branch_id || null,
     }
 
     if (isEdit.value && pointId.value) {
@@ -264,10 +280,14 @@ onUnmounted(() => {
               cols="12"
               md="6"
             >
-              <VTextField
-                v-model="form.category"
+              <VAutocomplete
+                v-model="form.category_id"
+                :items="categoryStore.dropdownItems"
+                item-title="name"
+                item-value="id"
                 label="Category"
                 variant="outlined"
+                clearable
                 :disabled="isSaving"
               />
             </VCol>
@@ -275,10 +295,14 @@ onUnmounted(() => {
               cols="12"
               md="6"
             >
-              <VTextField
-                v-model="form.sub_category"
+              <VAutocomplete
+                v-model="form.sub_category_id"
+                :items="subCategoryStore.dropdownItems"
+                item-title="name"
+                item-value="id"
                 label="Sub-Category"
                 variant="outlined"
+                clearable
                 :disabled="isSaving"
               />
             </VCol>
@@ -286,10 +310,14 @@ onUnmounted(() => {
               cols="12"
               md="6"
             >
-              <VTextField
-                v-model="form.mother_brand"
+              <VAutocomplete
+                v-model="form.mother_brand_id"
+                :items="motherBrandStore.dropdownItems"
+                item-title="name"
+                item-value="id"
                 label="Mother Brand"
                 variant="outlined"
+                clearable
                 :disabled="isSaving"
               />
             </VCol>
@@ -297,10 +325,14 @@ onUnmounted(() => {
               cols="12"
               md="6"
             >
-              <VTextField
-                v-model="form.branch"
+              <VAutocomplete
+                v-model="form.branch_id"
+                :items="branchStore.dropdownItems"
+                item-title="name"
+                item-value="id"
                 label="Branch"
                 variant="outlined"
+                clearable
                 :disabled="isSaving"
               />
             </VCol>

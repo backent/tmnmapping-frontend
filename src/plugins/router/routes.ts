@@ -84,6 +84,66 @@ export const routes = [
         name: 'building-restriction-edit',
         component: () => import('@/pages/building-restriction-form.vue'),
       },
+      {
+        path: 'categories',
+        name: 'categories',
+        component: () => import('@/pages/categories.vue'),
+      },
+      {
+        path: 'categories/new',
+        name: 'category-new',
+        component: () => import('@/pages/category-form.vue'),
+      },
+      {
+        path: 'categories/:id/edit',
+        name: 'category-edit',
+        component: () => import('@/pages/category-form.vue'),
+      },
+      {
+        path: 'sub-categories',
+        name: 'sub-categories',
+        component: () => import('@/pages/sub-categories.vue'),
+      },
+      {
+        path: 'sub-categories/new',
+        name: 'sub-category-new',
+        component: () => import('@/pages/sub-category-form.vue'),
+      },
+      {
+        path: 'sub-categories/:id/edit',
+        name: 'sub-category-edit',
+        component: () => import('@/pages/sub-category-form.vue'),
+      },
+      {
+        path: 'mother-brands',
+        name: 'mother-brands',
+        component: () => import('@/pages/mother-brands.vue'),
+      },
+      {
+        path: 'mother-brands/new',
+        name: 'mother-brand-new',
+        component: () => import('@/pages/mother-brand-form.vue'),
+      },
+      {
+        path: 'mother-brands/:id/edit',
+        name: 'mother-brand-edit',
+        component: () => import('@/pages/mother-brand-form.vue'),
+      },
+      {
+        path: 'branches',
+        name: 'branches',
+        component: () => import('@/pages/branches.vue'),
+      },
+      {
+        path: 'branches/new',
+        name: 'branch-new',
+        component: () => import('@/pages/branch-form.vue'),
+      },
+      {
+        path: 'branches/:id/edit',
+        name: 'branch-edit',
+        component: () => import('@/pages/branch-form.vue'),
+      },
     ],
   },
   {

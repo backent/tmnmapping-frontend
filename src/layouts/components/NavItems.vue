@@ -82,4 +82,39 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/building-restrictions',
     }"
   />
+
+  <!-- Master Data -->
+  <VerticalNavSectionTitle
+    :item="{
+      heading: 'Master Data',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Categories',
+      icon: 'ri-folder-line',
+      to: '/categories',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Sub Categories',
+      icon: 'ri-folder-2-line',
+      to: '/sub-categories',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Mother Brands',
+      icon: 'ri-briefcase-line',
+      to: '/mother-brands',
+    }"
+  />
+  <VerticalNavLink
+    :item="{
+      title: 'Branches',
+      icon: 'ri-store-line',
+      to: '/branches',
+    }"
+  />
 </template>
