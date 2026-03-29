@@ -192,8 +192,7 @@ const buildingTypeTotals = computed(() => {
 
           <!-- Filter Card -->
           <VCard class="mb-4 pb-2" >
-            <div style="max-height: 250px; overflow-y: auto;">
-
+            <div>
 
               <!-- Polygon filter: draw on map, filter buildings inside -->
               <VDivider />
@@ -234,11 +233,6 @@ const buildingTypeTotals = computed(() => {
                 :polygon="mappingStore.filters.polygon"
               />
               <SavedPolygonFilter v-if="!isReporting" />
-              <!-- POI Filter -->
-              <POIFilter
-                :model-value="mappingStore.filters.poi_ids"
-                @update:model-value="mappingStore.setSelectedPOIs($event)"
-              />
 
                 <!-- Building Type -->
               <BuildingTypeFilter
@@ -318,6 +312,12 @@ const buildingTypeTotals = computed(() => {
               :model-value="mappingStore.filters.year || mappingStore.yearRange"
               :reporting="isReporting"
               @update:model-value="mappingStore.filters.year = $event"
+            />
+
+            <!-- POI Filter (above Radius) -->
+            <POIFilter
+              :model-value="mappingStore.filters.poi_ids"
+              @update:model-value="mappingStore.setSelectedPOIs($event)"
             />
 
             <!-- Radius -->
