@@ -165,21 +165,21 @@ const defaultImage = '/images/defaultimage.jpeg'
     </VCarousel>
 
     <!-- Building Header -->
-    <VListItem style="background-color: #a9a9a9">
+    <VListItem style="background-color: #f4f5fa">
       <VListItemContent>
         <VListItemTitle>
-          <h3 class="pb-2 white--text">
+          <h3 class="pb-2">
             {{ buildingDetail.building_name }}
           </h3>
           <VChip
             label
-            color="white"
+            color="primary"
           >
             {{ buildingDetail.building_grade }}
           </VChip>
           <p
             style="white-space: normal;"
-            class="pt-2 mb-0 white--text"
+            class="pt-2 mb-0"
           >
             {{ buildingDetail.address }}
           </p>
