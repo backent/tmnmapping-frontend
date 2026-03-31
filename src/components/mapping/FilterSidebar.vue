@@ -155,7 +155,7 @@ const buildingTypeTotals = computed(() => {
     <!-- Building Type Totals -->
     <div
       v-if="buildingTypeTotals.length > 0"
-      class="text-center pb-2 pt-1"
+      class="d-flex flex-wrap pb-2 pt-1 px-1"
     >
       <VChip
         v-for="type in buildingTypeTotals"
