@@ -10,8 +10,15 @@ import NavUserProfile from '@/layouts/components/NavUserProfile.vue'
 
 <template>
   <VerticalNavLayout>
-    <!-- navbar is hidden; slot kept empty -->
-    <template #navbar="{ toggleNav: _ }" />
+    <!-- navbar: hidden on desktop, visible on mobile as hamburger trigger -->
+    <template #navbar="{ toggleNav }">
+      <IconBtn
+        class="mobile-nav-toggle"
+        @click="toggleNav"
+      >
+        <VIcon icon="ri-menu-line" />
+      </IconBtn>
+    </template>
 
     <template #vertical-nav-header="{ toggleIsOverlayNavActive, toggleNav }">
       <RouterLink
@@ -52,9 +59,20 @@ import NavUserProfile from '@/layouts/components/NavUserProfile.vue'
 </template>
 
 <style lang="scss">
-// Hide navbar globally — toggle is now in the sidebar
+// Hide navbar on desktop — toggle lives in the sidebar header
 .layout-navbar {
   display: none !important;
+}
+
+// Re-show navbar on mobile/tablet so the hamburger button is accessible
+.layout-overlay-nav .layout-navbar {
+  display: block !important;
+
+  .navbar-content-container {
+    display: flex;
+    align-items: center;
+    padding-inline: 0.75rem;
+  }
 }
 
 // Reduce footer height (54px → 36px)
