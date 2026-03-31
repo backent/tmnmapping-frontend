@@ -155,12 +155,12 @@ const buildingTypeTotals = computed(() => {
     <!-- Building Type Totals -->
     <div
       v-if="buildingTypeTotals.length > 0"
-      class="d-flex flex-wrap pb-2 pt-1 px-1"
+      class="chip-grid pb-2 pt-1 px-1"
     >
       <VChip
         v-for="type in buildingTypeTotals"
         :key="type.key"
-        class="ma-1"
+        class="ma-1 justify-center"
       >
         {{ type.initial }}: {{ type.total }}
       </VChip>
@@ -371,6 +371,11 @@ const buildingTypeTotals = computed(() => {
   max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
 }
 
 </style>
