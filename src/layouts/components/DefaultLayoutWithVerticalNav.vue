@@ -5,29 +5,15 @@ import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
 
 // Components
 import Footer from '@/layouts/components/Footer.vue'
-import UserProfile from '@/layouts/components/UserProfile.vue'
+import NavUserProfile from '@/layouts/components/NavUserProfile.vue'
 </script>
 
 <template>
   <VerticalNavLayout>
-    <!-- 👉 navbar -->
-    <template #navbar="{ toggleNav }">
-      <div class="d-flex h-100 align-center">
-        <!-- 👉 Nav toggle: overlay on mobile, collapse on desktop -->
-        <IconBtn
-          class="ms-n3"
-          @click="toggleNav"
-        >
-          <VIcon icon="ri-menu-fold-line" />
-        </IconBtn>
+    <!-- navbar is hidden; slot kept empty -->
+    <template #navbar="{ toggleNav: _ }" />
 
-        <VSpacer />
-
-        <UserProfile />
-      </div>
-    </template>
-
-    <template #vertical-nav-header="{ toggleIsOverlayNavActive }">
+    <template #vertical-nav-header="{ toggleIsOverlayNavActive, toggleNav }">
       <RouterLink
         to="/"
         class="app-logo app-title-wrapper"
@@ -39,34 +25,16 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
             class="app-logo-image"
           >
         </div>
-
-        
       </RouterLink>
 
-      <IconBtn
-        class="d-block d-lg-none"
-        @click="toggleIsOverlayNavActive(false)"
-      >
-        <VIcon icon="ri-close-line" />
+      <!-- Nav toggle lives in the sidebar now -->
+      <IconBtn @click="toggleNav">
+        <VIcon icon="ri-menu-fold-line" />
       </IconBtn>
     </template>
 
     <template #before-vertical-nav-items>
-      <div class="nav-user-section mx-3 my-3 pa-3 rounded">
-        <div class="d-flex align-center gap-3">
-          <VAvatar
-            color="primary"
-            size="36"
-            class="flex-shrink-0"
-          >
-            <VIcon icon="ri-user-line" size="20" />
-          </VAvatar>
-          <div class="nav-user-info overflow-hidden">
-            <div class="text-sm font-weight-semibold text-truncate">Welcome Back, Jason</div>
-            <div class="text-xs text-medium-emphasis text-truncate">Last login: 27 Feb 2026</div>
-          </div>
-        </div>
-      </div>
+      <NavUserProfile />
     </template>
 
     <template #vertical-nav-content>
@@ -84,9 +52,9 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 </template>
 
 <style lang="scss">
-// Reduce topbar height (64px → 48px)
-.layout-navbar .navbar-content-container {
-  block-size: 48px !important;
+// Hide navbar globally — toggle is now in the sidebar
+.layout-navbar {
+  display: none !important;
 }
 
 // Reduce footer height (54px → 36px)
@@ -129,16 +97,29 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
   background-color: rgba(var(--v-theme-primary), 0.08);
   border: 1px solid rgba(var(--v-theme-primary), 0.12);
 
-  .nav-user-info {
-    transition: opacity 0.25s ease-in-out, max-inline-size 0.25s ease-in-out;
+  .nav-welcome-text {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .nav-user-collapsed {
+    display: none !important;
   }
 }
 
-// Hide user info text when nav is collapsed (mini mode)
+// Collapsed (mini) mode — show only the avatar icon
 .layout-vertical-nav-collapsed .layout-vertical-nav:not(.hovered) {
-  .nav-user-info {
-    opacity: 0;
-    max-inline-size: 0;
+  .nav-user-section {
+    margin-inline: 0.5rem;
+    padding: 0.5rem;
+
+    .nav-user-info {
+      display: none !important;
+    }
+
+    .nav-user-collapsed {
+      display: flex !important;
+    }
   }
 }
 </style>

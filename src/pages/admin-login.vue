@@ -47,6 +47,9 @@ const handleLogin = async () => {
       remember: form.value.remember,
     })
 
+    // Fetch full user profile (includes last_login from previous session)
+    await authStore.fetchCurrentUser()
+
     // Redirect to buildings page on successful login
     router.push('/buildings')
   }

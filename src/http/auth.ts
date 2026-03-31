@@ -28,6 +28,7 @@ export interface User {
   username: string
   name: string
   role: string
+  last_login?: string
   [key: string]: any
 }
 
