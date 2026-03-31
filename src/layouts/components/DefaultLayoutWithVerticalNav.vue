@@ -51,6 +51,24 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
       </IconBtn>
     </template>
 
+    <template #before-vertical-nav-items>
+      <div class="nav-user-section mx-3 my-3 pa-3 rounded">
+        <div class="d-flex align-center gap-3">
+          <VAvatar
+            color="primary"
+            size="36"
+            class="flex-shrink-0"
+          >
+            <VIcon icon="ri-user-line" size="20" />
+          </VAvatar>
+          <div class="nav-user-info overflow-hidden">
+            <div class="text-sm font-weight-semibold text-truncate">Welcome Back, Jason</div>
+            <div class="text-xs text-medium-emphasis text-truncate">Last login: 27 Feb 2026</div>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <template #vertical-nav-content>
       <NavItems />
     </template>
@@ -102,6 +120,25 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
       block-size: 100%;
       overflow: hidden;
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.nav-user-section {
+  background-color: rgba(var(--v-theme-primary), 0.08);
+  border: 1px solid rgba(var(--v-theme-primary), 0.12);
+
+  .nav-user-info {
+    transition: opacity 0.25s ease-in-out, max-inline-size 0.25s ease-in-out;
+  }
+}
+
+// Hide user info text when nav is collapsed (mini mode)
+.layout-vertical-nav-collapsed .layout-vertical-nav:not(.hovered) {
+  .nav-user-info {
+    opacity: 0;
+    max-inline-size: 0;
   }
 }
 </style>
