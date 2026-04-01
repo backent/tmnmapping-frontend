@@ -678,7 +678,7 @@ onBeforeUnmount(() => {
 
 .map-container {
   width: 100%;
-  height: 92%;
+  height: 100%;
   min-height: 600px;
 }
 
