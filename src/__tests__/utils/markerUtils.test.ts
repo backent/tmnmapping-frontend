@@ -38,8 +38,6 @@ function makeBuilding(overrides: Partial<MappingBuilding> = {}): MappingBuilding
 // Google Maps mock
 // ---------------------------------------------------------------------------
 
-// google.maps.Size and Point are called with `new`, so they must be
-// constructor-compatible functions, not arrow functions.
 function makeSizeCtor() {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   const ctor = vi.fn(function (this: Record<string, number>, w: number, h: number) {
@@ -61,15 +59,13 @@ function makePointCtor() {
 function setupGoogleMapsMock() {
   const SizeMock = makeSizeCtor()
   const PointMock = makePointCtor()
-
-  vi.stubGlobal('google', {
-    maps: {
-      Size: SizeMock,
-      Point: PointMock,
-    },
-  })
-
+  vi.stubGlobal('google', { maps: { Size: SizeMock, Point: PointMock } })
   return { SizeMock, PointMock }
+}
+
+// Decode the SVG text from a data URL for assertion
+function decodeSvgUrl(url: string): string {
+  return decodeURIComponent(url.replace('data:image/svg+xml;charset=UTF-8,', ''))
 }
 
 // ---------------------------------------------------------------------------
@@ -77,103 +73,98 @@ function setupGoogleMapsMock() {
 // ---------------------------------------------------------------------------
 
 describe('getMarkerIconConfig', () => {
-  beforeEach(() => {
-    setupGoogleMapsMock()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+  beforeEach(() => { setupGoogleMapsMock() })
+  afterEach(() => { vi.unstubAllGlobals() })
 
   describe('when google maps is available', () => {
-    it('returns an icon object (not null)', () => {
-      const config = getMarkerIconConfig(makeBuilding(), [], false)
-      expect(config).not.toBeNull()
+    it('returns a non-null icon object', () => {
+      expect(getMarkerIconConfig(makeBuilding(), [], false)).not.toBeNull()
     })
 
-    it('returns an object with url, scaledSize, and anchor properties', () => {
+    it('returns an object with url, scaledSize, and anchor', () => {
       const config = getMarkerIconConfig(makeBuilding(), [], false)
       expect(config).toHaveProperty('url')
       expect(config).toHaveProperty('scaledSize')
       expect(config).toHaveProperty('anchor')
     })
 
-    describe('LCD presence → colour mapping', () => {
-      it('maps null lcd_presence_status to gray marker', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: null }), [], false)
-        expect(config!.url).toContain('gray')
+    it('url is an inline SVG data URL', () => {
+      const config = getMarkerIconConfig(makeBuilding(), [], false)
+      expect(config!.url).toMatch(/^data:image\/svg\+xml/)
+    })
+
+    describe('LCD presence → fill color', () => {
+      it('null → opportunity color #8d91a9', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: null }), [], false)!.url)
+        expect(svg).toContain('#8d91a9')
       })
 
-      it('maps "Opportunity" to a gray marker', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Opportunity' }), [], false)
-        expect(config!.url).toContain('gray')
+      it('"Opportunity" → #8d91a9', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Opportunity' }), [], false)!.url)
+        expect(svg).toContain('#8d91a9')
       })
 
-      it('maps "TMN" to a blue marker', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'TMN' }), [], false)
-        expect(config!.url).toContain('blue')
+      it('"TMN" → #0b97f3', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'TMN' }), [], false)!.url)
+        expect(svg).toContain('#0b97f3')
       })
 
-      it('maps "Competitor" to a red marker', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Competitor' }), [], false)
-        expect(config!.url).toContain('red')
+      it('"Competitor" → #c72b29', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Competitor' }), [], false)!.url)
+        expect(svg).toContain('#c72b29')
       })
 
-      it('maps "CoExist" to a blue marker', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'CoExist' }), [], false)
-        expect(config!.url).toContain('blue')
+      it('"CoExist" → #5ecce0', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'CoExist' }), [], false)!.url)
+        expect(svg).toContain('#5ecce0')
       })
 
-      it('maps an unknown status to gray (default case)', () => {
-        const config = getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Unknown' }), [], false)
-        expect(config!.url).toContain('gray')
+      it('unknown status → #8d91a9 (default)', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Unknown' }), [], false)!.url)
+        expect(svg).toContain('#8d91a9')
       })
     })
 
-    describe('building type → icon path mapping', () => {
-      it('uses "apartment" in the path for Apartment type', () => {
-        const config = getMarkerIconConfig(makeBuilding({ building_type: 'Apartment' }), [], false)
-        expect(config!.url).toContain('apartment')
+    describe('building type → label (matching PNG markers)', () => {
+      it('"Apartment" → "A"', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Apartment' }), [], false)!.url)
+        expect(svg).toContain('>A<')
       })
 
-      it('uses "hotel" in the path for Hotel type', () => {
-        const config = getMarkerIconConfig(makeBuilding({ building_type: 'Hotel' }), [], false)
-        expect(config!.url).toContain('hotel')
+      it('"Hotel" → "H"', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Hotel' }), [], false)!.url)
+        expect(svg).toContain('>H<')
       })
 
-      it('uses "office" in the path for Office type', () => {
-        const config = getMarkerIconConfig(makeBuilding({ building_type: 'Office' }), [], false)
-        expect(config!.url).toContain('office')
+      it('"Office" → "O"', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Office' }), [], false)!.url)
+        expect(svg).toContain('>O<')
       })
 
-      it('uses "retail" in the path for Retail type', () => {
-        const config = getMarkerIconConfig(makeBuilding({ building_type: 'Retail' }), [], false)
-        expect(config!.url).toContain('retail')
+      it('"Retail" → "R"', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Retail' }), [], false)!.url)
+        expect(svg).toContain('>R<')
       })
 
-      it('uses "other" in the path for Other type', () => {
-        const config = getMarkerIconConfig(makeBuilding({ building_type: 'Other' }), [], false)
-        expect(config!.url).toContain('other')
+      it('"Other" → "OT"', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Other' }), [], false)!.url)
+        expect(svg).toContain('>OT<')
+      })
+
+      it('unknown type → first letter uppercased', () => {
+        const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ building_type: 'Warehouse' as any }), [], false)!.url)
+        expect(svg).toContain('>W<')
       })
     })
 
-    it('produces a URL in the format /marker/<type>-<color>.png', () => {
-      const config = getMarkerIconConfig(
-        makeBuilding({ building_type: 'Office', lcd_presence_status: 'TMN' }),
-        [],
-        false,
-      )
-      expect(config!.url).toBe('/marker/office-blue.png')
-    })
-
-    it('scaledSize is constructed with width=30 and height=40', () => {
+    it('scaledSize is 30×40', () => {
       const SizeMock = makeSizeCtor()
       vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
       getMarkerIconConfig(makeBuilding(), [], false)
       expect(SizeMock).toHaveBeenCalledWith(30, 40)
     })
 
-    it('anchor is constructed at point (15, 40)', () => {
+    it('anchor is at (15, 40)', () => {
       const PointMock = makePointCtor()
       vi.stubGlobal('google', { maps: { Size: makeSizeCtor(), Point: PointMock } })
       getMarkerIconConfig(makeBuilding(), [], false)
@@ -186,9 +177,7 @@ describe('getMarkerIconConfig', () => {
       vi.unstubAllGlobals()
       // @ts-expect-error - simulate missing Google Maps
       globalThis.google = undefined
-
-      const config = getMarkerIconConfig(makeBuilding(), [], false)
-      expect(config).toBeNull()
+      expect(getMarkerIconConfig(makeBuilding(), [], false)).toBeNull()
     })
   })
 })
