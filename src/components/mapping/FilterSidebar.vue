@@ -153,17 +153,19 @@ const buildingTypeTotals = computed(() => {
 <template>
   <div class="filter-sidebar-container">
     <!-- Building Type Totals -->
-    <div
-      v-if="buildingTypeTotals.length > 0"
-      class="chip-grid pb-2 pt-1 px-1"
-    >
-      <VChip
-        v-for="type in buildingTypeTotals"
-        :key="type.key"
-        class="ma-1 justify-center"
-      >
-        {{ type.initial }}: {{ type.total }}
-      </VChip>
+    <div v-if="buildingTypeTotals.length > 0">
+      <div class="px-3 pt-2 pb-1 text-caption text-medium-emphasis">
+        Total buildings: <strong>{{ mappingStore.totalBuildings }}</strong>
+      </div>
+      <div class="chip-grid pb-2 pt-1 px-1">
+        <VChip
+          v-for="type in buildingTypeTotals"
+          :key="type.key"
+          class="ma-1 justify-center"
+        >
+          {{ type.initial }}: {{ type.total }}
+        </VChip>
+      </div>
     </div>
 
     <VDivider />
