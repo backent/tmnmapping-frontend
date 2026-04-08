@@ -2,7 +2,7 @@ import type { MappingBuilding } from '@/types/mapping'
 
 const LCD_COLOR_MAP: Record<string, string> = {
   TMN: '#0b97f3',
-  Competitor: '#c72b29',
+  Competitor: '#913c92',
   CoExist: '#5ecce0',
   Opportunity: '#8d91a9',
 }
