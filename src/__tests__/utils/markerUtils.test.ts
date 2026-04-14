@@ -109,9 +109,9 @@ describe('getMarkerIconConfig', () => {
         expect(svg).toContain('#0b97f3')
       })
 
-      it('"Competitor" → #c72b29', () => {
+      it('"Competitor" → #913c92', () => {
         const svg = decodeSvgUrl(getMarkerIconConfig(makeBuilding({ lcd_presence_status: 'Competitor' }), [], false)!.url)
-        expect(svg).toContain('#c72b29')
+        expect(svg).toContain('#913c92')
       })
 
       it('"CoExist" → #5ecce0', () => {
