@@ -89,6 +89,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
       {
         input,
         sessionToken: sessionToken || undefined,
+        componentRestrictions: { country: 'ID' },
       },
       (results: google.maps.places.AutocompletePrediction[] | null, status: google.maps.places.PlacesServiceStatus) => {
         isLoading.value = false
