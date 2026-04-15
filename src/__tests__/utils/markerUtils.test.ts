@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getMarkerIconConfig } from '@/utils/markerUtils'
+import { computeMarkerSize, getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding } from '@/types/mapping'
 
 // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ describe('getMarkerIconConfig', () => {
       })
     })
 
-    it('scaledSize is 30×40', () => {
+    it('scaledSize is 30×40 at default zoom', () => {
       const SizeMock = makeSizeCtor()
 
       vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
@@ -177,12 +177,103 @@ describe('getMarkerIconConfig', () => {
       expect(SizeMock).toHaveBeenCalledWith(30, 40)
     })
 
-    it('anchor is at (15, 40)', () => {
+    it('anchor is at (15, 40) at default zoom', () => {
       const PointMock = makePointCtor()
 
       vi.stubGlobal('google', { maps: { Size: makeSizeCtor(), Point: PointMock } })
       getMarkerIconConfig(makeBuilding(), [], false)
       expect(PointMock).toHaveBeenCalledWith(15, 40)
+    })
+
+    describe('zoom-responsive sizing', () => {
+      it('zoom 14 (base) → 30×40', () => {
+        const SizeMock = makeSizeCtor()
+        const PointMock = makePointCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: PointMock } })
+        getMarkerIconConfig(makeBuilding(), [], false, 14)
+        expect(SizeMock).toHaveBeenCalledWith(30, 40)
+        expect(PointMock).toHaveBeenCalledWith(15, 40)
+      })
+
+      it('zoom 11 → smaller than base', () => {
+        const SizeMock = makeSizeCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
+        getMarkerIconConfig(makeBuilding(), [], false, 11)
+        const [w, h] = SizeMock.mock.calls[0] as [number, number]
+
+        expect(w).toBeLessThan(30)
+        expect(h).toBeLessThan(40)
+      })
+
+      it('zoom 17 → clamped at base (30×40)', () => {
+        const SizeMock = makeSizeCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
+        getMarkerIconConfig(makeBuilding(), [], false, 17)
+        expect(SizeMock).toHaveBeenCalledWith(30, 40)
+      })
+
+      it('zoom 20 → clamped at base (30×40)', () => {
+        const SizeMock = makeSizeCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
+        getMarkerIconConfig(makeBuilding(), [], false, 20)
+        expect(SizeMock).toHaveBeenCalledWith(30, 40)
+      })
+
+      it('zoom 6 → clamped at 0.45× base (14×18)', () => {
+        const SizeMock = makeSizeCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
+        getMarkerIconConfig(makeBuilding(), [], false, 6)
+        expect(SizeMock).toHaveBeenCalledWith(14, 18)
+      })
+
+      it('anchor = (width/2, height) at arbitrary zoom', () => {
+        const SizeMock = makeSizeCtor()
+        const PointMock = makePointCtor()
+
+        vi.stubGlobal('google', { maps: { Size: SizeMock, Point: PointMock } })
+        getMarkerIconConfig(makeBuilding(), [], false, 11)
+
+        const [w, h] = SizeMock.mock.calls[0] as [number, number]
+        const [ax, ay] = PointMock.mock.calls[0] as [number, number]
+
+        expect(ax).toBe(Math.round(w / 2))
+        expect(ay).toBe(h)
+      })
+    })
+  })
+
+  describe('computeMarkerSize', () => {
+    it('returns base 30×40 at zoom 14', () => {
+      expect(computeMarkerSize(14)).toEqual({ width: 30, height: 40 })
+    })
+
+    it('clamps at lower bound (0.45×) for very low zoom', () => {
+      expect(computeMarkerSize(4)).toEqual({ width: 14, height: 18 })
+    })
+
+    it('clamps at upper bound (1.0×) for high zoom', () => {
+      expect(computeMarkerSize(22)).toEqual({ width: 30, height: 40 })
+    })
+
+    it('scales monotonically when zooming out from base', () => {
+      const smaller = computeMarkerSize(10)
+      const small = computeMarkerSize(12)
+      const base = computeMarkerSize(14)
+
+      expect(smaller.width).toBeLessThan(small.width)
+      expect(small.width).toBeLessThan(base.width)
+    })
+
+    it('does not grow past base when zooming in', () => {
+      const base = computeMarkerSize(14)
+      const zoomedIn = computeMarkerSize(18)
+
+      expect(zoomedIn).toEqual(base)
     })
   })
 

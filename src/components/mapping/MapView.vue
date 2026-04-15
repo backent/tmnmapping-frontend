@@ -49,6 +49,9 @@ const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
 let lastDrawingManagerOverlay: google.maps.Polygon | null = null
 let overlaycompleteListener: google.maps.MapsEventListener | null = null
 let idleListener: google.maps.MapsEventListener | null = null
+let zoomChangedListener: google.maps.MapsEventListener | null = null
+let zoomResizeRafId: number | null = null
+let currentZoom: number = ZOOM_LEVEL
 const IDLE_DEBOUNCE_MS = 350
 let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const DEBUG_POLYGON = true // set false to disable polygon overlay debug logs
@@ -97,6 +100,22 @@ onMounted(async () => {
       disableDoubleClickZoom: true,
       clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.),
       streetViewControl: false,
+    })
+
+    currentZoom = map.value.getZoom() ?? ZOOM_LEVEL
+
+    // Resize pooled markers when zoom changes. rAF-throttled so rapid
+    // scroll/pinch events don't trigger a setIcon storm per frame.
+    zoomChangedListener = google.maps.event.addListener(map.value, 'zoom_changed', () => {
+      if (!map.value)
+        return
+      currentZoom = map.value.getZoom() ?? currentZoom
+      if (zoomResizeRafId !== null)
+        return
+      zoomResizeRafId = requestAnimationFrame(() => {
+        zoomResizeRafId = null
+        applyZoomToMarkers(currentZoom)
+      })
     })
 
     // Handle double click
@@ -271,6 +290,22 @@ function selectBuildingFromPicker(building: MappingBuilding) {
   closeBuildingPicker()
 }
 
+/**
+ * Resize every pooled building marker to match the current zoom level.
+ * Regenerates the full icon (including the SVG data URL, whose natural width/height
+ * track the target display size) so Google Maps keeps natural == display size —
+ * this avoids clipping and hit-box drift when zooming.
+ */
+function applyZoomToMarkers(zoom: number) {
+  const installation = props.filters.installation || []
+
+  for (const { marker, building } of Object.values(markersByBuildingId.value)) {
+    const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false, zoom)
+    if (iconConfig)
+      marker.setIcon(iconConfig)
+  }
+}
+
 function updateMarkers() {
   if (!map.value)
     return
@@ -284,7 +319,7 @@ function updateMarkers() {
     let entry = markersByBuildingId.value[id]
 
     if (!entry) {
-      const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false)
+      const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false, currentZoom)
       if (!iconConfig)
         continue
 
@@ -571,6 +606,14 @@ onBeforeUnmount(() => {
   if (idleListener) {
     google.maps.event.removeListener(idleListener)
     idleListener = null
+  }
+  if (zoomChangedListener) {
+    google.maps.event.removeListener(zoomChangedListener)
+    zoomChangedListener = null
+  }
+  if (zoomResizeRafId !== null) {
+    cancelAnimationFrame(zoomResizeRafId)
+    zoomResizeRafId = null
   }
   if (overlaycompleteListener) {
     google.maps.event.removeListener(overlaycompleteListener)
