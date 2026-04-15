@@ -17,9 +17,8 @@ const salesPackageStore = useSalesPackageStore()
 
 // Fetch sales packages if not already loaded
 onMounted(async () => {
-  if (salesPackageStore.packages.length === 0) {
+  if (salesPackageStore.packages.length === 0)
     await salesPackageStore.fetchSalesPackages({ take: 1000 }) // Fetch all packages
-  }
 })
 
 // Transform sales packages to autocomplete items (title/value for VAutocomplete)

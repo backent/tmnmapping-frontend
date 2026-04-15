@@ -60,9 +60,7 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
       width="326"
       app
     >
-      <FilterSidebar
-        :reporting="isReporting"
-      />
+      <FilterSidebar :reporting="isReporting" />
     </VNavigationDrawer>
 
     <VMain>
@@ -98,4 +96,3 @@ const handleMapDoubleClick = (lat: number, lng: number) => {
   z-index: 1000;
 }
 </style>
-

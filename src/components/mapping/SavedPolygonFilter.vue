@@ -8,9 +8,8 @@ const savedPolygonStore = useSavedPolygonStore()
 const mappingStore = useMappingStore()
 
 onMounted(async () => {
-  if (savedPolygonStore.savedPolygons.length === 0) {
+  if (savedPolygonStore.savedPolygons.length === 0)
     await savedPolygonStore.fetchSavedPolygons({ take: 500 })
-  }
 })
 
 const items = computed(() => {
@@ -26,17 +25,20 @@ const selectedId = ref<number | null>(null)
 
 function pointsToFilterFormat(polygon: SavedPolygon): { lat: number; lng: number }[] {
   const sorted = [...polygon.points].sort((a, b) => a.ord - b.ord)
+
   return sorted.map(p => ({ lat: p.lat, lng: p.lng }))
 }
 
-watch(selectedId, async (id) => {
+watch(selectedId, async id => {
   if (id == null) {
     mappingStore.setPolygon(null)
+
     return
   }
   const polygon = savedPolygonStore.savedPolygons.find(p => p.id === id)
   if (polygon) {
     const path = pointsToFilterFormat(polygon)
+
     await mappingStore.setPolygon(path)
     mappingStore.setFitBoundsToPolygon(true)
   }
@@ -45,19 +47,21 @@ watch(selectedId, async (id) => {
 // When polygon is cleared elsewhere (e.g. Clear polygon button), clear dropdown selection
 watch(
   () => mappingStore.filters.polygon,
-  (polygon) => {
-    if (!polygon || polygon.length < 3) {
+  polygon => {
+    if (!polygon || polygon.length < 3)
       selectedId.value = null
-    }
   },
   { deep: true },
 )
 
 async function deletePolygon(id: number, e: Event) {
   e.stopPropagation()
+
   const polygon = savedPolygonStore.savedPolygons.find(p => p.id === id)
-  if (!polygon) return
-  if (!confirm(`Delete saved polygon "${polygon.name}"?`)) return
+  if (!polygon)
+    return
+  if (!confirm(`Delete saved polygon "${polygon.name}"?`))
+    return
   try {
     await savedPolygonStore.deleteSavedPolygon(id)
     if (selectedId.value === id) {

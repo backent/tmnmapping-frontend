@@ -1,7 +1,7 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { SalesPackage, CreateSalesPackageRequest, UpdateSalesPackageRequest } from '@/types/salespackage'
+import type { CreateSalesPackageRequest, SalesPackage, UpdateSalesPackageRequest } from '@/types/salespackage'
 
 export function getSalesPackages(params?: PaginationParams): Promise<ApiResponse<SalesPackage[]>> {
   return getApi<ApiResponse<SalesPackage[]>>(
@@ -43,7 +43,9 @@ export function deleteSalesPackage(id: number): Promise<ApiResponse<string>> {
 
 export function importSalesPackages(file: File): Promise<ApiResponse<SalesPackage[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<SalesPackage[]>>(
     apiConfig.endpoints.sales_packages_import,
     formData,

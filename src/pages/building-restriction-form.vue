@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useBuildingRestrictionStore } from '@/stores/buildingrestriction'
-import { useBuildingStore } from '@/stores/building'
-import type { CreateBuildingRestrictionRequest } from '@/types/buildingrestriction'
+import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
+import type { BuildingRef, CreateBuildingRestrictionRequest } from '@/types/buildingrestriction'
 
 const route = useRoute()
 const router = useRouter()
 const buildingRestrictionStore = useBuildingRestrictionStore()
-const buildingStore = useBuildingStore()
 
 const isEdit = computed(() => !!route.params.id)
 const restrictionId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
-const form = ref<CreateBuildingRestrictionRequest>({
+interface BuildingRestrictionForm {
+  name: string
+  buildings: BuildingRef[]
+}
+
+const form = ref<BuildingRestrictionForm>({
   name: '',
-  building_ids: [],
+  buildings: [],
 })
 
 const isLoading = ref(false)
@@ -25,60 +29,61 @@ const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
-const buildingItems = computed(() =>
-  buildingStore.buildingDropdownOptions.map(b => ({
-    id: b.id,
-    name: b.name,
-    building_type: b.building_type,
-    title: b.building_type ? `${b.name} (${b.building_type})` : b.name,
-  })),
-)
-
 const fetchRestriction = async () => {
-  if (!restrictionId.value) return
+  if (!restrictionId.value)
+    return
   isLoading.value = true
   try {
     await buildingRestrictionStore.fetchBuildingRestrictionById(restrictionId.value)
+
     const restriction = buildingRestrictionStore.currentRestriction
     if (restriction) {
       form.value = {
         name: restriction.name,
-        building_ids: restriction.buildings.map(b => b.id),
+        buildings: restriction.buildings,
       }
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('Fetch error:', error)
     errorMessage.value = error?.details?.message || error?.details || 'Failed to load building restriction'
-  } finally {
+  }
+  finally {
     isLoading.value = false
   }
 }
 
 onMounted(async () => {
-  await buildingStore.fetchBuildingDropdownOptions()
-  if (isEdit.value) {
+  if (isEdit.value)
     await fetchRestriction()
-  }
 })
 
 const submit = async () => {
   errorMessage.value = ''
   if (!form.value.name.trim()) {
     errorMessage.value = 'Name is required'
+
     return
   }
-  if (!form.value.building_ids.length) {
+  if (!form.value.buildings.length) {
     errorMessage.value = 'At least one building is required'
+
     return
+  }
+
+  const payload: CreateBuildingRestrictionRequest = {
+    name: form.value.name,
+    building_ids: form.value.buildings.map(b => b.id),
   }
 
   isSaving.value = true
   try {
     if (isEdit.value && restrictionId.value) {
-      await buildingRestrictionStore.updateBuildingRestriction(restrictionId.value, form.value)
+      await buildingRestrictionStore.updateBuildingRestriction(restrictionId.value, payload)
       snackbarMessage.value = 'Building restriction updated successfully'
-    } else {
-      await buildingRestrictionStore.createBuildingRestriction(form.value)
+    }
+    else {
+      await buildingRestrictionStore.createBuildingRestriction(payload)
       snackbarMessage.value = 'Building restriction created successfully'
     }
     snackbarColor.value = 'success'
@@ -86,14 +91,18 @@ const submit = async () => {
     setTimeout(() => {
       router.push({ name: 'building-restrictions' })
     }, 1000)
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('Save error:', error)
+
     const msg = error?.details?.message || error?.details || 'Failed to save building restriction'
+
     errorMessage.value = msg
     snackbarMessage.value = msg
     snackbarColor.value = 'error'
     snackbar.value = true
-  } finally {
+  }
+  finally {
     isSaving.value = false
   }
 }
@@ -148,27 +157,21 @@ onUnmounted(() => {
               />
             </VCol>
             <VCol cols="12">
-              <VAutocomplete
-                v-model="form.building_ids"
-                :items="buildingItems"
-                item-title="title"
-                item-value="id"
-                label="Buildings"
-                multiple
-                chips
-                closable-chips
-                :loading="buildingStore.isLoading"
+              <VDivider class="my-2" />
+              <BuildingSelectField
+                v-model="form.buildings"
                 :disabled="isSaving"
-                hint="Type to search and select at least one building"
-                persistent-hint
-                clearable
               />
             </VCol>
-            <VCol cols="12" class="d-flex gap-2">
+            <VCol
+              cols="12"
+              class="d-flex gap-2"
+            >
               <VBtn
                 type="submit"
                 color="primary"
                 :loading="isSaving"
+                :disabled="form.buildings.length === 0"
               >
                 {{ isEdit ? 'Update' : 'Create' }}
               </VBtn>

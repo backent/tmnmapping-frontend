@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
-import { useBuildingStore } from '@/stores/building'
-import type { CreateSalesPackageRequest } from '@/types/salespackage'
+import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
+import type { BuildingRef, CreateSalesPackageRequest } from '@/types/salespackage'
 
 const route = useRoute()
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
-const buildingStore = useBuildingStore()
 
 const isEdit = computed(() => !!route.params.id)
 const packageId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
-const form = ref<CreateSalesPackageRequest>({
+interface SalesPackageForm {
+  name: string
+  buildings: BuildingRef[]
+}
+
+const form = ref<SalesPackageForm>({
   name: '',
-  building_ids: [],
+  buildings: [],
 })
 
 const isLoading = ref(false)
@@ -25,60 +29,61 @@ const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
-const buildingItems = computed(() =>
-  buildingStore.buildingDropdownOptions.map(b => ({
-    id: b.id,
-    name: b.name,
-    building_type: b.building_type,
-    title: b.building_type ? `${b.name} (${b.building_type})` : b.name,
-  })),
-)
-
 const fetchPackage = async () => {
-  if (!packageId.value) return
+  if (!packageId.value)
+    return
   isLoading.value = true
   try {
     await salesPackageStore.fetchSalesPackageById(packageId.value)
+
     const pkg = salesPackageStore.currentPackage
     if (pkg) {
       form.value = {
         name: pkg.name,
-        building_ids: pkg.buildings.map(b => b.id),
+        buildings: pkg.buildings,
       }
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('Fetch error:', error)
     errorMessage.value = error?.details?.message || error?.details || 'Failed to load sales package'
-  } finally {
+  }
+  finally {
     isLoading.value = false
   }
 }
 
 onMounted(async () => {
-  await buildingStore.fetchBuildingDropdownOptions()
-  if (isEdit.value) {
+  if (isEdit.value)
     await fetchPackage()
-  }
 })
 
 const submit = async () => {
   errorMessage.value = ''
   if (!form.value.name.trim()) {
     errorMessage.value = 'Name is required'
+
     return
   }
-  if (!form.value.building_ids.length) {
+  if (!form.value.buildings.length) {
     errorMessage.value = 'At least one building is required'
+
     return
+  }
+
+  const payload: CreateSalesPackageRequest = {
+    name: form.value.name,
+    building_ids: form.value.buildings.map(b => b.id),
   }
 
   isSaving.value = true
   try {
     if (isEdit.value && packageId.value) {
-      await salesPackageStore.updateSalesPackage(packageId.value, form.value)
+      await salesPackageStore.updateSalesPackage(packageId.value, payload)
       snackbarMessage.value = 'Sales package updated successfully'
-    } else {
-      await salesPackageStore.createSalesPackage(form.value)
+    }
+    else {
+      await salesPackageStore.createSalesPackage(payload)
       snackbarMessage.value = 'Sales package created successfully'
     }
     snackbarColor.value = 'success'
@@ -86,14 +91,18 @@ const submit = async () => {
     setTimeout(() => {
       router.push({ name: 'sales-packages' })
     }, 1000)
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('Save error:', error)
+
     const msg = error?.details?.message || error?.details || 'Failed to save sales package'
+
     errorMessage.value = msg
     snackbarMessage.value = msg
     snackbarColor.value = 'error'
     snackbar.value = true
-  } finally {
+  }
+  finally {
     isSaving.value = false
   }
 }
@@ -148,27 +157,21 @@ onUnmounted(() => {
               />
             </VCol>
             <VCol cols="12">
-              <VAutocomplete
-                v-model="form.building_ids"
-                :items="buildingItems"
-                item-title="title"
-                item-value="id"
-                label="Buildings"
-                multiple
-                chips
-                closable-chips
-                :loading="buildingStore.isLoading"
+              <VDivider class="my-2" />
+              <BuildingSelectField
+                v-model="form.buildings"
                 :disabled="isSaving"
-                hint="Type to search and select at least one building"
-                persistent-hint
-                clearable
               />
             </VCol>
-            <VCol cols="12" class="d-flex gap-2">
+            <VCol
+              cols="12"
+              class="d-flex gap-2"
+            >
               <VBtn
                 type="submit"
                 color="primary"
                 :loading="isSaving"
+                :disabled="form.buildings.length === 0"
               >
                 {{ isEdit ? 'Update' : 'Create' }}
               </VBtn>

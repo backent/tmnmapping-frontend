@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { useMappingStore } from '@/stores/mapping'
 import { useBuildingStore } from '@/stores/building'
-import { useDebounceFn } from '@vueuse/core'
 
 interface Props {
   modelValue: string[]
@@ -21,7 +21,7 @@ const buildingStore = useBuildingStore()
 
 const selected = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  set: value => emit('update:modelValue', value),
 })
 
 // Single Location Mode - AutocompleteService approach (avoids pac-container z-index issues)
@@ -45,6 +45,7 @@ const createSessionToken = () => {
 const initializeServices = () => {
   if (typeof google === 'undefined' || !google.maps?.places) {
     setTimeout(initializeServices, 100)
+
     return
   }
 
@@ -61,6 +62,7 @@ const initializeServices = () => {
 const getPredictions = useDebounceFn(async (input: string) => {
   if (typeof google === 'undefined' || !google.maps?.places) {
     initializeServices()
+
     return
   }
 
@@ -70,6 +72,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
     }
     catch (error) {
       console.error('Error creating AutocompleteService:', error)
+
       return
     }
   }
@@ -77,6 +80,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
   if (!input.trim()) {
     predictions.value = []
     showPredictions.value = false
+
     return
   }
 
@@ -119,11 +123,13 @@ watch(() => locationSearchText.value, newValue => {
     showPredictions.value = false
     selectedIndex.value = -1
     justSelected.value = false
+
     return
   }
 
   if (justSelected.value) {
     justSelected.value = false
+
     return
   }
 
@@ -160,6 +166,7 @@ const selectPlace = async (prediction: google.maps.places.AutocompletePrediction
           const lng = place.geometry.location.lng()
 
           const placeName = place.formatted_address || place.name || ''
+
           justSelected.value = true
           locationSearchText.value = placeName
           predictions.value = []
@@ -208,12 +215,12 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleClickOutside = (event: MouseEvent) => {
   setTimeout(() => {
     const target = event.target as HTMLElement
-    if (!locationTextFieldRef.value?.$el) return
+    if (!locationTextFieldRef.value?.$el)
+      return
 
     const wrapper = locationTextFieldRef.value.$el.closest('.location-filter-wrapper')
-    if (wrapper && !wrapper.contains(target) && !target.closest('.location-predictions-dropdown')) {
+    if (wrapper && !wrapper.contains(target) && !target.closest('.location-predictions-dropdown'))
       showPredictions.value = false
-    }
   }, 0)
 }
 
@@ -223,19 +230,21 @@ onMounted(async () => {
       initializeServices()
       document.addEventListener('click', handleClickOutside)
     })
-  } else if (props.mode === 'multi' && !buildingStore.filterOptions) {
+  }
+  else if (props.mode === 'multi' && !buildingStore.filterOptions) {
     await buildingStore.fetchFilterOptions()
   }
 })
 
-watch(() => props.mode, async (newMode) => {
+watch(() => props.mode, async newMode => {
   if (newMode === 'single') {
     nextTick(() => {
       if (!autocompleteService)
         initializeServices()
       document.addEventListener('click', handleClickOutside)
     })
-  } else if (newMode === 'multi' && !buildingStore.filterOptions) {
+  }
+  else if (newMode === 'multi' && !buildingStore.filterOptions) {
     await buildingStore.fetchFilterOptions()
   }
 })
@@ -247,18 +256,21 @@ onUnmounted(() => {
 // Multi Location Mode - Subdistrict items for VAutocomplete
 const subdistrictItems = computed(() => {
   const subdistricts = buildingStore.filterOptions?.subdistrict || []
+
   return subdistricts.map(subdistrict => ({
     title: subdistrict,
     value: subdistrict,
   }))
 })
-
 </script>
 
 <template>
   <!-- Single Location Mode - AutocompleteService with custom dropdown -->
   <template v-if="mode === 'single'">
-    <div class="location-filter-wrapper" style="position: relative;">
+    <div
+      class="location-filter-wrapper"
+      style="position: relative;"
+    >
       <VTextField
         ref="locationTextFieldRef"
         v-model="locationSearchText"
@@ -307,7 +319,10 @@ const subdistrictItems = computed(() => {
             @mouseenter="selectedIndex = index"
           >
             <template #prepend>
-              <VIcon icon="mdi-map-marker" class="me-2" />
+              <VIcon
+                icon="mdi-map-marker"
+                class="me-2"
+              />
             </template>
             <VListItemTitle>
               {{ prediction.description }}

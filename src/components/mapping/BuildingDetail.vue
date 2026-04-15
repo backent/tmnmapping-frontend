@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { MappingBuilding } from '@/types/mapping'
 import { getBuildingDetailForMapping } from '@/http/mapping'
 import { getImageProxyPath } from '@/utils/images'
@@ -26,9 +26,8 @@ const errorMessage = ref('')
 
 // Helper function to transform images array to photos.data format
 function transformImagesToPhotos(images: any[] | undefined): { data: Array<{ full_path: string }> } | undefined {
-  if (!images || !Array.isArray(images) || images.length === 0) {
+  if (!images || !Array.isArray(images) || images.length === 0)
     return undefined
-  }
 
   const transformed = images
     .map((img: any) => ({
@@ -40,34 +39,36 @@ function transformImagesToPhotos(images: any[] | undefined): { data: Array<{ ful
 }
 
 // Watch for building changes and fetch full details
-watch(() => props.building, async (building) => {
+watch(() => props.building, async building => {
   if (building) {
     // Transform initial building data to ensure images are properly formatted
     const transformedBuilding: MappingBuilding = {
       ...building,
+
       // Transform images from mapping response to photos format
       photos: building.photos || transformImagesToPhotos((building as any).images) || { data: [] },
     }
-    
+
     // Show building from props immediately (for instant feedback)
     buildingDetail.value = transformedBuilding
-    
+
     // Then fetch full details in the background (similar to oldmapping)
     isLoading.value = true
     errorMessage.value = ''
-    
+
     try {
       // Fetch full building details (similar to oldmapping's /api/admin/building/${id})
       const response: ApiResponse<any> = await getBuildingDetailForMapping(building.id)
-      
+
       if (response.data) {
         // Transform the response to match MappingBuilding interface
         // The API might return Building type, so we need to map it
         const apiData = response.data
-        
+
         // Merge with building from props, prioritizing API data for fields that exist
         buildingDetail.value = {
           ...building,
+
           // Map Building type fields to MappingBuilding if needed
           building_name: apiData.building_name || apiData.name || building.building_name,
           address: apiData.address || building.address,
@@ -77,10 +78,13 @@ watch(() => props.building, async (building) => {
           status: apiData.status || apiData.building_status || building.status,
           impression: apiData.impression?.toString() || building.impression,
           audience_actual: apiData.audience_actual || apiData.audience || building.audience_actual,
+
           // Transform images to photos format - use getImageProxyPath for proper URL conversion
           photos: apiData.photos || transformImagesToPhotos(apiData.images) || building.photos || { data: [] },
+
           // Keep job_detail_info from building if API doesn't provide it
           job_detail_info: apiData.job_detail_info || building.job_detail_info || [],
+
           // Keep other mapping-specific fields from building
           installation: apiData.installation || building.installation,
           last_renovated: apiData.last_renovated ?? building.last_renovated,
@@ -89,14 +93,18 @@ watch(() => props.building, async (building) => {
           ordered: apiData.ordered ?? building.ordered,
         }
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error fetching building details:', error)
+
       // Don't show error to user, just use building from props
       // The building from props already has the necessary data from the mapping list
-    } finally {
+    }
+    finally {
       isLoading.value = false
     }
-  } else {
+  }
+  else {
     buildingDetail.value = null
   }
 }, { immediate: true })
@@ -118,7 +126,9 @@ const defaultImage = '/images/defaultimage.jpeg'
       indeterminate
       color="primary"
     />
-    <p class="mt-2">Loading building details...</p>
+    <p class="mt-2">
+      Loading building details...
+    </p>
   </div>
 
   <!-- Error State -->
@@ -237,9 +247,7 @@ const defaultImage = '/images/defaultimage.jpeg'
     >
       <VListItemContent>
         <VListItemTitle>Screen Presence :</VListItemTitle>
-        <VListItemSubtitle
-          v-if="!buildingDetail.job_detail_info || buildingDetail.job_detail_info.length < 1"
-        >
+        <VListItemSubtitle v-if="!buildingDetail.job_detail_info || buildingDetail.job_detail_info.length < 1">
           -
         </VListItemSubtitle>
         <VListItemSubtitle
@@ -322,4 +330,3 @@ const defaultImage = '/images/defaultimage.jpeg'
     </VBtn>
   </VCard>
 </template>
-

@@ -1,6 +1,11 @@
 export interface BuildingRef {
   id: number
   name: string
+  project_name: string
+  subdistrict: string
+  citytown: string
+  province: string
+  building_type: string
 }
 
 export interface SalesPackage {

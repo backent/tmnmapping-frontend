@@ -153,24 +153,28 @@ describe('isToday', () => {
 
   it('returns false for yesterday', () => {
     const yesterday = new Date()
+
     yesterday.setDate(yesterday.getDate() - 1)
     expect(isToday(yesterday)).toBe(false)
   })
 
   it('returns false for tomorrow', () => {
     const tomorrow = new Date()
+
     tomorrow.setDate(tomorrow.getDate() + 1)
     expect(isToday(tomorrow)).toBe(false)
   })
 
   it('returns false for same day last year', () => {
     const lastYear = new Date()
+
     lastYear.setFullYear(lastYear.getFullYear() - 1)
     expect(isToday(lastYear)).toBe(false)
   })
 
   it('returns true for a different time on the same day', () => {
     const sameDay = new Date()
+
     sameDay.setHours(0, 0, 0, 0)
     expect(isToday(sameDay)).toBe(true)
   })

@@ -58,6 +58,7 @@ onMounted(async () => {
           version: 'weekly',
           libraries: ['places'],
         })
+
         await loader.load()
         isGoogleMapsLoaded.value = true
       }
@@ -75,9 +76,8 @@ onMounted(async () => {
     isGoogleMapsLoaded.value = true
   }
 
-  if (isEdit.value) {
+  if (isEdit.value)
     fetchPoint()
-  }
 })
 
 const fetchPoint = async () => {
@@ -87,6 +87,7 @@ const fetchPoint = async () => {
   isLoading.value = true
   try {
     await poiPointStore.fetchPOIPointById(pointId.value)
+
     const point = poiPointStore.currentPoint
     if (point) {
       form.value = {
@@ -127,11 +128,13 @@ const submit = async () => {
 
   if (!form.value.poi_name.trim()) {
     errorMessage.value = 'POI Name is required'
+
     return
   }
 
   if (!form.value.latitude || !form.value.longitude) {
     errorMessage.value = 'Location (latitude and longitude) is required'
+
     return
   }
 
@@ -164,7 +167,9 @@ const submit = async () => {
   }
   catch (error: any) {
     console.error('Save error:', error)
+
     const msg = error?.details?.message || error?.details || 'Failed to save POI point'
+
     errorMessage.value = msg
     snackbarMessage.value = msg
     snackbarColor.value = 'error'

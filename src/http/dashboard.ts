@@ -1,7 +1,7 @@
 import { getApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { DashboardReport, DashboardFilters, LCDPresenceSummaryResponse } from '@/types/dashboard'
+import type { DashboardFilters, DashboardReport, LCDPresenceSummaryResponse } from '@/types/dashboard'
 
 function toQueryParams(filters: Partial<DashboardFilters>): QueryParams {
   return {

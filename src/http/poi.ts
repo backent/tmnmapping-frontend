@@ -1,7 +1,7 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
+import type { CreatePOIRequest, POI, UpdatePOIRequest } from '@/types/poi'
 
 // GET /pois - List all POIs with pagination and optional search
 export function getPOIs(params?: PaginationParams): Promise<ApiResponse<POI[]>> {
@@ -49,7 +49,9 @@ export function deletePOI(id: number): Promise<ApiResponse<string>> {
 // POST /pois/import - Import POIs from xlsx/csv
 export function importPOIs(file: File): Promise<ApiResponse<POI[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<POI[]>>(
     apiConfig.endpoints.pois_import,
     formData,

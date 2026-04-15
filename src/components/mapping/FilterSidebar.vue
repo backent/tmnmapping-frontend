@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useMappingStore } from '@/stores/mapping'
-import { useBuildingStore } from '@/stores/building'
-import { useAuthStore } from '@/stores/auth'
-import { exportMappingData } from '@/utils/exportUtils'
 import { useDebounceFn } from '@vueuse/core'
 import BuildingTypeFilter from './BuildingTypeFilter.vue'
 import InstallationFilter from './InstallationFilter.vue'
@@ -22,6 +18,10 @@ import POIFilter from './POIFilter.vue'
 import BuildingDetail from './BuildingDetail.vue'
 import SavePolygonDialog from './SavePolygonDialog.vue'
 import SavedPolygonFilter from './SavedPolygonFilter.vue'
+import { exportMappingData } from '@/utils/exportUtils'
+import { useAuthStore } from '@/stores/auth'
+import { useBuildingStore } from '@/stores/building'
+import { useMappingStore } from '@/stores/mapping'
 
 interface Props {
   reporting?: boolean
@@ -54,6 +54,7 @@ const debouncedUpdateFilters = useDebounceFn(async () => {
 watch(
   () => {
     const { poi_ids: _poi, polygon: _polygon, ...rest } = mappingStore.filters
+
     return JSON.stringify(rest)
   },
   () => {
@@ -70,11 +71,13 @@ const handleExport = async () => {
     snackbarMessage.value = 'No data to export'
     snackbarColor.value = 'error'
     snackbar.value = true
+
     return
   }
   isExporting.value = true
   try {
     const blob = await mappingStore.exportData()
+
     exportMappingData(blob)
     snackbarMessage.value = 'Report downloaded successfully'
     snackbarColor.value = 'success'
@@ -136,6 +139,7 @@ const buildingTypeTotals = computed(() => {
   return buildingTypes
     .map(typeName => {
       const totalsKey = getTotalsKey(typeName)
+
       // Get total from the dynamic totals map (defaults to 0 if not found)
       const total = totals[totalsKey] || 0
 
@@ -146,6 +150,7 @@ const buildingTypeTotals = computed(() => {
         key: totalsKey,
       }
     })
+
   // Removed filter - show all building types from filter options, even with 0 counts
 })
 </script>
@@ -189,13 +194,9 @@ const buildingTypeTotals = computed(() => {
             @close="mappingStore.setSelectedBuilding(null)"
           />
 
-
-         
-
           <!-- Filter Card -->
-          <VCard class="mb-4 pb-2" >
+          <VCard class="mb-4 pb-2">
             <div>
-
               <!-- Polygon filter: draw on map, filter buildings inside -->
               <VDivider />
               <VSubheader>Polygon</VSubheader>
@@ -236,7 +237,7 @@ const buildingTypeTotals = computed(() => {
               />
               <SavedPolygonFilter v-if="!isReporting" />
 
-                <!-- Building Type -->
+              <!-- Building Type -->
               <BuildingTypeFilter
                 :model-value="mappingStore.filters.building_type || []"
                 @update:model-value="mappingStore.filters.building_type = $event"
@@ -379,6 +380,4 @@ const buildingTypeTotals = computed(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 }
-
 </style>
-

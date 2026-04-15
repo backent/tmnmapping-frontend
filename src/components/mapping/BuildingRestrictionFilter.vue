@@ -17,9 +17,8 @@ const buildingRestrictionStore = useBuildingRestrictionStore()
 
 // Fetch building restrictions if not already loaded
 onMounted(async () => {
-  if (buildingRestrictionStore.restrictions.length === 0) {
+  if (buildingRestrictionStore.restrictions.length === 0)
     await buildingRestrictionStore.fetchBuildingRestrictions({ take: 1000 }) // Fetch all restrictions
-  }
 })
 
 // Transform building restrictions to autocomplete items (title/value for VAutocomplete)

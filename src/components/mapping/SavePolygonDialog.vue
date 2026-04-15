@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useSavedPolygonStore } from '@/stores/savedpolygon'
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'saved'): void
@@ -19,13 +20,13 @@ const isSaving = ref(false)
 const errorMessage = ref('')
 
 const canSave = computed(() => {
-  return name.value.trim().length > 0 &&
-    props.polygon != null &&
-    props.polygon.length >= 3 &&
-    !isSaving.value
+  return name.value.trim().length > 0
+    && props.polygon != null
+    && props.polygon.length >= 3
+    && !isSaving.value
 })
 
-watch(() => props.modelValue, (visible) => {
+watch(() => props.modelValue, visible => {
   if (visible) {
     name.value = ''
     errorMessage.value = ''
@@ -33,7 +34,8 @@ watch(() => props.modelValue, (visible) => {
 })
 
 async function save() {
-  if (!canSave.value || !props.polygon) return
+  if (!canSave.value || !props.polygon)
+    return
   errorMessage.value = ''
   isSaving.value = true
   try {

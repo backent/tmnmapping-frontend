@@ -1,7 +1,7 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { SubCategory, CreateSubCategoryRequest, UpdateSubCategoryRequest } from '@/types/subcategory'
+import type { CreateSubCategoryRequest, SubCategory, UpdateSubCategoryRequest } from '@/types/subcategory'
 
 export function getSubCategories(params?: PaginationParams): Promise<ApiResponse<SubCategory[]>> {
   return getApi<ApiResponse<SubCategory[]>>(
@@ -50,7 +50,9 @@ export function getSubCategoriesDropdown(): Promise<ApiResponse<SubCategory[]>> 
 
 export function importSubCategories(file: File): Promise<ApiResponse<SubCategory[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<SubCategory[]>>(
     apiConfig.endpoints.sub_categories_import,
     formData,

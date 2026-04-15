@@ -56,6 +56,7 @@ export interface PaginationParams {
   province?: string
   grade_resource?: string
   building_type?: string
+  exclude_ids?: string
 }
 
 // Lightweight building option for dropdown use

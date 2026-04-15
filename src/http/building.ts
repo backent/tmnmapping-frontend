@@ -1,7 +1,7 @@
 import { getApi, postApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingUpdateData, PaginationParams, FilterOptions, BuildingDropdownOption } from '@/types/building'
+import type { Building, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
 
 // GET /buildings - List all buildings with optional pagination
 export function getBuildings(params?: PaginationParams): Promise<ApiResponse<Building[]>> {

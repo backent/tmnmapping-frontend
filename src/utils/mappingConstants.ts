@@ -100,4 +100,3 @@ export const DEFAULT_DISTRICTS = [
   { name: 'Bogor', value: 'Bogor' },
   { name: 'Tangerang', value: 'Tangerang' },
 ] as const
-

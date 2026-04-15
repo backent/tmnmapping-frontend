@@ -1,7 +1,7 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { POIPoint, CreatePOIPointRequest, UpdatePOIPointRequest, POIPointUsageResponse } from '@/types/poipoint'
+import type { CreatePOIPointRequest, POIPoint, POIPointUsageResponse, UpdatePOIPointRequest } from '@/types/poipoint'
 
 export function getPOIPoints(params?: PaginationParams): Promise<ApiResponse<POIPoint[]>> {
   return getApi<ApiResponse<POIPoint[]>>(
@@ -58,7 +58,9 @@ export function getPOIPointsDropdown(): Promise<ApiResponse<POIPoint[]>> {
 
 export function importPOIPoints(file: File): Promise<ApiResponse<POIPoint[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<POIPoint[]>>(
     apiConfig.endpoints.poi_points_import,
     formData,

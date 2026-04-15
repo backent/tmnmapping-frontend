@@ -20,8 +20,10 @@ const props = withDefaults(defineProps<Props>(), {
 const circleInstance = ref<google.maps.Circle | null>(null)
 
 function createCircle() {
-  if (!props.map) return
+  if (!props.map)
+    return
   const radiusMeters = Math.max(0, props.radiusKm * 1000)
+
   circleInstance.value = new google.maps.Circle({
     center: props.center,
     radius: radiusMeters,
@@ -35,7 +37,8 @@ function createCircle() {
 }
 
 function updateCircle() {
-  if (!circleInstance.value) return
+  if (!circleInstance.value)
+    return
   circleInstance.value.setCenter(props.center)
   circleInstance.value.setRadius(Math.max(0, props.radiusKm * 1000))
 }

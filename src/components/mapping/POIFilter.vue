@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { usePOIStore } from '@/stores/poi'
-import type { POI } from '@/types/poi'
 
 interface Props {
   modelValue: number[] | undefined

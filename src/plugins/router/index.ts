@@ -1,7 +1,7 @@
 import type { App } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { routes } from './routes'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +17,7 @@ router.beforeEach(async to => {
     // Already authenticated — redirect away from login page
     if (authStore.isAuthenticated)
       return '/dashboard'
+
     return true
   }
 

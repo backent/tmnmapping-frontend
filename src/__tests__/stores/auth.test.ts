@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/auth'
 import type { User } from '@/http/auth'
 
+// Re-import after mock so we get the mocked versions
+import { getMe, postLogin, postLogout } from '@/http/auth'
+
 // ---------------------------------------------------------------------------
 // Mock the HTTP layer so no real network calls are made
 // ---------------------------------------------------------------------------
@@ -12,9 +15,6 @@ vi.mock('@/http/auth', () => ({
   postLogout: vi.fn(),
   getMe: vi.fn(),
 }))
-
-// Re-import after mock so we get the mocked versions
-import { getMe, postLogin, postLogout } from '@/http/auth'
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -69,16 +69,19 @@ describe('useAuthStore', () => {
   describe('initial state', () => {
     it('has null currentUser', () => {
       const store = useAuthStore()
+
       expect(store.currentUser).toBeNull()
     })
 
     it('is not authenticated', () => {
       const store = useAuthStore()
+
       expect(store.isAuthenticated).toBe(false)
     })
 
     it('is not loading', () => {
       const store = useAuthStore()
+
       expect(store.isLoading).toBe(false)
     })
   })
@@ -91,18 +94,21 @@ describe('useAuthStore', () => {
     describe('isAdmin', () => {
       it('returns true when role is "admin"', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.isAdmin).toBe(true)
       })
 
       it('returns false for other roles', () => {
         const store = useAuthStore()
+
         store.currentUser = authorUser
         expect(store.isAdmin).toBe(false)
       })
 
       it('returns false when no user is set', () => {
         const store = useAuthStore()
+
         expect(store.isAdmin).toBe(false)
       })
     })
@@ -110,12 +116,14 @@ describe('useAuthStore', () => {
     describe('isAuthor', () => {
       it('returns true when role is "author"', () => {
         const store = useAuthStore()
+
         store.currentUser = authorUser
         expect(store.isAuthor).toBe(true)
       })
 
       it('returns false for other roles', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.isAuthor).toBe(false)
       })
@@ -124,12 +132,14 @@ describe('useAuthStore', () => {
     describe('isApprover', () => {
       it('returns true when role is "approver"', () => {
         const store = useAuthStore()
+
         store.currentUser = approverUser
         expect(store.isApprover).toBe(true)
       })
 
       it('returns false for other roles', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.isApprover).toBe(false)
       })
@@ -138,12 +148,14 @@ describe('useAuthStore', () => {
     describe('isGuest', () => {
       it('returns true when role is "guest"', () => {
         const store = useAuthStore()
+
         store.currentUser = guestUser
         expect(store.isGuest).toBe(true)
       })
 
       it('returns false for other roles', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.isGuest).toBe(false)
       })
@@ -152,12 +164,14 @@ describe('useAuthStore', () => {
     describe('userName', () => {
       it('returns the user name when set', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.userName).toBe('Admin User')
       })
 
       it('returns an empty string when no user is set', () => {
         const store = useAuthStore()
+
         expect(store.userName).toBe('')
       })
     })
@@ -165,12 +179,14 @@ describe('useAuthStore', () => {
     describe('userUsername', () => {
       it('returns the username when set', () => {
         const store = useAuthStore()
+
         store.currentUser = adminUser
         expect(store.userUsername).toBe('admin')
       })
 
       it('returns an empty string when no user is set', () => {
         const store = useAuthStore()
+
         expect(store.userUsername).toBe('')
       })
     })
@@ -185,6 +201,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogin).mockResolvedValue({ data: { user: adminUser } })
 
       const store = useAuthStore()
+
       await store.login({ username: 'admin', password: 'secret' })
 
       expect(store.currentUser).toEqual(adminUser)
@@ -195,6 +212,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogin).mockResolvedValue({ data: { user: adminUser } })
 
       const store = useAuthStore()
+
       await store.login({ username: 'admin', password: 'secret' })
 
       expect(store.isLoading).toBe(false)
@@ -204,6 +222,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogin).mockRejectedValue(new Error('Unauthorised'))
 
       const store = useAuthStore()
+
       // Pre-populate state to verify it gets cleared
       store.currentUser = adminUser
       store.isAuthenticated = true
@@ -218,6 +237,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogin).mockRejectedValue(new Error('Unauthorised'))
 
       const store = useAuthStore()
+
       await expect(store.login({ username: 'bad', password: 'bad' })).rejects.toThrow()
 
       expect(store.isLoading).toBe(false)
@@ -225,6 +245,7 @@ describe('useAuthStore', () => {
 
     it('returns the raw API response', async () => {
       const mockResponse = { data: { user: adminUser }, message: 'Login successful' }
+
       vi.mocked(postLogin).mockResolvedValue(mockResponse)
 
       const store = useAuthStore()
@@ -243,6 +264,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogout).mockResolvedValue({ data: null })
 
       const store = useAuthStore()
+
       store.currentUser = adminUser
       store.isAuthenticated = true
 
@@ -256,6 +278,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogout).mockResolvedValue({ data: null })
 
       const store = useAuthStore()
+
       await store.logout()
 
       expect(store.isLoading).toBe(false)
@@ -265,6 +288,7 @@ describe('useAuthStore', () => {
       vi.mocked(postLogout).mockRejectedValue(new Error('Network error'))
 
       const store = useAuthStore()
+
       store.currentUser = adminUser
       store.isAuthenticated = true
 
@@ -286,6 +310,7 @@ describe('useAuthStore', () => {
       vi.mocked(getMe).mockResolvedValue({ data: adminUser })
 
       const store = useAuthStore()
+
       await store.fetchCurrentUser()
 
       expect(store.currentUser).toEqual(adminUser)
@@ -296,6 +321,7 @@ describe('useAuthStore', () => {
       vi.mocked(getMe).mockResolvedValue({ data: adminUser })
 
       const store = useAuthStore()
+
       await store.fetchCurrentUser()
 
       expect(store.isLoading).toBe(false)
@@ -305,6 +331,7 @@ describe('useAuthStore', () => {
       vi.mocked(getMe).mockRejectedValue(new Error('Unauthenticated'))
 
       const store = useAuthStore()
+
       store.currentUser = adminUser
       store.isAuthenticated = true
 
@@ -318,6 +345,7 @@ describe('useAuthStore', () => {
       vi.mocked(getMe).mockRejectedValue(new Error('Unauthenticated'))
 
       const store = useAuthStore()
+
       await expect(store.fetchCurrentUser()).rejects.toThrow()
 
       expect(store.isLoading).toBe(false)
@@ -331,6 +359,7 @@ describe('useAuthStore', () => {
   describe('clearAuth()', () => {
     it('resets all auth state to defaults', () => {
       const store = useAuthStore()
+
       store.currentUser = adminUser
       store.isAuthenticated = true
       store.isLoading = true

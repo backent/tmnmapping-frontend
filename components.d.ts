@@ -10,6 +10,7 @@ declare module 'vue' {
     BuildingDetail: typeof import('./src/components/mapping/BuildingDetail.vue')['default']
     BuildingGradeFilter: typeof import('./src/components/mapping/BuildingGradeFilter.vue')['default']
     BuildingRestrictionFilter: typeof import('./src/components/mapping/BuildingRestrictionFilter.vue')['default']
+    BuildingSelectField: typeof import('./src/components/building/BuildingSelectField.vue')['default']
     BuildingTypeFilter: typeof import('./src/components/mapping/BuildingTypeFilter.vue')['default']
     CardStatisticsHorizontal: typeof import('./src/@core/components/cards/CardStatisticsHorizontal.vue')['default']
     CardStatisticsVertical: typeof import('./src/@core/components/cards/CardStatisticsVertical.vue')['default']

@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
-import {
-  getPOIs,
-  getPOIById,
-  createPOI,
-  updatePOI,
-  deletePOI,
-  importPOIs,
-  exportPOIs,
-} from '@/http/poi'
-import type { POI, CreatePOIRequest, UpdatePOIRequest } from '@/types/poi'
-import type { PaginationParams } from '@/types/api'
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
+import {
+  createPOI,
+  deletePOI,
+  exportPOIs,
+  getPOIById,
+  getPOIs,
+  importPOIs,
+  updatePOI,
+} from '@/http/poi'
+import type { CreatePOIRequest, POI, UpdatePOIRequest } from '@/types/poi'
+import type { PaginationParams } from '@/types/api'
 
 interface POIState {
   pois: POI[]
@@ -86,7 +86,9 @@ export const usePOIStore = defineStore('poi', {
       this.isLoading = true
       try {
         const response = await getPOIById(id)
+
         this.currentPOI = response.data || null
+
         return response
       }
       catch (error) {
@@ -102,9 +104,9 @@ export const usePOIStore = defineStore('poi', {
       this.isLoading = true
       try {
         const response = await createPOI(data)
-        if (response.data) {
+        if (response.data)
           this.pois.push(response.data)
-        }
+
         return response
       }
       catch (error) {
@@ -122,13 +124,13 @@ export const usePOIStore = defineStore('poi', {
         const response = await updatePOI(id, data)
         if (response.data) {
           const index = this.pois.findIndex(p => p.id === id)
-          if (index !== -1) {
+          if (index !== -1)
             this.pois[index] = response.data
-          }
-          if (this.currentPOI?.id === id) {
+
+          if (this.currentPOI?.id === id)
             this.currentPOI = response.data
-          }
         }
+
         return response
       }
       catch (error) {
@@ -145,9 +147,8 @@ export const usePOIStore = defineStore('poi', {
       try {
         await deletePOI(id)
         this.pois = this.pois.filter(p => p.id !== id)
-        if (this.currentPOI?.id === id) {
+        if (this.currentPOI?.id === id)
           this.currentPOI = null
-        }
       }
       catch (error) {
         console.error('Error deleting POI:', error)
@@ -161,8 +162,7 @@ export const usePOIStore = defineStore('poi', {
     async importPOIs(file: File) {
       this.isLoading = true
       try {
-        const response = await importPOIs(file)
-        return response
+        return await importPOIs(file)
       }
       catch (error) {
         console.error('Error importing POIs:', error)
@@ -177,6 +177,7 @@ export const usePOIStore = defineStore('poi', {
       try {
         const blob = await exportPOIs(search)
         const filename = `POI_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
+
         saveAs(blob, filename)
       }
       catch (error) {

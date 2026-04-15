@@ -54,4 +54,3 @@ export function postLogout(): Promise<ApiResponse<any>> {
 export function getMe(): Promise<ApiResponse<User>> {
   return getApi<ApiResponse<User>>(apiConfig.endpoints.auth_me)
 }
-

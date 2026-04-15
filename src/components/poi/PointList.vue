@@ -47,9 +47,18 @@ const handleEdit = (index: number) => {
         </VListItemSubtitle>
         <VListItemSubtitle v-if="point.category || point.sub_category || point.mother_brand || point.branch">
           <span v-if="point.category">Category: {{ point.category }}</span>
-          <span v-if="point.sub_category" class="ms-2">Sub-Category: {{ point.sub_category }}</span>
-          <span v-if="point.mother_brand" class="ms-2">Mother Brand: {{ point.mother_brand }}</span>
-          <span v-if="point.branch" class="ms-2">Branch: {{ point.branch }}</span>
+          <span
+            v-if="point.sub_category"
+            class="ms-2"
+          >Sub-Category: {{ point.sub_category }}</span>
+          <span
+            v-if="point.mother_brand"
+            class="ms-2"
+          >Mother Brand: {{ point.mother_brand }}</span>
+          <span
+            v-if="point.branch"
+            class="ms-2"
+          >Branch: {{ point.branch }}</span>
         </VListItemSubtitle>
 
         <template #append>
@@ -61,7 +70,12 @@ const handleEdit = (index: number) => {
             @click="handleEdit(index)"
           >
             <VIcon icon="ri-edit-line" />
-            <VTooltip activator="parent" location="top">Edit</VTooltip>
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              Edit
+            </VTooltip>
           </VBtn>
           <VBtn
             icon
@@ -71,7 +85,12 @@ const handleEdit = (index: number) => {
             @click="handleRemove(index)"
           >
             <VIcon icon="ri-delete-bin-line" />
-            <VTooltip activator="parent" location="top">Delete</VTooltip>
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              Delete
+            </VTooltip>
           </VBtn>
         </template>
       </VListItem>

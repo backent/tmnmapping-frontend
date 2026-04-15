@@ -46,4 +46,3 @@ const selected = computed({
     />
   </div>
 </template>
-

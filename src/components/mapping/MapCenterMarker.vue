@@ -7,6 +7,7 @@
 interface Props {
   map: google.maps.Map | null
   position: { lat: number; lng: number }
+
   /** When false, marker is hidden (e.g. radius set to 0 km) */
   visible?: boolean
 }
@@ -18,7 +19,8 @@ const props = withDefaults(defineProps<Props>(), {
 const markerInstance = ref<google.maps.Marker | null>(null)
 
 function createMarker() {
-  if (!props.map) return
+  if (!props.map)
+    return
   markerInstance.value = new google.maps.Marker({
     position: props.position,
     map: props.map,
@@ -37,20 +39,18 @@ function createMarker() {
 
 watch(
   () => props.position,
-  (pos) => {
-    if (markerInstance.value && pos) {
+  pos => {
+    if (markerInstance.value && pos)
       markerInstance.value.setPosition(pos)
-    }
   },
   { deep: true },
 )
 
 watch(
   () => props.visible,
-  (visible) => {
-    if (markerInstance.value) {
+  visible => {
+    if (markerInstance.value)
       markerInstance.value.setVisible(visible)
-    }
   },
   { immediate: true },
 )

@@ -7,6 +7,6 @@ import dayjs from 'dayjs'
 export function exportMappingData(blob: Blob, baseName = 'Target Media Nusantara - Mapping Building List -') {
   const currentDay = dayjs().format('DD-MM-YYYY')
   const filename = `${baseName}${currentDay}.xlsx`
+
   saveAs(blob, filename)
 }
-

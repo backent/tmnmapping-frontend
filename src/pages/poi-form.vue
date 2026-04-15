@@ -20,13 +20,12 @@ const form = ref<CreatePOIRequest>({
 })
 
 // Ensure color always has # prefix and is in hex format
-watch(() => form.value.color, (newColor) => {
+watch(() => form.value.color, newColor => {
   const color: unknown = newColor
   if (color) {
     if (typeof color === 'string') {
-      if (!color.startsWith('#')) {
+      if (!color.startsWith('#'))
         form.value.color = `#${color}`
-      }
     }
     else if (typeof color === 'object' && color !== null && 'hex' in color) {
       form.value.color = (color as { hex: string }).hex
@@ -46,7 +45,9 @@ const snackbarColor = ref<'success' | 'error'>('success')
 // --- Helper: filter points by query ---
 function filterPoints(points: POIPoint[], query: string): POIPoint[] {
   const q = query.trim().toLowerCase()
-  if (!q) return points
+  if (!q)
+    return points
+
   return points.filter(p =>
     p.poi_name.toLowerCase().includes(q)
     || (p.address && p.address.toLowerCase().includes(q))
@@ -59,6 +60,7 @@ function filterPoints(points: POIPoint[], query: string): POIPoint[] {
 // --- Helper: paginate an array ---
 function paginate<T>(items: T[], page: number, perPage: number): T[] {
   const start = (page - 1) * perPage
+
   return items.slice(start, start + perPage)
 }
 
@@ -107,6 +109,7 @@ const dialogPendingIds = ref<number[]>([])
 const filteredAvailablePoints = computed(() => {
   const selectedSet = new Set(form.value.point_ids)
   const available = allPoints.value.filter(p => !selectedSet.has(p.id))
+
   return filterPoints(available, dialogSearch.value)
 })
 
@@ -145,9 +148,8 @@ const confirmAddPoints = () => {
 
 onMounted(async () => {
   await poiPointStore.fetchPOIPointsDropdown()
-  if (isEdit.value) {
+  if (isEdit.value)
     fetchPOI()
-  }
 })
 
 const fetchPOI = async () => {
@@ -157,6 +159,7 @@ const fetchPOI = async () => {
   isLoading.value = true
   try {
     await poiStore.fetchPOIById(poiId.value)
+
     const poi = poiStore.currentPOI
     if (poi) {
       form.value = {
@@ -180,16 +183,19 @@ const submit = async () => {
 
   if (!form.value.brand.trim()) {
     errorMessage.value = 'Brand is required'
+
     return
   }
 
   if (!form.value.color) {
     errorMessage.value = 'Color is required'
+
     return
   }
 
   if (form.value.point_ids.length === 0) {
     errorMessage.value = 'At least one point is required'
+
     return
   }
 
@@ -211,7 +217,9 @@ const submit = async () => {
   }
   catch (error: any) {
     console.error('Save error:', error)
+
     const errorMsg = error?.details?.message || error?.details || 'Failed to save POI'
+
     errorMessage.value = errorMsg
     snackbarMessage.value = errorMsg
     snackbarColor.value = 'error'

@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { Branch, CreateBranchRequest, UpdateBranchRequest } from '@/types/branch'
@@ -50,7 +50,9 @@ export function getBranchesDropdown(): Promise<ApiResponse<Branch[]>> {
 
 export function importBranches(file: File): Promise<ApiResponse<Branch[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<Branch[]>>(
     apiConfig.endpoints.branches_import,
     formData,

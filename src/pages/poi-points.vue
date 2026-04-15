@@ -37,7 +37,9 @@ const brandsPerPage = ref(10)
 
 const filteredBrands = computed(() => {
   const q = brandsSearch.value.trim().toLowerCase()
-  if (!q) return brandsDialogList.value
+  if (!q)
+    return brandsDialogList.value
+
   return brandsDialogList.value.filter(b => b.brand.toLowerCase().includes(q))
 })
 
@@ -47,6 +49,7 @@ const brandsTotalPages = computed(() =>
 
 const pagedBrands = computed(() => {
   const start = (brandsPage.value - 1) * brandsPerPage.value
+
   return filteredBrands.value.slice(start, start + brandsPerPage.value)
 })
 
@@ -68,12 +71,14 @@ const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.va
 const fetchPoints = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
+
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
       orderBy: 'created_at',
       orderDirection: 'DESC',
     }
+
     if (searchQuery.value.trim())
       params.search = searchQuery.value.trim()
 
@@ -121,6 +126,7 @@ const handleDeleteClick = async (point: POIPoint) => {
 
   try {
     const usage = await poiPointStore.fetchPOIPointUsage(point.id)
+
     deleteUsageBrands.value = usage.pois.map(p => p.brand)
   }
   catch {
@@ -169,6 +175,7 @@ const handleFileSelected = async (event: Event) => {
   try {
     const response = await poiPointStore.importPOIPoints(file)
     const count = response.data?.length || 0
+
     snackbarMessage.value = `Successfully imported ${count} POI point(s)`
     snackbarColor.value = 'success'
     snackbar.value = true
@@ -434,8 +441,14 @@ const handleExport = async () => {
         <VCardTitle>Delete POI Point</VCardTitle>
         <VDivider />
         <VCardText>
-          <div v-if="isCheckingUsage" class="d-flex justify-center py-4">
-            <VProgressCircular indeterminate color="primary" />
+          <div
+            v-if="isCheckingUsage"
+            class="d-flex justify-center py-4"
+          >
+            <VProgressCircular
+              indeterminate
+              color="primary"
+            />
           </div>
           <div v-else>
             <p>

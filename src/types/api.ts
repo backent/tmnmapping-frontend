@@ -52,4 +52,3 @@ export interface PaginationParams {
 }
 
 export type QueryParams = Record<string, string | string[] | number | boolean | undefined | null>
-

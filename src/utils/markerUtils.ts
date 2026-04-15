@@ -22,6 +22,7 @@ const BUILDING_TYPE_LABEL: Record<string, string> = {
 function getLcdPresenceColor(lcdPresenceStatus: string | null): string {
   if (!lcdPresenceStatus)
     return '#8d91a9'
+
   return LCD_COLOR_MAP[lcdPresenceStatus] ?? '#8d91a9'
 }
 
@@ -29,6 +30,7 @@ function getBuildingTypeLabel(buildingType: string): string {
   if (BUILDING_TYPE_LABEL[buildingType])
     return BUILDING_TYPE_LABEL[buildingType]
   const words = buildingType.trim().split(/\s+/)
+
   return words
     .slice(0, 2)
     .map(w => w.charAt(0).toUpperCase())
@@ -46,14 +48,17 @@ function getBuildingTypeLabel(buildingType: string): string {
 function buildPinSvgUrl(color: string, label: string): string {
   // 2× coordinate space: pin renders at 30×40 CSS px, but SVG units are 60×80
   const fontSize = label.length === 1 ? 36 : 24
+
   // Vertical center of white circle is at y=26 (cy=26 in 60×80 space)
   // Text baseline = cy + fontSize * 0.36 (approximate cap-height centering)
   const textY = Math.round(30 + fontSize * 0.36)
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="80" viewBox="0 0 60 80">
     <path d="M30 0C13.431 0 0 13.431 0 30c0 21 30 50 30 50s30-29 30-50C60 13.431 46.569 0 30 0z" fill="${color}"/>
     <circle cx="30" cy="30" r="20" fill="#ffffff"/>
     <text x="30" y="${textY}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="900" fill="#3d3d3d">${label}</text>
   </svg>`
+
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
 }
 

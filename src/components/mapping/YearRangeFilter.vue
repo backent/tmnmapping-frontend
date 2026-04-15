@@ -19,7 +19,7 @@ const startYear = ref<number>(props.modelValue[0])
 const endYear = ref<number>(props.modelValue[1])
 
 // Watch for prop changes
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.modelValue, newValue => {
   startYear.value = newValue[0]
   endYear.value = newValue[1]
 }, { immediate: true })
@@ -57,4 +57,3 @@ const updateYearRange = () => {
     />
   </div>
 </template>
-

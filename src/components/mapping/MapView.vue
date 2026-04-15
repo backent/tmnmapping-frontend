@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Loader } from '@googlemaps/js-api-loader'
+
 // NOTE: MarkerClusterer groups nearby markers into clusters for better performance
 // Uncomment the line below to re-enable marker clustering
 // import { MarkerClusterer } from '@googlemaps/markerclusterer'
 import { useMappingStore } from '@/stores/mapping'
 import { getMarkerIconConfig } from '@/utils/markerUtils'
-import type { MappingBuilding } from '@/types/mapping'
-import type { MappingFilters } from '@/types/mapping'
+import type { MappingBuilding, MappingFilters } from '@/types/mapping'
 import MapRadiusCircle from '@/components/mapping/MapRadiusCircle.vue'
 import MapCenterMarker from '@/components/mapping/MapCenterMarker.vue'
 
@@ -32,15 +32,19 @@ const emit = defineEmits<Emits>()
 const ZOOM_LEVEL = 14
 const mapContainer = ref<HTMLDivElement>()
 const map = ref<google.maps.Map | null>(null)
+
 /** Marker pool by building id; markers are never destroyed on filter/pan, only visibility is updated */
 const markersByBuildingId = ref<Record<string, { marker: google.maps.Marker; building: MappingBuilding; clickListener: google.maps.MapsEventListener }>>({})
+
 // NOTE: Clusterer disabled - uncomment to re-enable marker clustering
 // const clusterer = ref<MarkerClusterer | null>(null)
 const poiPointMarkers = ref<google.maps.Marker[]>([])
+
 /** Imperative pool of POI radius circles; never destroyed, only repositioned/hidden (prevents zoom reappear) */
 const poiCirclePool: google.maps.Circle[] = []
 const drawingManager = ref<google.maps.drawing.DrawingManager | null>(null)
 const filterPolygonOverlay = ref<google.maps.Polygon | null>(null)
+
 /** Drawing Manager's completed overlay; kept so we can remove it again if it reappears on zoom */
 let lastDrawingManagerOverlay: google.maps.Polygon | null = null
 let overlaycompleteListener: google.maps.MapsEventListener | null = null
@@ -65,17 +69,16 @@ const showCenterMarker = computed(
   () => (Number(mappingStore.radius) || 0) > 0 && mappingStore.selectedPOIs.length === 0,
 )
 
-
 // Initialize Google Maps
 onMounted(async () => {
-  if (!mapContainer.value) {
+  if (!mapContainer.value)
     return
-  }
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
   if (!apiKey) {
     console.error('VITE_GOOGLE_MAPS_API_KEY is not set')
+
     return
   }
 
@@ -93,7 +96,7 @@ onMounted(async () => {
       zoom: ZOOM_LEVEL,
       disableDoubleClickZoom: true,
       clickableIcons: false, // Disable interaction with Google POI (restaurants, etc.),
-      streetViewControl: false
+      streetViewControl: false,
     })
 
     // Handle double click
@@ -101,6 +104,7 @@ onMounted(async () => {
       if (event.latLng) {
         const lat = event.latLng.lat()
         const lng = event.latLng.lng()
+
         mappingStore.setMapCenter(lat, lng)
         emit('mapDoubleClick', lat, lng)
       }
@@ -116,47 +120,50 @@ onMounted(async () => {
       drawingManager.value,
       'overlaycomplete',
       (e: google.maps.drawing.OverlayCompleteEvent) => {
-        if (e.type !== google.maps.drawing.OverlayType.POLYGON || !e.overlay) {
+        if (e.type !== google.maps.drawing.OverlayType.POLYGON || !e.overlay)
           return
-        }
+
         const path: { lat: number; lng: number }[] = []
+
         ;(e.overlay as google.maps.Polygon).getPath().forEach((latLng: google.maps.LatLng) => {
           path.push({ lat: latLng.lat(), lng: latLng.lng() })
         })
         lastDrawingManagerOverlay = e.overlay as google.maps.Polygon
         e.overlay.setMap(null)
-        if (DEBUG_POLYGON) {
+        if (DEBUG_POLYGON)
           console.log('[MapView polygon] overlaycomplete: path length=', path.length, 'lastDrawingManagerOverlay set, setMap(null) called')
-        }
-        if (path.length >= 3) {
+
+        if (path.length >= 3)
           mappingStore.setPolygon(path)
-        }
       },
     )
 
     // Bounds-based fetch: on map idle (pan/zoom finished), send viewport bounds and refetch
     idleListener = google.maps.event.addListener(map.value, 'idle', () => {
-      if (idleDebounceTimer) {
+      if (idleDebounceTimer)
         clearTimeout(idleDebounceTimer)
-      }
+
       idleDebounceTimer = setTimeout(() => {
         idleDebounceTimer = null
+
         const bounds = map.value?.getBounds()
-        if (!bounds) {
+        if (!bounds)
           return
-        }
+
         const ne = bounds.getNorthEast()
         const sw = bounds.getSouthWest()
         const minLat = sw.lat()
         const minLng = sw.lng()
         const maxLat = ne.lat()
         const maxLng = ne.lng()
+
         mappingStore.setMapBounds({ minLat, minLng, maxLat, maxLng })
         mappingStore.fetchBuildings()
+
         // Re-sync overlays with store so cleared polygon/radius don't reappear on zoom
-        if (DEBUG_POLYGON) {
+        if (DEBUG_POLYGON)
           console.log('[MapView polygon] idle: calling updateFilterPolygonOverlay(), store polygon=', mappingStore.filters.polygon ? `${mappingStore.filters.polygon.length} points` : 'undefined')
-        }
+
         updateFilterPolygonOverlay()
       }, IDLE_DEBOUNCE_MS)
     })
@@ -174,16 +181,14 @@ onMounted(async () => {
 
 // Update markers when buildings change (create new markers for accumulated, set visibility from current response)
 watch(() => props.buildings, () => {
-  if (isMapLoaded.value) {
+  if (isMapLoaded.value)
     updateMarkers()
-  }
 })
 
 // Update center when it changes
 watch(() => props.center, () => {
-  if (map.value && isMapLoaded.value) {
+  if (map.value && isMapLoaded.value)
     map.value.setCenter(props.center)
-  }
 })
 
 // Watch selected POIs: update dot markers, circles, and fit bounds
@@ -197,16 +202,15 @@ watch(() => selectedPOIs.value, () => {
 
 // Watch radius changes to update POI circles
 watch(() => props.radius, () => {
-  if (isMapLoaded.value) {
+  if (isMapLoaded.value)
     updatePOICircles()
-  }
 })
 
 // Toggle Drawing Manager polygon mode when draw polygon is active
 watch(() => drawPolygonActive.value, () => {
-  if (!drawingManager.value) {
+  if (!drawingManager.value)
     return
-  }
+
   drawingManager.value.setDrawingMode(
     drawPolygonActive.value ? google.maps.drawing.OverlayType.POLYGON : null,
   )
@@ -215,9 +219,9 @@ watch(() => drawPolygonActive.value, () => {
 // Render stored polygon overlay when filters.polygon changes
 watch(() => filterPolygon.value, () => {
   if (isMapLoaded.value) {
-    if (DEBUG_POLYGON) {
+    if (DEBUG_POLYGON)
       console.log('[MapView polygon] watcher: filterPolygon changed, calling updateFilterPolygonOverlay(), path=', filterPolygon.value ? `${filterPolygon.value.length} points` : 'undefined')
-    }
+
     updateFilterPolygonOverlay()
   }
 }, { deep: true })
@@ -226,9 +230,9 @@ watch(() => filterPolygon.value, () => {
 watch(
   () => mappingStore.fitBoundsToPolygon && filterPolygon.value && filterPolygon.value.length >= 3,
   shouldFit => {
-    if (!shouldFit || !map.value || !filterPolygon.value?.length) {
+    if (!shouldFit || !map.value || !filterPolygon.value?.length)
       return
-    }
+
     const bounds = new google.maps.LatLngBounds()
     for (const p of filterPolygon.value)
       bounds.extend({ lat: p.lat, lng: p.lng })
@@ -250,10 +254,10 @@ function getBuildingsAtPosition(building: MappingBuilding): MappingBuilding[] {
     const bLng = b.coordinates?.lng ?? b.longitude
     const buildingLatLng = new google.maps.LatLng(bLat, bLng)
     const distMeters = google.maps.geometry.spherical.computeDistanceBetween(refLatLng, buildingLatLng)
-    if (distMeters <= SAME_POSITION_EPSILON_METERS) {
+    if (distMeters <= SAME_POSITION_EPSILON_METERS)
       samePosition.push(b)
-    }
   }
+
   return samePosition
 }
 
@@ -268,9 +272,8 @@ function selectBuildingFromPicker(building: MappingBuilding) {
 }
 
 function updateMarkers() {
-  if (!map.value) {
+  if (!map.value)
     return
-  }
 
   const visibleIds = new Set((props.buildings || []).map(b => String(b.id)))
   const accumulated = mappingStore.buildingsAccumulatedList
@@ -282,9 +285,9 @@ function updateMarkers() {
 
     if (!entry) {
       const iconConfig = getMarkerIconConfig(building, installation, props.reporting || false)
-      if (!iconConfig) {
+      if (!iconConfig)
         continue
-      }
+
       try {
         const marker = new google.maps.Marker({
           position: {
@@ -297,7 +300,9 @@ function updateMarkers() {
           optimized: false,
           clickable: true,
         })
+
         marker.setMap(map.value)
+
         const clickListener = google.maps.event.addListener(marker, 'click', () => {
           const candidates = getBuildingsAtPosition(building)
           if (candidates.length > 1) {
@@ -308,6 +313,7 @@ function updateMarkers() {
             emit('markerClick', building)
           }
         })
+
         entry = { marker, building, clickListener }
         markersByBuildingId.value[id] = entry
       }
@@ -330,7 +336,7 @@ function updatePOIMarkers() {
     return
 
   // Flatten all POI points with per-POI color
-  type FlatPoint = { lat: number; lng: number; color: string; label: string }
+  interface FlatPoint { lat: number; lng: number; color: string; label: string }
   const allPoints: FlatPoint[] = []
   for (const poi of selectedPOIs.value) {
     for (const point of poi.points) {
@@ -362,6 +368,7 @@ function updatePOIMarkers() {
         title: '',
         zIndex: 999,
       })
+
       poiPointMarkers.value.push(marker)
     }
     catch (error) {
@@ -375,6 +382,7 @@ function updatePOIMarkers() {
     const marker = poiPointMarkers.value[i]
     if (i < needCount) {
       const p = allPoints[i]
+
       marker.setPosition({ lat: p.lat, lng: p.lng })
       marker.setIcon({
         path: google.maps.SymbolPath.CIRCLE,
@@ -404,12 +412,11 @@ function updatePOICircles() {
   const radiusMeters = (selectedPOIs.value.length > 0 && props.radius > 0) ? props.radius * 1000 : 0
 
   // Flatten all POI points with per-POI color
-  type FlatCircle = { lat: number; lng: number; color: string }
+  interface FlatCircle { lat: number; lng: number; color: string }
   const allPoints: FlatCircle[] = []
   for (const poi of selectedPOIs.value) {
-    for (const point of poi.points) {
+    for (const point of poi.points)
       allPoints.push({ lat: point.latitude, lng: point.longitude, color: poi.color })
-    }
   }
 
   // Grow pool if needed
@@ -426,6 +433,7 @@ function updatePOICircles() {
         strokeColor: '#ff0000',
         visible: false,
       })
+
       poiCirclePool.push(circle)
     }
     catch (error) {
@@ -439,6 +447,7 @@ function updatePOICircles() {
     const circle = poiCirclePool[i]
     if (i < allPoints.length) {
       const p = allPoints[i]
+
       circle.setCenter({ lat: p.lat, lng: p.lng })
       circle.setRadius(radiusMeters)
       circle.setOptions({ fillColor: p.color, strokeColor: p.color })
@@ -452,9 +461,9 @@ function updatePOICircles() {
 }
 
 function updateFilterPolygonOverlay() {
-  if (!map.value) {
+  if (!map.value)
     return
-  }
+
   const path = filterPolygon.value
   const hasPath = path && path.length >= 3
 
@@ -462,14 +471,13 @@ function updateFilterPolygonOverlay() {
     const gmPath = path.map(p => new google.maps.LatLng(p.lat, p.lng))
     if (filterPolygonOverlay.value) {
       filterPolygonOverlay.value.setPath(gmPath)
-      if (!filterPolygonOverlay.value.getMap()) {
+      if (!filterPolygonOverlay.value.getMap())
         filterPolygonOverlay.value.setMap(map.value)
-      }
     }
     else {
-      if (DEBUG_POLYGON) {
+      if (DEBUG_POLYGON)
         console.log('[MapView polygon] updateFilterPolygonOverlay: creating new polygon, path length=', path.length)
-      }
+
       filterPolygonOverlay.value = new google.maps.Polygon({
         paths: gmPath,
         strokeColor: '#1a73e8',
@@ -480,41 +488,42 @@ function updateFilterPolygonOverlay() {
         map: map.value,
       })
     }
+
     return
   }
 
   // No path (cleared): keep polygon on map with degenerate path so it doesn't reappear on zoom
   if (filterPolygonOverlay.value) {
-    if (DEBUG_POLYGON) {
+    if (DEBUG_POLYGON)
       console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, setting polygon to degenerate path')
-    }
+
     const emptyPath = [
       new google.maps.LatLng(0, 0),
       new google.maps.LatLng(0, 0),
       new google.maps.LatLng(0, 0),
     ]
+
     filterPolygonOverlay.value.setPath(emptyPath)
-    if (!filterPolygonOverlay.value.getMap()) {
+    if (!filterPolygonOverlay.value.getMap())
       filterPolygonOverlay.value.setMap(map.value)
-    }
   }
 
   // Ensure Drawing Manager's overlay is also removed if it was re-shown on zoom
   if (lastDrawingManagerOverlay) {
-    if (DEBUG_POLYGON) {
+    if (DEBUG_POLYGON)
       console.log('[MapView polygon] updateFilterPolygonOverlay: path empty, clearing lastDrawingManagerOverlay')
-    }
+
     lastDrawingManagerOverlay.setMap(null)
     lastDrawingManagerOverlay = null
   }
+
   // Force Drawing Manager to drop any internal overlay that may reappear on zoom
   if (drawingManager.value && map.value) {
     drawingManager.value.setMap(null)
     drawingManager.value.setMap(map.value)
   }
-  if (DEBUG_POLYGON) {
+  if (DEBUG_POLYGON)
     console.log('[MapView polygon] updateFilterPolygonOverlay: done (no polygon to show), path=', path ? path.length : 'undefined')
-  }
 }
 
 function fitPOIBounds() {
@@ -533,10 +542,12 @@ function fitPOIBounds() {
     for (const point of allPoints) {
       const lat = point.latitude
       const lng = point.longitude
+
       bounds.extend({ lat, lng })
       if (radiusMeters > 0) {
         const degLat = radiusMeters / metersPerDegreeLat
         const degLng = radiusMeters / (metersPerDegreeLat * Math.max(0.01, Math.cos((lat * Math.PI) / 180)))
+
         bounds.extend({ lat: lat + degLat, lng })
         bounds.extend({ lat: lat - degLat, lng })
         bounds.extend({ lat, lng: lng + degLng })
@@ -577,10 +588,10 @@ onBeforeUnmount(() => {
     lastDrawingManagerOverlay.setMap(null)
     lastDrawingManagerOverlay = null
   }
-  Object.values(markersByBuildingId.value).forEach((entry) => {
-    if (entry.clickListener) {
+  Object.values(markersByBuildingId.value).forEach(entry => {
+    if (entry.clickListener)
       google.maps.event.removeListener(entry.clickListener)
-    }
+
     entry.marker.setMap(null)
   })
   markersByBuildingId.value = {}
@@ -722,4 +733,3 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 </style>
-

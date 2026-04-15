@@ -18,15 +18,14 @@ const buildingStore = useBuildingStore()
 
 // Fetch filter options if not already loaded
 onMounted(async () => {
-  if (!buildingStore.filterOptions) {
+  if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
-  }
 })
 
 // Transform backend building_type array to autocomplete format
 const items = computed(() => {
   const backendTypes = buildingStore.filterOptions?.building_type || []
-  
+
   // Map backend values to autocomplete format
   // Backend returns array of strings like ['Apartment', 'Office', 'Hotel', ...]
   return backendTypes.map(type => ({
@@ -61,4 +60,3 @@ const selected = computed({
     />
   </div>
 </template>
-

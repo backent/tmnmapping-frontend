@@ -57,6 +57,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
   // Ensure services are initialized
   if (typeof google === 'undefined' || !google.maps?.places) {
     initializeServices()
+
     return
   }
 
@@ -66,6 +67,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
     }
     catch (error) {
       console.error('Error creating AutocompleteService:', error)
+
       return
     }
   }
@@ -73,6 +75,7 @@ const getPredictions = useDebounceFn(async (input: string) => {
   if (!input.trim()) {
     predictions.value = []
     showPredictions.value = false
+
     return
   }
 
@@ -122,12 +125,14 @@ watch(() => locationSearchText.value, newValue => {
     showPredictions.value = false
     selectedIndex.value = -1
     justSelected.value = false
+
     return
   }
 
   // Suppress prediction fetch immediately after a place is selected
   if (justSelected.value) {
     justSelected.value = false
+
     return
   }
 
@@ -214,7 +219,7 @@ const handleKeydown = (event: KeyboardEvent) => {
       if (selectedIndex.value >= 0 && selectedIndex.value < predictions.value.length)
         selectPlace(predictions.value[selectedIndex.value])
       else if (predictions.value.length > 0) {
-        // Select first prediction if none selected
+      // Select first prediction if none selected
         selectPlace(predictions.value[0])
       }
       break
@@ -230,13 +235,14 @@ const handleClickOutside = (event: MouseEvent) => {
   // Use setTimeout to allow click events on dropdown items to process first
   setTimeout(() => {
     const target = event.target as HTMLElement
-    if (!locationTextFieldRef.value?.$el) return
+    if (!locationTextFieldRef.value?.$el)
+      return
 
     const wrapper = locationTextFieldRef.value.$el.closest('.place-autocomplete-wrapper')
+
     // Check if click is outside the wrapper (including dropdown)
-    if (wrapper && !wrapper.contains(target) && !target.closest('.predictions-dropdown')) {
+    if (wrapper && !wrapper.contains(target) && !target.closest('.predictions-dropdown'))
       showPredictions.value = false
-    }
   }, 0)
 }
 
@@ -257,7 +263,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="place-autocomplete-wrapper" style="position: relative;">
+  <div
+    class="place-autocomplete-wrapper"
+    style="position: relative;"
+  >
     <VTextField
       ref="locationTextFieldRef"
       v-model="locationSearchText"
@@ -308,8 +317,7 @@ onUnmounted(() => {
             <VIcon
               icon="ri-map-pin-line"
               class="me-2"
-            >
-            </VIcon>
+            />
           </template>
           <VListItemTitle>
             {{ prediction.description }}

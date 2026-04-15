@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -44,24 +44,44 @@ function getCount(byStatus: Record<string, number>, status: string): number {
 
 function getPct(percentages: Record<string, number>, status: string): string {
   const v = percentages?.[status]
+
   return v != null ? `${v}%` : '0%'
 }
 
 async function downloadLCDPresenceExcel() {
   const summary = lcdSummary.value
-  if (!summary) return
+  if (!summary)
+    return
 
   const XLSX = await import('xlsx')
   const wb = XLSX.utils.book_new()
 
   // ── Section 1 header: All Occupied + Market Exclusivity
   const s1Headers1: (string | null)[] = [
-    'All Occupied', null, null, null, null, null,
-    'Market Exclusivity', null, null, null, null,
+    'All Occupied',
+    null,
+    null,
+    null,
+    null,
+    null,
+    'Market Exclusivity',
+    null,
+    null,
+    null,
+    null,
   ]
+
   const s1Headers2 = [
-    'City - All Building', 'All', 'Total TMN', 'Total Competitor', 'Total CoExist', 'Total Opportunity',
-    'TMN %', 'Competitor %', 'CoExist %', 'Opportunity %',
+    'City - All Building',
+    'All',
+    'Total TMN',
+    'Total Competitor',
+    'Total CoExist',
+    'Total Opportunity',
+    'TMN %',
+    'Competitor %',
+    'CoExist %',
+    'Opportunity %',
   ]
 
   const s1Rows = summary.data.map(row => [
@@ -78,6 +98,7 @@ async function downloadLCDPresenceExcel() {
   ])
 
   const totals = summary.totals
+
   const s1Total = [
     'Total',
     totals.total,
@@ -102,8 +123,16 @@ async function downloadLCDPresenceExcel() {
 
   // Set column widths
   ws['!cols'] = [
-    { wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 18 },
-    { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
+    { wch: 22 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 14 },
   ]
 
   XLSX.utils.book_append_sheet(wb, ws, 'LCD Presence Summary')
@@ -111,6 +140,7 @@ async function downloadLCDPresenceExcel() {
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
   const filename = `TMN - LCD Presence Summary - ${dayjs().format('DD-MM-YYYY')}.xlsx`
+
   saveAs(blob, filename)
 }
 </script>
@@ -202,9 +232,7 @@ async function downloadLCDPresenceExcel() {
           />
 
           <template v-else-if="lcdSummary">
-            <div
-              
-            >
+            <div>
               <VTable
                 density="compact"
                 height="480px"
@@ -227,7 +255,7 @@ async function downloadLCDPresenceExcel() {
                     </th>
                     <th
                       v-for="status in LCD_STATUSES"
-                      :key="'pct-' + status"
+                      :key="`pct-${status}`"
                       class="text-right"
                     >
                       {{ status }} %
@@ -252,7 +280,7 @@ async function downloadLCDPresenceExcel() {
                     </td>
                     <td
                       v-for="status in LCD_STATUSES"
-                      :key="'pct-' + status"
+                      :key="`pct-${status}`"
                       class="text-right"
                     >
                       {{ row.percentages[status] != null ? `${row.percentages[status]}%` : '0%' }}
@@ -274,7 +302,7 @@ async function downloadLCDPresenceExcel() {
                     </td>
                     <td
                       v-for="status in LCD_STATUSES"
-                      :key="'pct-' + status"
+                      :key="`pct-${status}`"
                       class="text-right"
                     >
                       {{ lcdSummary.totals.percentages[status] != null ? `${lcdSummary.totals.percentages[status]}%` : '0%' }}

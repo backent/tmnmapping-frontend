@@ -1,10 +1,10 @@
-import { getApi, postApi } from '@/utils/http'
+import { getApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
 import type {
-  MappingResponse,
-  MappingFilters,
   MappingFilterOptions,
+  MappingFilters,
+  MappingResponse,
   PotentialClient,
   RegionSearchResponse,
   ScreenTypeOption,
@@ -31,70 +31,70 @@ function buildFilterParams(
 ): QueryParams {
   const params: QueryParams = {}
 
-  if (!filters) {
+  if (!filters)
     return params
-  }
 
-  if (filters.region) {
+  if (filters.region)
     params['filter[district_subdistrict]'] = filters.region
-  }
-  if (filters.district_subdistrict?.length) {
+
+  if (filters.district_subdistrict?.length)
     params['filter[district_subdistrict]'] = filters.district_subdistrict.join(',')
-  }
-  if (filters.building_type?.length) {
+
+  if (filters.building_type?.length)
     params['filter[building_type]'] = filters.building_type.join(',')
-  }
-  if (filters.building_grade?.length) {
+
+  if (filters.building_grade?.length)
     params['filter[building_grade]'] = filters.building_grade.join(',')
-  }
-  if (filters.installation?.length) {
+
+  if (filters.installation?.length)
     params['filter[installation]'] = filters.installation.join(',')
-  }
-  if (filters.screen_type?.length) {
+
+  if (filters.screen_type?.length)
     params['filter[screen_type]'] = filters.screen_type.join(',')
-  }
-  if (filters.screen_point?.length) {
+
+  if (filters.screen_point?.length)
     params['filter[screen_point]'] = filters.screen_point.join(',')
-  }
-  if (filters.progress?.length) {
+
+  if (filters.progress?.length)
     params['filter[progress]'] = filters.progress.join(',')
-  }
-  if (filters.lcd_presence?.length) {
+
+  if (filters.lcd_presence?.length)
     params['filter[lcd_presence]'] = filters.lcd_presence.join(',')
-  }
-  if (filters.sellable?.length) {
+
+  if (filters.sellable?.length)
     params['filter[sellable]'] = filters.sellable.join(',')
-  }
-  if (filters.connectivity?.length) {
+
+  if (filters.connectivity?.length)
     params['filter[connectivity]'] = filters.connectivity.join(',')
-  }
-  if (filters.sales_package_ids?.length) {
+
+  if (filters.sales_package_ids?.length)
     params['filter[sales_package_ids]'] = filters.sales_package_ids.join(',')
-  }
-  if (filters.building_restriction_ids?.length) {
+
+  if (filters.building_restriction_ids?.length)
     params['filter[building_restriction_ids]'] = filters.building_restriction_ids.join(',')
-  }
-  if (filters.year) {
+
+  if (filters.year)
     params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
-  }
 
   // Spatial filters: polygon takes priority; when set, omit POI/lat/lng/radius
   if (filters.polygon && filters.polygon.length >= 3) {
     params['filter[polygon]'] = JSON.stringify(filters.polygon)
-  } else {
+  }
+  else {
     // POI filter handling
     if (filters.poi_ids?.length) {
       params['filter[poi_id]'] = filters.poi_ids.join(',')
-      if (filters.radius) {
+      if (filters.radius)
         params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
-      }
-    } else {
+    }
+    else {
       let lat: number | undefined
       let lng: number | undefined
       if (filters.radius && filters.radius > 0) {
         lat = mapCenter?.lat
         lng = mapCenter?.lng
-      } else {
+      }
+      else {
         lat = filters.lat ?? mapCenter?.lat
         lng = filters.lng ?? mapCenter?.lng
       }
@@ -102,15 +102,13 @@ function buildFilterParams(
         params['filter[lat]'] = lat
         params['filter[lng]'] = lng
       }
-      if (filters.radius) {
+      if (filters.radius)
         params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
-      }
     }
   }
 
-  if (filters.places_id) {
+  if (filters.places_id)
     params['filter[places_id]'] = filters.places_id
-  }
 
   // Map viewport bounds (backend returns only buildings in view when set)
   if (bounds) {
@@ -293,11 +291,13 @@ export function buildExportPayload(
   mapCenter: { lat: number; lng: number },
 ): ExportMappingByFilterPayload {
   const f = filters
+
   const payload: ExportMappingByFilterPayload = {
     filters: {},
     map_center: { ...mapCenter },
     bounds: null,
   }
+
   if (f.district_subdistrict?.length)
     payload.filters.district_subdistrict = f.district_subdistrict
   if (f.building_type?.length)
@@ -328,6 +328,7 @@ export function buildExportPayload(
     payload.filters.poi_ids = f.poi_ids
   if (f.polygon && f.polygon.length >= 3)
     payload.filters.polygon = f.polygon
+
   return payload
 }
 
@@ -349,10 +350,8 @@ export async function exportMappingDataByFilters(
     },
   )
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(`HTTP error! Status: ${response.status}`)
-  }
 
   return response.blob()
 }
-

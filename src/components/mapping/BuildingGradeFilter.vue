@@ -17,15 +17,14 @@ const buildingStore = useBuildingStore()
 
 // Fetch filter options if not already loaded
 onMounted(async () => {
-  if (!buildingStore.filterOptions) {
+  if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
-  }
 })
 
 // Transform backend grade_resource array to autocomplete format
 const items = computed(() => {
   const backendGrades = buildingStore.filterOptions?.grade_resource || []
-  
+
   // Map backend values to autocomplete format
   // Backend returns array of strings like ['Premium', 'Grade A', 'Grade B', ...]
   return backendGrades.map(grade => ({
@@ -60,4 +59,3 @@ const selected = computed({
     />
   </div>
 </template>
-

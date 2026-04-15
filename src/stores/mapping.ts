@@ -1,21 +1,21 @@
 import { defineStore } from 'pinia'
 import {
-  getMappingBuildings,
-  getMappingFilterOptions,
-  searchRegions,
-  searchScreenTypes,
-  getScreenTypes,
-  getYearList,
-  getPotentialClients,
-  getPotentialClientById,
   buildExportPayload,
   exportMappingDataByFilters,
+  getMappingBuildings,
+  getMappingFilterOptions,
+  getPotentialClientById,
+  getPotentialClients,
+  getScreenTypes,
+  getYearList,
+  searchRegions,
+  searchScreenTypes,
 } from '@/http/mapping'
 import { usePOIStore } from '@/stores/poi'
 import type {
   MappingBuilding,
-  MappingFilters,
   MappingFilterOptions,
+  MappingFilters,
   PotentialClient,
   RegionSearchResponse,
   ScreenTypeOption,
@@ -23,10 +23,11 @@ import type {
 import type { POI } from '@/types/poi'
 
 /** Map viewport bounds for bounds-based fetching */
-export type MapBounds = { minLat: number; minLng: number; maxLat: number; maxLng: number }
+export interface MapBounds { minLat: number; minLng: number; maxLat: number; maxLng: number }
 
 interface MappingState {
   buildings: MappingBuilding[]
+
   /** Accumulated buildings by id (merged on each fetch); used for marker pool + visibility */
   buildingsAccumulated: Record<string, MappingBuilding>
   filterOptions: MappingFilterOptions | null
@@ -39,6 +40,7 @@ interface MappingState {
     lat: number
     lng: number
   }
+
   /** Map viewport bounds; when set, fetch returns only buildings in view */
   mapBounds: MapBounds | null
   radius: number // in kilometers
@@ -49,6 +51,7 @@ interface MappingState {
   regionSearchResults: RegionSearchResponse | null
   selectedPOIs: POI[]
   drawPolygonActive: boolean
+
   /** When true, MapView should fit bounds to the current polygon once then clear this flag */
   fitBoundsToPolygon: boolean
 }
@@ -59,7 +62,7 @@ export const useMappingStore = defineStore('mapping', {
     buildingsAccumulated: {},
     filterOptions: null,
     filters: {
-      lcd_presence: ["TMN"], // Empty array shows all LCD presence statuses
+      lcd_presence: ['TMN'], // Empty array shows all LCD presence statuses
     },
     isLoading: false,
     isSearching: false,
@@ -94,24 +97,25 @@ export const useMappingStore = defineStore('mapping', {
 
     hasActiveFilters: (state): boolean => {
       const filters = state.filters
+
       return !!(
-        filters.region ||
-        filters.district_subdistrict?.length ||
-        filters.building_type?.length ||
-        filters.building_grade?.length ||
-        filters.installation?.length ||
-        filters.screen_type?.length ||
-        filters.progress?.length ||
-        (filters.lcd_presence && filters.lcd_presence.length > 0 && filters.lcd_presence[0] !== 'TMN') ||
-        filters.sellable?.length ||
-        filters.connectivity?.length ||
-        filters.sales_package_ids?.length ||
-        filters.building_restriction_ids?.length ||
-        filters.year ||
-        filters.radius ||
-        filters.places_id ||
-        filters.poi_ids?.length ||
-        (filters.polygon && filters.polygon.length >= 3)
+        filters.region
+        || filters.district_subdistrict?.length
+        || filters.building_type?.length
+        || filters.building_grade?.length
+        || filters.installation?.length
+        || filters.screen_type?.length
+        || filters.progress?.length
+        || (filters.lcd_presence && filters.lcd_presence.length > 0 && filters.lcd_presence[0] !== 'TMN')
+        || filters.sellable?.length
+        || filters.connectivity?.length
+        || filters.sales_package_ids?.length
+        || filters.building_restriction_ids?.length
+        || filters.year
+        || filters.radius
+        || filters.places_id
+        || filters.poi_ids?.length
+        || (filters.polygon && filters.polygon.length >= 3)
       )
     },
   },
@@ -136,12 +140,12 @@ export const useMappingStore = defineStore('mapping', {
               lng: building.longitude,
             },
           }))
+
           this.buildings = transformed
 
           // Merge into accumulated so we never destroy markers; only show/hide by current response
-          for (const building of transformed) {
+          for (const building of transformed)
             this.buildingsAccumulated[String(building.id)] = building
-          }
 
           // Use dynamic totals map from backend
           this.totals = response.data.totals || {}
@@ -171,7 +175,7 @@ export const useMappingStore = defineStore('mapping', {
      */
     async resetFilters() {
       this.filters = {
-        lcd_presence: ["TMN"], // Empty array shows all LCD presence statuses
+        lcd_presence: ['TMN'], // Empty array shows all LCD presence statuses
       }
       this.mapCenter = {
         lat: -6.2,
@@ -205,6 +209,7 @@ export const useMappingStore = defineStore('mapping', {
     setRadius(radius: number) {
       const value = Number(radius)
       const normalized = Number.isFinite(value) && value >= 0 ? value : 0
+
       this.radius = normalized
       this.filters.radius = normalized > 0 ? normalized : undefined
     },
@@ -221,15 +226,17 @@ export const useMappingStore = defineStore('mapping', {
         this.filters.lng = undefined
         this.radius = 0
         await this.fetchBuildings()
+
         return
       }
 
       try {
         const poiStore = usePOIStore()
+
         // Ensure POI list is loaded
-        if (poiStore.pois.length === 0) {
+        if (poiStore.pois.length === 0)
           await poiStore.fetchPOIs({ take: 1000, skip: 0 })
-        }
+
         const selectedPOIs = poiIds
           .map(id => poiStore.pois.find(p => p.id === id))
           .filter((p): p is POI => p !== undefined)
@@ -253,9 +260,9 @@ export const useMappingStore = defineStore('mapping', {
      * Set polygon filter (drawn on map). Clears draw mode and fetches buildings.
      */
     async setPolygon(path: { lat: number; lng: number }[] | null) {
-      if (path === null) {
+      if (path === null)
         console.log('[mapping store] setPolygon(null) – clearing polygon filter')
-      }
+
       this.filters.polygon = path ?? undefined
       this.drawPolygonActive = false
       await this.fetchBuildings()
@@ -293,7 +300,9 @@ export const useMappingStore = defineStore('mapping', {
     async fetchFilterOptions() {
       try {
         const response = await getMappingFilterOptions()
+
         this.filterOptions = response.data || null
+
         return response
       }
       catch (error) {
@@ -309,7 +318,9 @@ export const useMappingStore = defineStore('mapping', {
       this.isSearching = true
       try {
         const response = await searchRegions(query)
+
         this.regionSearchResults = response.data || null
+
         return response.data
       }
       catch (error) {
@@ -328,6 +339,7 @@ export const useMappingStore = defineStore('mapping', {
       this.isSearching = true
       try {
         const response = await searchScreenTypes(query)
+
         return response.data
       }
       catch (error) {
@@ -345,7 +357,9 @@ export const useMappingStore = defineStore('mapping', {
     async fetchScreenTypes() {
       try {
         const response = await getScreenTypes()
+
         this.screenTypes = response.data || []
+
         return response
       }
       catch (error) {
@@ -362,8 +376,10 @@ export const useMappingStore = defineStore('mapping', {
         const response = await getYearList()
         if (response.data?.year?.length) {
           const years = response.data.year
+
           this.yearRange = [years[0], years[years.length - 1]]
         }
+
         return response
       }
       catch (error) {
@@ -378,7 +394,9 @@ export const useMappingStore = defineStore('mapping', {
     async fetchPotentialClients() {
       try {
         const response = await getPotentialClients()
+
         this.potentialClients = response.data || []
+
         return response
       }
       catch (error) {
@@ -393,7 +411,9 @@ export const useMappingStore = defineStore('mapping', {
     async selectPotentialClient(id: number) {
       try {
         const response = await getPotentialClientById(id)
+
         this.selectedPotentialClient = response.data
+
         return response
       }
       catch (error) {
@@ -415,8 +435,7 @@ export const useMappingStore = defineStore('mapping', {
     async exportData() {
       const payload = buildExportPayload(this.filters, this.mapCenter)
       try {
-        const blob = await exportMappingDataByFilters(payload)
-        return blob
+        return await exportMappingDataByFilters(payload)
       }
       catch (error) {
         console.error('Error exporting data:', error)
@@ -425,4 +444,3 @@ export const useMappingStore = defineStore('mapping', {
     },
   },
 })
-

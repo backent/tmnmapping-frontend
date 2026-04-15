@@ -40,6 +40,7 @@ const parseQueryParamArray = (value: any): string[] => {
 // Initialize state from URL query parameters
 const currentPage = ref(parseQueryParam(route.query.page, 1, val => Number.parseInt(val, 10)))
 const itemsPerPage = ref(parseQueryParam(route.query.perPage, 10, val => Number.parseInt(val, 10)))
+
 const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([
   {
     key: parseQueryParam(route.query.orderBy, 'created_at'),
@@ -56,11 +57,13 @@ const filterBuildingStatus = ref<string[]>(parseQueryParamArray(route.query.buil
 const filterSellable = ref<string[]>(parseQueryParamArray(route.query.sellable))
 const filterConnectivity = ref<string[]>(parseQueryParamArray(route.query.connectivity))
 const filterResourceType = ref<string[]>(parseQueryParamArray(route.query.resource_type))
+
 const filterCompetitorLocation = ref<boolean | null>(
   route.query.competitor_location === undefined
     ? null
     : parseQueryParam(route.query.competitor_location, null, val => val === 'true'),
 )
+
 const filterCbdArea = ref<string[]>(parseQueryParamArray(route.query.cbd_area))
 const filterSubdistrict = ref<string[]>(parseQueryParamArray(route.query.subdistrict))
 const filterCitytown = ref<string[]>(parseQueryParamArray(route.query.citytown))
@@ -150,48 +153,47 @@ const fetchBuildings = async () => {
     }
 
     // Add search if present
-    if (searchQuery.value.trim()) {
+    if (searchQuery.value.trim())
       params.search = searchQuery.value.trim()
-    }
 
     // Add filters if present
-    if (filterBuildingStatus.value.length > 0) {
+    if (filterBuildingStatus.value.length > 0)
       params.building_status = filterBuildingStatus.value.join(',')
-    }
-    if (filterSellable.value.length > 0) {
+
+    if (filterSellable.value.length > 0)
       params.sellable = filterSellable.value.join(',')
-    }
-    if (filterConnectivity.value.length > 0) {
+
+    if (filterConnectivity.value.length > 0)
       params.connectivity = filterConnectivity.value.join(',')
-    }
-    if (filterResourceType.value.length > 0) {
+
+    if (filterResourceType.value.length > 0)
       params.resource_type = filterResourceType.value.join(',')
-    }
-    if (filterCompetitorLocation.value !== null) {
+
+    if (filterCompetitorLocation.value !== null)
       params.competitor_location = filterCompetitorLocation.value
-    }
-    if (filterCbdArea.value.length > 0) {
+
+    if (filterCbdArea.value.length > 0)
       params.cbd_area = filterCbdArea.value.join(',')
-    }
-    if (filterSubdistrict.value.length > 0) {
+
+    if (filterSubdistrict.value.length > 0)
       params.subdistrict = filterSubdistrict.value.join(',')
-    }
-    if (filterCitytown.value.length > 0) {
+
+    if (filterCitytown.value.length > 0)
       params.citytown = filterCitytown.value.join(',')
-    }
-    if (filterProvince.value.length > 0) {
+
+    if (filterProvince.value.length > 0)
       params.province = filterProvince.value.join(',')
-    }
-    if (filterGradeResource.value.length > 0) {
+
+    if (filterGradeResource.value.length > 0)
       params.grade_resource = filterGradeResource.value.join(',')
-    }
-    if (filterBuildingType.value.length > 0) {
+
+    if (filterBuildingType.value.length > 0)
       params.building_type = filterBuildingType.value.join(',')
-    }
 
     // Add sorting if present
     if (sortBy.value.length > 0) {
       const sort = sortBy.value[0]
+
       params.orderBy = sort.key
       params.orderDirection = sort.order === 'desc' ? 'DESC' : 'ASC'
     }
@@ -217,9 +219,8 @@ watch(searchQuery, () => {
   currentPage.value = 1
 
   // Clear existing timeout
-  if (searchDebounce.value) {
+  if (searchDebounce.value)
     clearTimeout(searchDebounce.value)
-  }
 
   // Debounce search - wait 500ms after user stops typing
   searchDebounce.value = setTimeout(() => {
@@ -241,20 +242,20 @@ const handleEdit = (building: Building) => {
 }
 
 const triggerSync = async () => {
-    try {
+  try {
     await buildingStore.triggerSync()
     snackbarMessage.value = 'Buildings synced successfully!'
-      snackbarColor.value = 'success'
-      snackbar.value = true
+    snackbarColor.value = 'success'
+    snackbar.value = true
 
     // Refresh current page after sync
     await fetchBuildings()
-    }
-    catch (error: any) {
+  }
+  catch (error: any) {
     snackbarMessage.value = error?.response?.data?.data || 'Failed to sync buildings'
-      snackbarColor.value = 'error'
-      snackbar.value = true
-    }
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
 }
 
 const formatDate = (dateString: string) => {
@@ -285,6 +286,7 @@ const clearFilters = () => {
 onMounted(async () => {
   // Fetch filter options first
   await buildingStore.fetchFilterOptions()
+
   // Then fetch buildings
   await fetchBuildings()
 })
@@ -313,7 +315,10 @@ onMounted(async () => {
         <VCardText>
           <!-- Filters -->
           <VRow class="mb-4">
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterBuildingStatus"
                 :items="filterOptions?.building_status || []"
@@ -325,7 +330,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterSellable"
                 :items="filterOptions?.sellable || []"
@@ -337,7 +345,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterConnectivity"
                 :items="filterOptions?.connectivity || []"
@@ -349,7 +360,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterResourceType"
                 :items="filterOptions?.resource_type || []"
@@ -361,7 +375,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterCompetitorLocation"
                 :items="[
@@ -374,7 +391,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterCbdArea"
                 :items="filterOptions?.cbd_area || []"
@@ -386,7 +406,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterSubdistrict"
                 :items="filterOptions?.subdistrict || []"
@@ -398,7 +421,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterCitytown"
                 :items="filterOptions?.citytown || []"
@@ -410,7 +436,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterProvince"
                 :items="filterOptions?.province || []"
@@ -422,7 +451,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterGradeResource"
                 :items="filterOptions?.grade_resource || []"
@@ -434,7 +466,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VAutocomplete
                 v-model="filterBuildingType"
                 :items="filterOptions?.building_type || []"
@@ -450,7 +485,10 @@ onMounted(async () => {
 
           <!-- Search and Clear Filters -->
           <VRow class="mb-4">
-            <VCol cols="12" md="4">
+            <VCol
+              cols="12"
+              md="4"
+            >
               <VTextField
                 v-model="searchQuery"
                 label="Search by name"
@@ -461,7 +499,10 @@ onMounted(async () => {
                 hide-details
               />
             </VCol>
-            <VCol cols="12" md="2">
+            <VCol
+              cols="12"
+              md="2"
+            >
               <VBtn
                 color="secondary"
                 variant="outlined"

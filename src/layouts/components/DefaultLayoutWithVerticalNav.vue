@@ -161,4 +161,3 @@ import NavUserProfile from '@/layouts/components/NavUserProfile.vue'
   }
 }
 </style>
-

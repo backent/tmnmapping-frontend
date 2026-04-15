@@ -35,12 +35,14 @@ const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.va
 const fetchItems = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
+
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
       orderBy: 'created_at',
       orderDirection: 'DESC',
     }
+
     if (searchQuery.value.trim())
       params.search = searchQuery.value.trim()
 
@@ -87,7 +89,8 @@ const confirmDelete = (item: SubCategory) => {
 }
 
 const handleDelete = async () => {
-  if (!itemToDelete.value) return
+  if (!itemToDelete.value)
+    return
   try {
     await subCategoryStore.deleteItem(itemToDelete.value.id)
     snackbarMessage.value = 'Sub-category deleted successfully'
@@ -123,6 +126,7 @@ const handleFileSelected = async (event: Event) => {
   try {
     const response = await subCategoryStore.importFile(file)
     const count = response.data?.length || 0
+
     snackbarMessage.value = `Successfully imported ${count} sub-category(s)`
     snackbarColor.value = 'success'
     snackbar.value = true

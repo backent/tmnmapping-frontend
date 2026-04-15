@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
 import {
   getBuildingById,
+  getBuildingDropdownOptions,
   getBuildings,
+  getFilterOptions,
   putBuilding,
   syncBuildings,
-  getFilterOptions,
-  getBuildingDropdownOptions,
 } from '@/http/building'
-import type { Building, BuildingUpdateData, PaginationParams, FilterOptions, BuildingDropdownOption } from '@/types/building'
+import type { Building, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
 
 interface BuildingState {
   buildings: Building[]
@@ -17,6 +17,17 @@ interface BuildingState {
   isSyncing: boolean
   filterOptions: FilterOptions | null
   pagination: {
+    currentPage: number
+    lastPage: number
+    perPage: number
+    total: number
+  }
+
+  // Independent state for the building picker modal (BuildingSelectField),
+  // kept separate from `buildings` so it doesn't fight with the main /buildings list page.
+  pickerBuildings: Building[]
+  pickerIsLoading: boolean
+  pickerPagination: {
     currentPage: number
     lastPage: number
     perPage: number
@@ -33,6 +44,14 @@ export const useBuildingStore = defineStore('building', {
     isSyncing: false,
     filterOptions: null,
     pagination: {
+      currentPage: 1,
+      lastPage: 1,
+      perPage: 10,
+      total: 0,
+    },
+    pickerBuildings: [],
+    pickerIsLoading: false,
+    pickerPagination: {
       currentPage: 1,
       lastPage: 1,
       perPage: 10,
@@ -66,18 +85,18 @@ export const useBuildingStore = defineStore('building', {
     // Fetch all buildings with pagination
     async fetchBuildings(params?: PaginationParams) {
       this.isLoading = true
-      
+
       try {
         const response = await getBuildings(params)
-        
+
         this.buildings = response.data || []
-        
+
         // Check if response has pagination metadata (extras)
         if (response.extras) {
           const take = response.extras.take || 10
           const skip = response.extras.skip || 0
           const total = response.extras.total || 0
-          
+
           this.pagination = {
             currentPage: Math.floor(skip / take) + 1,
             lastPage: Math.ceil(total / take) || 1,
@@ -94,7 +113,7 @@ export const useBuildingStore = defineStore('building', {
           this.pagination.perPage = params?.take || 10
           this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
         }
-        
+
         return response
       }
       catch (error) {
@@ -109,10 +128,12 @@ export const useBuildingStore = defineStore('building', {
     // Fetch single building
     async fetchBuildingById(id: number) {
       this.isLoading = true
-      
+
       try {
         const response = await getBuildingById(id)
-          this.currentBuilding = response.data
+
+        this.currentBuilding = response.data
+
         return response
       }
       catch (error) {
@@ -127,19 +148,19 @@ export const useBuildingStore = defineStore('building', {
     // Update existing building (user fields only)
     async updateBuilding(id: number, data: BuildingUpdateData) {
       this.isLoading = true
-      
+
       try {
         const response = await putBuilding(id, data)
-        
+
         // Update in local state
-          const index = this.buildings.findIndex(b => b.id === id)
-          
+        const index = this.buildings.findIndex(b => b.id === id)
+
         if (index !== -1)
-            this.buildings[index] = response.data
-          
+          this.buildings[index] = response.data
+
         if (this.currentBuilding?.id === id)
-            this.currentBuilding = response.data
-        
+          this.currentBuilding = response.data
+
         return response
       }
       catch (error) {
@@ -154,13 +175,13 @@ export const useBuildingStore = defineStore('building', {
     // Trigger manual sync from ERP
     async triggerSync() {
       this.isSyncing = true
-      
+
       try {
         const response = await syncBuildings()
-        
+
         // Refresh buildings list after sync
         await this.fetchBuildings()
-        
+
         return response
       }
       catch (error) {
@@ -181,7 +202,9 @@ export const useBuildingStore = defineStore('building', {
     async fetchFilterOptions() {
       try {
         const response = await getFilterOptions()
+
         this.filterOptions = response.data || null
+
         return response
       }
       catch (error) {
@@ -190,12 +213,45 @@ export const useBuildingStore = defineStore('building', {
       }
     },
 
+    // Fetch paginated buildings for the picker modal (BuildingSelectField).
+    // Writes to separate state so concurrent use of /buildings list page is unaffected.
+    async fetchBuildingsForPicker(params: PaginationParams) {
+      this.pickerIsLoading = true
+      try {
+        const response = await getBuildings(params)
+
+        this.pickerBuildings = response.data || []
+
+        const take = response.extras?.take ?? params.take ?? 10
+        const skip = response.extras?.skip ?? params.skip ?? 0
+        const total = response.extras?.total ?? this.pickerBuildings.length
+
+        this.pickerPagination = {
+          currentPage: Math.floor(skip / take) + 1,
+          lastPage: Math.ceil(total / take) || 1,
+          perPage: take,
+          total,
+        }
+
+        return response
+      }
+      catch (error) {
+        console.error('Error fetching picker buildings:', error)
+        throw error
+      }
+      finally {
+        this.pickerIsLoading = false
+      }
+    },
+
     // Fetch lightweight building list for dropdown selection
     async fetchBuildingDropdownOptions() {
       this.isLoading = true
       try {
         const response = await getBuildingDropdownOptions()
+
         this.buildingDropdownOptions = response.data || []
+
         return response
       }
       catch (error) {

@@ -17,15 +17,14 @@ const buildingStore = useBuildingStore()
 
 // Fetch filter options if not already loaded
 onMounted(async () => {
-  if (!buildingStore.filterOptions) {
+  if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
-  }
 })
 
 // Transform backend sellable array to autocomplete format with value transformation
 const items = computed(() => {
   const backendSellable = buildingStore.filterOptions?.sellable || []
-  
+
   // Map backend values to autocomplete format with transformed titles
   // Backend returns array of strings like ['sell', 'not_sell']
   return backendSellable.map(sellable => ({

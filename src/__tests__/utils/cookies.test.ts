@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { generateUUID, getCookie, setCookie } from '@/utils/cookies'
 
 /**
@@ -7,8 +7,9 @@ import { generateUUID, getCookie, setCookie } from '@/utils/cookies'
  */
 
 function clearAllCookies() {
-  document.cookie.split(';').forEach((cookie) => {
+  document.cookie.split(';').forEach(cookie => {
     const name = cookie.split('=')[0].trim()
+
     document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`
   })
 }
@@ -42,6 +43,7 @@ describe('getCookie', () => {
 
   it('returns null when document is undefined (SSR context)', () => {
     const originalDocument = globalThis.document
+
     // @ts-expect-error - simulating SSR where document is undefined
     delete globalThis.document
     expect(getCookie('any')).toBeNull()
@@ -72,8 +74,10 @@ describe('setCookie', () => {
 
   it('does nothing when document is undefined (SSR context)', () => {
     const originalDocument = globalThis.document
+
     // @ts-expect-error - simulating SSR
     delete globalThis.document
+
     // Should not throw
     expect(() => setCookie('key', 'value', 1)).not.toThrow()
     globalThis.document = originalDocument
@@ -85,20 +89,24 @@ describe('generateUUID', () => {
 
   it('generates a string that matches the UUID v4 format', () => {
     const uuid = generateUUID()
+
     expect(uuid).toMatch(UUID_V4_REGEX)
   })
 
   it('generates unique UUIDs on successive calls', () => {
     const uuids = new Set(Array.from({ length: 20 }, () => generateUUID()))
+
     expect(uuids.size).toBe(20)
   })
 
   it('falls back to manual generation when crypto.randomUUID is unavailable', () => {
     const originalRandomUUID = crypto.randomUUID
+
     // @ts-expect-error - simulate older environment without randomUUID
     crypto.randomUUID = undefined
 
     const uuid = generateUUID()
+
     expect(uuid).toMatch(UUID_V4_REGEX)
 
     crypto.randomUUID = originalRandomUUID

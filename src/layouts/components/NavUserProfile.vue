@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -11,9 +11,12 @@ async function handleLogout() {
 }
 
 function formatLastLogin(raw: string | undefined): string {
-  if (!raw) return '-'
+  if (!raw)
+    return '-'
   const d = new Date(raw)
-  if (isNaN(d.getTime())) return raw
+  if (isNaN(d.getTime()))
+    return raw
+
   return d.toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',

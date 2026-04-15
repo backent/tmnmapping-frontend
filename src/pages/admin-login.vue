@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
-const tmnLogo = '/images/defaultimage.jpeg'
 import { useAuthStore } from '@/stores/auth'
 
 import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png'
 import authV1MaskLight from '@images/pages/auth-v1-mask-light.png'
+
+const tmnLogo = '/images/defaultimage.jpeg'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -35,6 +36,7 @@ const handleLogin = async () => {
   // Validate form
   if (!form.value.username || !form.value.password) {
     errorMessage.value = 'Please enter both username and password'
+
     return
   }
 
@@ -77,11 +79,11 @@ const handleLogin = async () => {
           class="d-flex align-center gap-3"
         >
           <img
-              :src="tmnLogo"
-              alt="TMN Logo"
-              class="tmn-logo"
-              style="height: 4rem;width: auto;"
-            />
+            :src="tmnLogo"
+            alt="TMN Logo"
+            class="tmn-logo"
+            style="height: 4rem;width: auto;"
+          >
         </RouterLink>
       </VCardItem>
 
@@ -172,4 +174,3 @@ const handleLogin = async () => {
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth";
 </style>
-

@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import {
-  getSavedPolygons,
-  getSavedPolygonById,
   createSavedPolygon,
-  updateSavedPolygon,
   deleteSavedPolygon,
+  getSavedPolygonById,
+  getSavedPolygons,
+  updateSavedPolygon,
 } from '@/http/savedpolygon'
-import type { SavedPolygon, CreateSavedPolygonRequest, UpdateSavedPolygonRequest } from '@/types/savedpolygon'
+import type { CreateSavedPolygonRequest, SavedPolygon, UpdateSavedPolygonRequest } from '@/types/savedpolygon'
 import type { PaginationParams } from '@/types/api'
 
 interface SavedPolygonState {
@@ -39,18 +39,21 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
       this.isLoading = true
       try {
         const response = await getSavedPolygons(params)
+
         this.savedPolygons = response.data || []
         if (response.extras) {
           const take = response.extras.take || 10
           const skip = response.extras.skip || 0
           const total = response.extras.total || 0
+
           this.pagination = {
             currentPage: Math.floor(skip / take) + 1,
             lastPage: Math.ceil(total / take) || 1,
             perPage: take,
             total,
           }
-        } else {
+        }
+        else {
           this.pagination.total = response.data?.length || 0
           this.pagination.currentPage = params?.skip
             ? Math.floor((params.skip / (params.take || 10)) + 1)
@@ -58,6 +61,7 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
           this.pagination.perPage = params?.take || 10
           this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
         }
+
         return response
       }
       catch (error) {
@@ -73,7 +77,9 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
       this.isLoading = true
       try {
         const response = await getSavedPolygonById(id)
+
         this.currentSavedPolygon = response.data || null
+
         return response
       }
       catch (error) {
@@ -89,9 +95,9 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
       this.isLoading = true
       try {
         const response = await createSavedPolygon(data)
-        if (response.data) {
+        if (response.data)
           this.savedPolygons.push(response.data)
-        }
+
         return response
       }
       catch (error) {
@@ -109,13 +115,13 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
         const response = await updateSavedPolygon(id, data)
         if (response.data) {
           const index = this.savedPolygons.findIndex(p => p.id === id)
-          if (index !== -1) {
+          if (index !== -1)
             this.savedPolygons[index] = response.data
-          }
-          if (this.currentSavedPolygon?.id === id) {
+
+          if (this.currentSavedPolygon?.id === id)
             this.currentSavedPolygon = response.data
-          }
         }
+
         return response
       }
       catch (error) {
@@ -132,9 +138,8 @@ export const useSavedPolygonStore = defineStore('savedpolygon', {
       try {
         await deleteSavedPolygon(id)
         this.savedPolygons = this.savedPolygons.filter(p => p.id !== id)
-        if (this.currentSavedPolygon?.id === id) {
+        if (this.currentSavedPolygon?.id === id)
           this.currentSavedPolygon = null
-        }
       }
       catch (error) {
         console.error('Error deleting saved polygon:', error)

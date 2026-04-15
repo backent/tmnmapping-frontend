@@ -17,15 +17,14 @@ const buildingStore = useBuildingStore()
 
 // Fetch filter options if not already loaded
 onMounted(async () => {
-  if (!buildingStore.filterOptions) {
+  if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
-  }
 })
 
 // Transform backend building_status array to autocomplete format
 const items = computed(() => {
   const backendStatuses = buildingStore.filterOptions?.building_status || []
-  
+
   // Map backend values to autocomplete format
   // Backend returns array of strings like ['Project Created', 'First Meeting', ...]
   return backendStatuses.map(status => ({
@@ -60,4 +59,3 @@ const selected = computed({
     />
   </div>
 </template>
-

@@ -17,15 +17,14 @@ const buildingStore = useBuildingStore()
 
 // Fetch filter options if not already loaded
 onMounted(async () => {
-  if (!buildingStore.filterOptions) {
+  if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
-  }
 })
 
 // Transform backend connectivity array to autocomplete format with value transformation
 const items = computed(() => {
   const backendConnectivity = buildingStore.filterOptions?.connectivity || []
-  
+
   // Map backend values to autocomplete format with transformed titles
   // Backend returns array of strings like ['online', 'manual', 'not_yet_checked']
   return backendConnectivity.map(connectivity => ({

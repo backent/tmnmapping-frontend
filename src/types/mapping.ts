@@ -1,11 +1,11 @@
 // Marker status types
 export type MarkerStatus =
-  | 'tmn_installed'      // Purple - TMN installed
-  | 'incomplete'          // Yellow - Incomplete/Need Request
-  | 'competitor_only'     // Red - Competitor only
+  | 'tmn_installed' // Purple - TMN installed
+  | 'incomplete' // Yellow - Incomplete/Need Request
+  | 'competitor_only' // Red - Competitor only
   | 'tmn_plus_competitor' // Blue - TMN + Competitor
-  | 'opportunity'         // Gray - Opportunity (no installation)
-  | 'reporting'          // Purple - Reporting mode
+  | 'opportunity' // Gray - Opportunity (no installation)
+  | 'reporting' // Purple - Reporting mode
 
 export type BuildingType =
   | 'Apartment'
@@ -71,6 +71,7 @@ export interface MappingBuilding {
 
 // Mapping filters interface
 export interface MappingFilters {
+
   // Location filters
   region?: string
   district_subdistrict?: string[]
@@ -161,4 +162,3 @@ export interface RegionSearchResponse {
   district: string[]
   subdistrict: string[]
 }
-

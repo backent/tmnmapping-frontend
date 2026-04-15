@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { BuildingRestriction, CreateBuildingRestrictionRequest, UpdateBuildingRestrictionRequest } from '@/types/buildingrestriction'
@@ -43,7 +43,9 @@ export function deleteBuildingRestriction(id: number): Promise<ApiResponse<strin
 
 export function importBuildingRestrictions(file: File): Promise<ApiResponse<BuildingRestriction[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<BuildingRestriction[]>>(
     apiConfig.endpoints.building_restrictions_import,
     formData,

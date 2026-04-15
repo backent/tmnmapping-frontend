@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { getAcquisitionReport, getBuildingProposalReport, getLOIReport, getBuildingLCDPresenceSummary } from '@/http/dashboard'
-import type { DashboardReport, DashboardFilters, LCDPresenceSummaryResponse } from '@/types/dashboard'
+import { getAcquisitionReport, getBuildingLCDPresenceSummary, getBuildingProposalReport, getLOIReport } from '@/http/dashboard'
+import type { DashboardFilters, DashboardReport, LCDPresenceSummaryResponse } from '@/types/dashboard'
 
 interface ResourceState {
   report: DashboardReport | null
@@ -15,6 +15,7 @@ function toISODate(d: Date): string {
 function defaultResourceState(): ResourceState {
   const today = new Date()
   const weekAgo = new Date(today)
+
   weekAgo.setDate(today.getDate() - 7)
 
   return {
@@ -50,6 +51,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.acquisition.isLoading = true
       try {
         const response = await getAcquisitionReport(this.acquisition.filters)
+
         this.acquisition.report = response.data || null
       }
       catch (error) {
@@ -65,6 +67,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.buildingProposal.isLoading = true
       try {
         const response = await getBuildingProposalReport(this.buildingProposal.filters)
+
         this.buildingProposal.report = response.data || null
       }
       catch (error) {
@@ -80,6 +83,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.loi.isLoading = true
       try {
         const response = await getLOIReport(this.loi.filters)
+
         this.loi.report = response.data || null
       }
       catch (error) {
@@ -95,6 +99,7 @@ export const useDashboardStore = defineStore('dashboard', {
       this.buildingLCDPresence.isLoading = true
       try {
         const response = await getBuildingLCDPresenceSummary()
+
         this.buildingLCDPresence.data = response.data || null
       }
       catch (error) {

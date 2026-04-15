@@ -58,6 +58,7 @@ describe('getApi', () => {
     await getApi('/test', { page: 2, limit: 5 })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('page=2')
     expect(calledUrl).toContain('limit=5')
   })
@@ -67,6 +68,7 @@ describe('getApi', () => {
     await getApi('/test', { page: 1, search: null, filter: undefined })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('page=1')
     expect(calledUrl).not.toContain('search')
     expect(calledUrl).not.toContain('filter')
@@ -77,14 +79,18 @@ describe('getApi', () => {
     await getApi('/buildings/:id', {}, { id: 42 })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('/buildings/42')
     expect(calledUrl).not.toContain(':id')
   })
 
   it('returns the parsed JSON response', async () => {
     const responseBody = { data: { id: 1, name: 'Test' } }
+
     mockFetch.mockResolvedValue(createMockResponse(responseBody))
+
     const result = await getApi('/test')
+
     expect(result).toEqual(responseBody)
   })
 
@@ -100,11 +106,13 @@ describe('getApi', () => {
 
   it('redirects to /login on a 401 response', async () => {
     const response401 = createMockResponse({ message: 'Unauthorized' }, 401)
+
     mockFetch.mockResolvedValue(response401)
 
     // jsdom doesn't navigate, but we can verify window.location.href was set
     const originalLocation = window.location
     const mockAssign = vi.fn()
+
     Object.defineProperty(window, 'location', {
       value: { href: '', assign: mockAssign },
       writable: true,
@@ -122,6 +130,7 @@ describe('getApi', () => {
     await getApi('/test')
 
     const requestOptions = mockFetch.mock.calls[0][1]
+
     expect(requestOptions.headers).toMatchObject({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -145,10 +154,13 @@ describe('postApi', () => {
 
   it('serialises the body as JSON', async () => {
     mockFetch.mockResolvedValue(createMockResponse({ data: 'created' }))
+
     const body = { name: 'Alice', age: 30 }
+
     await postApi('/test', body)
 
     const requestOptions = mockFetch.mock.calls[0][1]
+
     expect(requestOptions.body).toBe(JSON.stringify(body))
   })
 
@@ -166,13 +178,17 @@ describe('postApi', () => {
     await postApi('/test', {}, { page: 3 })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('page=3')
   })
 
   it('returns the parsed JSON response', async () => {
     const body = { data: { id: 99 } }
+
     mockFetch.mockResolvedValue(createMockResponse(body))
+
     const result = await postApi('/test')
+
     expect(result).toEqual(body)
   })
 
@@ -198,10 +214,13 @@ describe('putApi', () => {
 
   it('serialises the body as JSON', async () => {
     mockFetch.mockResolvedValue(createMockResponse({}))
+
     const body = { name: 'Bob' }
+
     await putApi('/test', body)
 
     const requestOptions = mockFetch.mock.calls[0][1]
+
     expect(requestOptions.body).toBe(JSON.stringify(body))
   })
 
@@ -210,6 +229,7 @@ describe('putApi', () => {
     await putApi('/buildings/:id', { id: 7, name: 'Tower A' })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('/buildings/7')
   })
 
@@ -238,6 +258,7 @@ describe('deleteApi', () => {
     await deleteApi('/items/:id', { id: 5 })
 
     const calledUrl: string = mockFetch.mock.calls[0][0]
+
     expect(calledUrl).toContain('/items/5')
     expect(calledUrl).not.toContain(':id')
   })
@@ -264,7 +285,9 @@ describe('deleteApi', () => {
 describe('postFormApi', () => {
   it('calls fetch with the POST method and a FormData body', async () => {
     mockFetch.mockResolvedValue(createMockResponse({ data: 'uploaded' }))
+
     const formData = new FormData()
+
     formData.append('file', new Blob(['test']), 'test.txt')
 
     await postFormApi('/upload', formData)
@@ -277,11 +300,13 @@ describe('postFormApi', () => {
 
   it('does NOT set a Content-Type header (lets browser set boundary)', async () => {
     mockFetch.mockResolvedValue(createMockResponse({}))
+
     const formData = new FormData()
 
     await postFormApi('/upload', formData)
 
     const requestOptions = mockFetch.mock.calls[0][1]
+
     // headers should be undefined or not contain Content-Type
     expect(requestOptions.headers).toBeUndefined()
   })

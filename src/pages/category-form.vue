@@ -23,10 +23,12 @@ const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
 const fetchItem = async () => {
-  if (!itemId.value) return
+  if (!itemId.value)
+    return
   isLoading.value = true
   try {
     await categoryStore.fetchById(itemId.value)
+
     const item = categoryStore.currentItem
     if (item) {
       form.value = {
@@ -44,15 +46,15 @@ const fetchItem = async () => {
 }
 
 onMounted(async () => {
-  if (isEdit.value) {
+  if (isEdit.value)
     await fetchItem()
-  }
 })
 
 const submit = async () => {
   errorMessage.value = ''
   if (!form.value.name.trim()) {
     errorMessage.value = 'Name is required'
+
     return
   }
 
@@ -74,7 +76,9 @@ const submit = async () => {
   }
   catch (error: any) {
     console.error('Save error:', error)
+
     const msg = error?.details?.message || error?.details || 'Failed to save category'
+
     errorMessage.value = msg
     snackbarMessage.value = msg
     snackbarColor.value = 'error'

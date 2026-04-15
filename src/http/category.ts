@@ -1,4 +1,4 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
 import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@/types/category'
@@ -50,7 +50,9 @@ export function getCategoriesDropdown(): Promise<ApiResponse<Category[]>> {
 
 export function importCategories(file: File): Promise<ApiResponse<Category[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<Category[]>>(
     apiConfig.endpoints.categories_import,
     formData,

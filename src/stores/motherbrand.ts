@@ -1,18 +1,18 @@
 import { defineStore } from 'pinia'
-import {
-  getMotherBrands,
-  getMotherBrandById,
-  createMotherBrand,
-  updateMotherBrand,
-  deleteMotherBrand,
-  getMotherBrandsDropdown,
-  importMotherBrands,
-  exportMotherBrands,
-} from '@/http/motherbrand'
-import type { MotherBrand, CreateMotherBrandRequest, UpdateMotherBrandRequest } from '@/types/motherbrand'
-import type { PaginationParams } from '@/types/api'
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
+import {
+  createMotherBrand,
+  deleteMotherBrand,
+  exportMotherBrands,
+  getMotherBrandById,
+  getMotherBrands,
+  getMotherBrandsDropdown,
+  importMotherBrands,
+  updateMotherBrand,
+} from '@/http/motherbrand'
+import type { CreateMotherBrandRequest, MotherBrand, UpdateMotherBrandRequest } from '@/types/motherbrand'
+import type { PaginationParams } from '@/types/api'
 
 interface MotherBrandState {
   items: MotherBrand[]
@@ -46,11 +46,13 @@ export const useMotherBrandStore = defineStore('motherbrand', {
       this.isLoading = true
       try {
         const response = await getMotherBrands(params)
+
         this.items = response.data || []
         if (response.extras) {
           const take = response.extras.take || 10
           const skip = response.extras.skip || 0
           const total = response.extras.total || 0
+
           this.pagination = {
             currentPage: Math.floor(skip / take) + 1,
             lastPage: Math.ceil(total / take) || 1,
@@ -66,6 +68,7 @@ export const useMotherBrandStore = defineStore('motherbrand', {
           this.pagination.perPage = params?.take || 10
           this.pagination.lastPage = Math.ceil(this.pagination.total / this.pagination.perPage) || 1
         }
+
         return response
       }
       catch (error) {
@@ -81,7 +84,9 @@ export const useMotherBrandStore = defineStore('motherbrand', {
       this.isLoading = true
       try {
         const response = await getMotherBrandById(id)
+
         this.currentItem = response.data || null
+
         return response
       }
       catch (error) {
@@ -97,9 +102,9 @@ export const useMotherBrandStore = defineStore('motherbrand', {
       this.isLoading = true
       try {
         const response = await createMotherBrand(data)
-        if (response.data) {
+        if (response.data)
           this.items.push(response.data)
-        }
+
         return response
       }
       catch (error) {
@@ -117,13 +122,13 @@ export const useMotherBrandStore = defineStore('motherbrand', {
         const response = await updateMotherBrand(id, data)
         if (response.data) {
           const index = this.items.findIndex(item => item.id === id)
-          if (index !== -1) {
+          if (index !== -1)
             this.items[index] = response.data
-          }
-          if (this.currentItem?.id === id) {
+
+          if (this.currentItem?.id === id)
             this.currentItem = response.data
-          }
         }
+
         return response
       }
       catch (error) {
@@ -140,9 +145,8 @@ export const useMotherBrandStore = defineStore('motherbrand', {
       try {
         await deleteMotherBrand(id)
         this.items = this.items.filter(item => item.id !== id)
-        if (this.currentItem?.id === id) {
+        if (this.currentItem?.id === id)
           this.currentItem = null
-        }
       }
       catch (error) {
         console.error('Error deleting mother brand:', error)
@@ -156,7 +160,9 @@ export const useMotherBrandStore = defineStore('motherbrand', {
     async fetchDropdown() {
       try {
         const response = await getMotherBrandsDropdown()
+
         this.dropdownItems = response.data || []
+
         return response
       }
       catch (error) {
@@ -168,8 +174,7 @@ export const useMotherBrandStore = defineStore('motherbrand', {
     async importFile(file: File) {
       this.isLoading = true
       try {
-        const response = await importMotherBrands(file)
-        return response
+        return await importMotherBrands(file)
       }
       catch (error) {
         console.error('Error importing mother brands:', error)
@@ -184,6 +189,7 @@ export const useMotherBrandStore = defineStore('motherbrand', {
       try {
         const blob = await exportMotherBrands(search)
         const filename = `MotherBrand_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
+
         saveAs(blob, filename)
       }
       catch (error) {

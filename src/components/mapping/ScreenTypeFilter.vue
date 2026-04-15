@@ -19,9 +19,9 @@ const mappingStore = useMappingStore()
 // Keep JSON.stringify for value to maintain compatibility with backend
 const items = computed(() => {
   // Return empty array if no screen types available
-  if (!mappingStore.screenTypes || mappingStore.screenTypes.length === 0) {
+  if (!mappingStore.screenTypes || mappingStore.screenTypes.length === 0)
     return []
-  }
+
   return mappingStore.screenTypes.map(st => ({
     title: st.name,
     value: JSON.stringify(st),

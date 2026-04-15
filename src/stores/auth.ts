@@ -70,15 +70,15 @@ export const useAuthStore = defineStore('auth', {
      */
     async login(credentials: LoginCredentials) {
       this.isLoading = true
-      
+
       try {
         const response = await postLogin(credentials)
-        
+
         if (response.data?.user) {
           this.currentUser = response.data.user
           this.isAuthenticated = true
         }
-        
+
         return response
       }
       catch (error) {
@@ -96,12 +96,13 @@ export const useAuthStore = defineStore('auth', {
      */
     async logout() {
       this.isLoading = true
-      
+
       try {
         await postLogout()
       }
       catch (error) {
         console.error('Logout error:', error)
+
         // Continue with logout even if API call fails
       }
       finally {
@@ -116,15 +117,15 @@ export const useAuthStore = defineStore('auth', {
      */
     async fetchCurrentUser() {
       this.isLoading = true
-      
+
       try {
         const response = await getMe()
-        
+
         if (response.data) {
           this.currentUser = response.data
           this.isAuthenticated = true
         }
-        
+
         return response
       }
       catch (error) {
@@ -147,4 +148,3 @@ export const useAuthStore = defineStore('auth', {
     },
   },
 })
-

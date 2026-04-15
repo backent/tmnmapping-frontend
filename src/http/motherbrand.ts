@@ -1,7 +1,7 @@
-import { getApi, postApi, putApi, deleteApi, postFormApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { MotherBrand, CreateMotherBrandRequest, UpdateMotherBrandRequest } from '@/types/motherbrand'
+import type { CreateMotherBrandRequest, MotherBrand, UpdateMotherBrandRequest } from '@/types/motherbrand'
 
 export function getMotherBrands(params?: PaginationParams): Promise<ApiResponse<MotherBrand[]>> {
   return getApi<ApiResponse<MotherBrand[]>>(
@@ -50,7 +50,9 @@ export function getMotherBrandsDropdown(): Promise<ApiResponse<MotherBrand[]>> {
 
 export function importMotherBrands(file: File): Promise<ApiResponse<MotherBrand[]>> {
   const formData = new FormData()
+
   formData.append('file', file)
+
   return postFormApi<ApiResponse<MotherBrand[]>>(
     apiConfig.endpoints.mother_brands_import,
     formData,

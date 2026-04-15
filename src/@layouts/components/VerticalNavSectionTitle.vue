@@ -18,4 +18,3 @@ defineProps<{
     </div>
   </li>
 </template>
-
