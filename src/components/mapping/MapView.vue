@@ -56,7 +56,7 @@ const IDLE_DEBOUNCE_MS = 350
 let idleDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const DEBUG_POLYGON = true // set false to disable polygon overlay debug logs
 // Buildings within this many meters are "same position" (multi-building picker)
-const SAME_POSITION_EPSILON_METERS = 100
+const SAME_POSITION_EPSILON_METERS = 10
 
 const mappingStore = useMappingStore()
 
@@ -261,6 +261,31 @@ watch(
   },
 )
 
+/**
+ * LCD presence priority for picking the representative marker when multiple buildings share a position.
+ * Lower number = higher priority. The representative's own marker (color + letter) is shown; others are hidden.
+ */
+const LCD_PRESENCE_PRIORITY: Record<string, number> = {
+  TMN: 1,
+  CoExist: 2,
+  Competitor: 3,
+  Opportunity: 4,
+}
+const LCD_PRESENCE_COLORS: Record<string, string> = {
+  TMN: '#0b97f3',
+  Competitor: '#913c92',
+  CoExist: '#5ecce0',
+  Opportunity: '#8d91a9',
+}
+
+function getLcdPresencePriority(status: string | null): number {
+  return status ? (LCD_PRESENCE_PRIORITY[status] ?? 999) : 999
+}
+
+function lcdPresenceColor(status: string | null): string {
+  return status ? (LCD_PRESENCE_COLORS[status] ?? '#8d91a9') : '#8d91a9'
+}
+
 /** All visible buildings at or near the given building's position (for multi-building picker). */
 function getBuildingsAtPosition(building: MappingBuilding): MappingBuilding[] {
   const buildings = props.buildings || []
@@ -306,6 +331,46 @@ function applyZoomToMarkers(zoom: number) {
   }
 }
 
+/**
+ * For each position group of currently visible buildings, pick the representative building
+ * with the highest LCD presence priority (TMN > CoExist > Competitor > Opportunity).
+ * Returns a set of building IDs to hide (the non-winners in each multi-building group).
+ */
+function computeHiddenInGroupIds(): Set<string> {
+  const visibleBuildings = props.buildings || []
+  const assigned = new Set<string>()
+  const hidden = new Set<string>()
+
+  for (const building of visibleBuildings) {
+    const id = String(building.id)
+    if (assigned.has(id))
+      continue
+    const group = getBuildingsAtPosition(building)
+    for (const b of group)
+      assigned.add(String(b.id))
+    if (group.length <= 1)
+      continue
+
+    // Winner = lowest priority number (tie-break by first occurrence)
+    let winner = group[0]
+    let winnerPrio = getLcdPresencePriority(winner.lcd_presence_status)
+    for (let i = 1; i < group.length; i++) {
+      const prio = getLcdPresencePriority(group[i].lcd_presence_status)
+      if (prio < winnerPrio) {
+        winner = group[i]
+        winnerPrio = prio
+      }
+    }
+
+    for (const b of group) {
+      if (String(b.id) !== String(winner.id))
+        hidden.add(String(b.id))
+    }
+  }
+
+  return hidden
+}
+
 function updateMarkers() {
   if (!map.value)
     return
@@ -313,6 +378,7 @@ function updateMarkers() {
   const visibleIds = new Set((props.buildings || []).map(b => String(b.id)))
   const accumulated = mappingStore.buildingsAccumulatedList
   const installation = props.filters.installation || []
+  const hiddenInGroupIds = computeHiddenInGroupIds()
 
   for (const building of accumulated) {
     const id = String(building.id)
@@ -358,7 +424,7 @@ function updateMarkers() {
       }
     }
 
-    entry.marker.setVisible(visibleIds.has(id))
+    entry.marker.setVisible(visibleIds.has(id) && !hiddenInGroupIds.has(id))
   }
 }
 
@@ -705,7 +771,16 @@ onBeforeUnmount(() => {
             :subtitle="b.building_type || undefined"
             clickable
             @click="selectBuildingFromPicker(b)"
-          />
+          >
+            <template #append>
+              <VChip
+                size="x-small"
+                :style="{ backgroundColor: lcdPresenceColor(b.lcd_presence_status), color: '#fff' }"
+              >
+                {{ b.lcd_presence_status ?? 'N/A' }}
+              </VChip>
+            </template>
+          </VListItem>
         </VList>
         <VCardActions>
           <VSpacer />
