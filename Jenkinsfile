@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     env.APP_VERSION = readFile('VERSION').trim()
-                    // Credential ID: "tmn-app-frontend-image-name" (Secret text) – Docker image repo (e.g. backent/tmn-mapping-frontend)
+                    // Credential ID: "tmn-app-frontend-image-name" (Secret text) – Docker image repo (e.g. account/image-name)
                     withCredentials([string(credentialsId: 'tmn-app-frontend-image-name', variable: 'IMG')]) {
                         env.IMAGE_NAME = IMG
                     }
@@ -95,7 +95,7 @@ pipeline {
         stage('Deploy to Server') {
             steps {
                 // Credential IDs (all "Secret text"):
-                //   tmn-app-server-host  – SSH server address (e.g. 247.247.247.247)
+                //   tmn-app-server-host  – SSH server address (e.g. 108.136.218.247)
                 //   tmn-app-server-user  – SSH username       (e.g. ubuntu)
                 //   tmn-app-server-port  – SSH port           (e.g. 22)
                 // Credential ID: "tmn-app-ssh-key"
