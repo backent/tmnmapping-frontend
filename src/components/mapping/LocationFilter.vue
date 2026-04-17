@@ -275,7 +275,6 @@ const subdistrictItems = computed(() => {
         ref="locationTextFieldRef"
         v-model="locationSearchText"
         placeholder="Type a location or Region"
-        prepend-inner-icon="mdi-map-marker"
         outlined
         hide-details
         class="mb-5"
@@ -318,12 +317,6 @@ const subdistrictItems = computed(() => {
             @click.stop="selectPlace(prediction)"
             @mouseenter="selectedIndex = index"
           >
-            <template #prepend>
-              <VIcon
-                icon="mdi-map-marker"
-                class="me-2"
-              />
-            </template>
             <VListItemTitle>
               {{ prediction.description }}
             </VListItemTitle>

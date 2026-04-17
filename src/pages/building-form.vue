@@ -148,8 +148,8 @@ onUnmounted(() => {
             md="6"
           >
             <VTextField
-              :model-value="building?.iris_code"
-              label="IRIS Code"
+              :model-value="building?.external_building_id"
+              label="Building ID"
               readonly
               variant="outlined"
             />

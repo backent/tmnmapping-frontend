@@ -530,14 +530,14 @@ onMounted(async () => {
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
-                    ID
+                  <th
+                    class="text-uppercase"
+                    style="white-space: nowrap;"
+                  >
+                    Building ID
                   </th>
                   <th class="text-uppercase">
                     Name
-                  </th>
-                  <th class="text-uppercase">
-                    IRIS Code
                   </th>
                   <th class="text-uppercase">
                     Project
@@ -574,19 +574,18 @@ onMounted(async () => {
                   v-for="building in buildings"
                   :key="building.id"
                 >
-                  <td>{{ building.id }}</td>
-                  <td>
-                    <span class="font-weight-medium">{{ building.name }}</span>
-                  </td>
-                  <td>
+                  <td style="white-space: nowrap;">
                     <code
-                      v-if="building.iris_code"
+                      v-if="building.external_building_id"
                       class="text-primary"
-                    >{{ building.iris_code }}</code>
+                    >{{ building.external_building_id }}</code>
                     <span
                       v-else
                       class="text-disabled"
                     >-</span>
+                  </td>
+                  <td>
+                    <span class="font-weight-medium">{{ building.name }}</span>
                   </td>
                   <td>
                     <span v-if="building.project_name">{{ building.project_name }}</span>
