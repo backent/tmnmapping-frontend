@@ -23,6 +23,15 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isImporting = ref(false)
 const isExporting = ref(false)
 
+// Import duplicate error dialog
+interface DuplicateRow {
+  name: string
+  building_name: string
+  rows: number[]
+}
+const duplicateDialog = ref(false)
+const duplicateRows = ref<DuplicateRow[]>([])
+
 const restrictions = computed(() => buildingRestrictionStore.restrictions)
 const isLoading = computed(() => buildingRestrictionStore.isLoading)
 const totalRecords = computed(() => buildingRestrictionStore.pagination.total)
@@ -123,9 +132,16 @@ const handleFileSelected = async (event: Event) => {
     await fetchRestrictions()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import building restrictions'
-    snackbarColor.value = 'error'
-    snackbar.value = true
+    const dupes = error?.details?.extras?.duplicates as DuplicateRow[] | undefined
+    if (dupes && dupes.length > 0) {
+      duplicateRows.value = dupes
+      duplicateDialog.value = true
+    }
+    else {
+      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import building restrictions'
+      snackbarColor.value = 'error'
+      snackbar.value = true
+    }
   }
   finally {
     isImporting.value = false
@@ -343,6 +359,62 @@ const handleExport = async () => {
         </VCardText>
       </VCard>
     </VCol>
+
+    <!-- Duplicate rows dialog (import validation) -->
+    <VDialog
+      v-model="duplicateDialog"
+      max-width="720"
+      scrollable
+    >
+      <VCard>
+        <VCardTitle class="d-flex align-center gap-2">
+          <VIcon
+            icon="ri-error-warning-line"
+            color="error"
+          />
+          <span>Import failed: duplicate rows</span>
+        </VCardTitle>
+        <VCardText>
+          <p class="mb-4 text-body-2">
+            The same building restriction cannot reference the same building more than once. Please fix the rows below in your file and try again.
+          </p>
+          <VTable density="compact">
+            <thead>
+              <tr>
+                <th class="text-uppercase">
+                  Name
+                </th>
+                <th class="text-uppercase">
+                  Building
+                </th>
+                <th class="text-uppercase">
+                  Rows
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(dup, idx) in duplicateRows"
+                :key="idx"
+              >
+                <td>{{ dup.name }}</td>
+                <td>{{ dup.building_name || '-' }}</td>
+                <td>{{ dup.rows.join(', ') }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            @click="duplicateDialog = false"
+          >
+            Close
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <VSnackbar
       v-model="snackbar"

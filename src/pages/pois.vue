@@ -24,6 +24,16 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isImporting = ref(false)
 const isExporting = ref(false)
 
+// Import duplicate error dialog
+interface DuplicateRow {
+  brand: string
+  poi_name: string
+  address: string
+  rows: number[]
+}
+const duplicateDialog = ref(false)
+const duplicateRows = ref<DuplicateRow[]>([])
+
 const pois = computed(() => poiStore.pois)
 const isLoading = computed(() => poiStore.isLoading)
 const totalRecords = computed(() => poiStore.pagination.total)
@@ -132,9 +142,16 @@ const handleFileSelected = async (event: Event) => {
     await fetchPOIs()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import POIs'
-    snackbarColor.value = 'error'
-    snackbar.value = true
+    const dupes = error?.details?.extras?.duplicates as DuplicateRow[] | undefined
+    if (dupes && dupes.length > 0) {
+      duplicateRows.value = dupes
+      duplicateDialog.value = true
+    }
+    else {
+      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import POIs'
+      snackbarColor.value = 'error'
+      snackbar.value = true
+    }
   }
   finally {
     isImporting.value = false
@@ -370,6 +387,66 @@ const handleExport = async () => {
         </VCardText>
       </VCard>
     </VCol>
+
+    <!-- Duplicate rows dialog (import validation) -->
+    <VDialog
+      v-model="duplicateDialog"
+      max-width="720"
+      scrollable
+    >
+      <VCard>
+        <VCardTitle class="d-flex align-center gap-2">
+          <VIcon
+            icon="ri-error-warning-line"
+            color="error"
+          />
+          <span>Import failed: duplicate rows</span>
+        </VCardTitle>
+        <VCardText>
+          <p class="mb-4 text-body-2">
+            The same brand cannot reference the same POI (by name and address) more than once. Please fix the rows below in your file and try again.
+          </p>
+          <VTable density="compact">
+            <thead>
+              <tr>
+                <th class="text-uppercase">
+                  Brand
+                </th>
+                <th class="text-uppercase">
+                  POI Name
+                </th>
+                <th class="text-uppercase">
+                  Address
+                </th>
+                <th class="text-uppercase">
+                  Rows
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(dup, idx) in duplicateRows"
+                :key="idx"
+              >
+                <td>{{ dup.brand }}</td>
+                <td>{{ dup.poi_name || '-' }}</td>
+                <td>{{ dup.address || '-' }}</td>
+                <td>{{ dup.rows.join(', ') }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            @click="duplicateDialog = false"
+          >
+            Close
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <!-- Snackbar for feedback -->
     <VSnackbar
