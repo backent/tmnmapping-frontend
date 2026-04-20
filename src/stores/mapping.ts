@@ -52,8 +52,8 @@ interface MappingState {
   selectedPOIs: POI[]
   drawPolygonActive: boolean
 
-  /** When true, MapView should fit bounds to the current polygon once then clear this flag */
-  fitBoundsToPolygon: boolean
+  /** Monotonic counter; increment to request MapView fit bounds to the current polygon */
+  fitBoundsToPolygon: number
 }
 
 export const useMappingStore = defineStore('mapping', {
@@ -81,7 +81,7 @@ export const useMappingStore = defineStore('mapping', {
     regionSearchResults: null,
     selectedPOIs: [],
     drawPolygonActive: false,
-    fitBoundsToPolygon: false,
+    fitBoundsToPolygon: 0,
   }),
 
   getters: {
@@ -277,9 +277,13 @@ export const useMappingStore = defineStore('mapping', {
 
     /**
      * Request that the map fit bounds to the current polygon (e.g. after loading a saved polygon).
+     * Implemented as a monotonic counter so that repeated requests — including switching from
+     * one saved polygon to another while a fit is already pending/completed — always trigger
+     * MapView's watcher, regardless of prior state.
      */
-    setFitBoundsToPolygon(value: boolean) {
-      this.fitBoundsToPolygon = value
+    setFitBoundsToPolygon(value: boolean = true) {
+      if (value)
+        this.fitBoundsToPolygon += 1
     },
 
     /**

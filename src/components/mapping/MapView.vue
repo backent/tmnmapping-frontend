@@ -245,19 +245,22 @@ watch(() => filterPolygon.value, () => {
   }
 }, { deep: true })
 
-// When a saved polygon is loaded, fit map bounds to it once
+// When a saved polygon is loaded, fit map bounds to it once.
+// Uses a monotonic counter so switching directly between saved polygons (without clearing
+// in between) reliably triggers this watcher, rather than relying on a boolean flag
+// whose false→true→false toggle is sensitive to Vue's dependency-tracking order.
 watch(
-  () => mappingStore.fitBoundsToPolygon && filterPolygon.value && filterPolygon.value.length >= 3,
-  shouldFit => {
-    if (!shouldFit || !map.value || !filterPolygon.value?.length)
+  () => mappingStore.fitBoundsToPolygon,
+  () => {
+    const polygon = filterPolygon.value
+    if (!map.value || !polygon || polygon.length < 3)
       return
 
     const bounds = new google.maps.LatLngBounds()
-    for (const p of filterPolygon.value)
+    for (const p of polygon)
       bounds.extend({ lat: p.lat, lng: p.lng })
     if (!bounds.isEmpty())
       map.value.fitBounds(bounds, 50)
-    mappingStore.setFitBoundsToPolygon(false)
   },
 )
 
