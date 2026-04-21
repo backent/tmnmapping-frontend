@@ -176,6 +176,10 @@ onMounted(async () => {
         const maxLat = ne.lat()
         const maxLng = ne.lng()
 
+        console.log('[MapView idle] firing fetchBuildings', {
+          bounds: { minLat, minLng, maxLat, maxLng },
+          polygonLen: mappingStore.filters.polygon?.length,
+        })
         mappingStore.setMapBounds({ minLat, minLng, maxLat, maxLng })
         mappingStore.fetchBuildings()
 
@@ -251,16 +255,32 @@ watch(() => filterPolygon.value, () => {
 // whose false→true→false toggle is sensitive to Vue's dependency-tracking order.
 watch(
   () => mappingStore.fitBoundsToPolygon,
-  () => {
+  (counter, prevCounter) => {
     const polygon = filterPolygon.value
-    if (!map.value || !polygon || polygon.length < 3)
+
+    console.log('[MapView fit watcher] fired', {
+      counter,
+      prevCounter,
+      hasMap: !!map.value,
+      polygonLen: polygon?.length,
+    })
+
+    if (!map.value || !polygon || polygon.length < 3) {
+      console.log('[MapView fit watcher] skipped (preconditions not met)')
+
       return
+    }
 
     const bounds = new google.maps.LatLngBounds()
     for (const p of polygon)
       bounds.extend({ lat: p.lat, lng: p.lng })
-    if (!bounds.isEmpty())
+    if (!bounds.isEmpty()) {
+      console.log('[MapView fit watcher] calling map.fitBounds', {
+        ne: bounds.getNorthEast().toJSON(),
+        sw: bounds.getSouthWest().toJSON(),
+      })
       map.value.fitBounds(bounds, 50)
+    }
   },
 )
 

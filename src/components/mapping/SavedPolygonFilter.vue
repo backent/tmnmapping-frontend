@@ -29,18 +29,29 @@ function pointsToFilterFormat(polygon: SavedPolygon): { lat: number; lng: number
   return sorted.map(p => ({ lat: p.lat, lng: p.lng }))
 }
 
-watch(selectedId, async id => {
+watch(selectedId, async (id, prevId) => {
+  console.log('[SavedPolygonFilter] selectedId changed', { prevId, id, currentPolygonLen: mappingStore.filters.polygon?.length })
   if (id == null) {
+    console.log('[SavedPolygonFilter] id is null, clearing polygon')
     mappingStore.setPolygon(null)
 
     return
   }
   const polygon = savedPolygonStore.savedPolygons.find(p => p.id === id)
+  console.log('[SavedPolygonFilter] found polygon', { id, found: !!polygon, points: polygon?.points.length })
   if (polygon) {
     const path = pointsToFilterFormat(polygon)
 
+    console.log('[SavedPolygonFilter] calling setPolygon', { pathLen: path.length })
     await mappingStore.setPolygon(path)
+    console.log('[SavedPolygonFilter] setPolygon resolved, calling setFitBoundsToPolygon(true)', {
+      currentFilterPolygonLen: mappingStore.filters.polygon?.length,
+      fitCounterBefore: mappingStore.fitBoundsToPolygon,
+    })
     mappingStore.setFitBoundsToPolygon(true)
+    console.log('[SavedPolygonFilter] setFitBoundsToPolygon called', {
+      fitCounterAfter: mappingStore.fitBoundsToPolygon,
+    })
   }
 })
 
