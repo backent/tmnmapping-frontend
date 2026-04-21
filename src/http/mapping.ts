@@ -1,6 +1,6 @@
-import { getApi } from '@/utils/http'
+import { getApi, postApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
-import type { ApiResponse, QueryParams } from '@/types/api'
+import type { ApiResponse } from '@/types/api'
 import type {
   MappingFilterOptions,
   MappingFilters,
@@ -18,111 +18,34 @@ export interface MapBounds {
   maxLng: number
 }
 
-/**
- * Build query parameters from mapping filters
- * @param filters - Mapping filters
- * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
- * @param bounds - Optional map viewport bounds (minLat, minLng, maxLat, maxLng)
- */
-function buildFilterParams(
-  filters?: MappingFilters,
-  mapCenter?: { lat: number; lng: number },
-  bounds?: MapBounds | null,
-): QueryParams {
-  const params: QueryParams = {}
-
-  if (!filters)
-    return params
-
-  if (filters.region)
-    params['filter[district_subdistrict]'] = filters.region
-
-  if (filters.district_subdistrict?.length)
-    params['filter[district_subdistrict]'] = filters.district_subdistrict.join(',')
-
-  if (filters.building_type?.length)
-    params['filter[building_type]'] = filters.building_type.join(',')
-
-  if (filters.building_grade?.length)
-    params['filter[building_grade]'] = filters.building_grade.join(',')
-
-  if (filters.installation?.length)
-    params['filter[installation]'] = filters.installation.join(',')
-
-  if (filters.screen_type?.length)
-    params['filter[screen_type]'] = filters.screen_type.join(',')
-
-  if (filters.screen_point?.length)
-    params['filter[screen_point]'] = filters.screen_point.join(',')
-
-  if (filters.progress?.length)
-    params['filter[progress]'] = filters.progress.join(',')
-
-  if (filters.lcd_presence?.length)
-    params['filter[lcd_presence]'] = filters.lcd_presence.join(',')
-
-  if (filters.sellable?.length)
-    params['filter[sellable]'] = filters.sellable.join(',')
-
-  if (filters.connectivity?.length)
-    params['filter[connectivity]'] = filters.connectivity.join(',')
-
-  if (filters.sales_package_ids?.length)
-    params['filter[sales_package_ids]'] = filters.sales_package_ids.join(',')
-
-  if (filters.building_restriction_ids?.length)
-    params['filter[building_restriction_ids]'] = filters.building_restriction_ids.join(',')
-
-  if (filters.year)
-    params['filter[year]'] = `${filters.year[0]},${filters.year[1]}`
-
-  // Spatial filters: polygon takes priority; when set, omit POI/lat/lng/radius
-  if (filters.polygon && filters.polygon.length >= 3) {
-    params['filter[polygon]'] = JSON.stringify(filters.polygon)
-  }
-  else {
-    // POI filter handling
-    if (filters.poi_ids?.length) {
-      params['filter[poi_id]'] = filters.poi_ids.join(',')
-      if (filters.radius)
-        params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
-    }
-    else {
-      let lat: number | undefined
-      let lng: number | undefined
-      if (filters.radius && filters.radius > 0) {
-        lat = mapCenter?.lat
-        lng = mapCenter?.lng
-      }
-      else {
-        lat = filters.lat ?? mapCenter?.lat
-        lng = filters.lng ?? mapCenter?.lng
-      }
-      if (lat != null && lng != null) {
-        params['filter[lat]'] = lat
-        params['filter[lng]'] = lng
-      }
-      if (filters.radius)
-        params['filter[radius]'] = filters.radius * 1000 // Convert km to meters
-    }
-  }
-
-  if (filters.places_id)
-    params['filter[places_id]'] = filters.places_id
-
-  // Map viewport bounds (backend returns only buildings in view when set)
-  if (bounds) {
-    params['filter[min_lat]'] = bounds.minLat
-    params['filter[max_lat]'] = bounds.maxLat
-    params['filter[min_lng]'] = bounds.minLng
-    params['filter[max_lng]'] = bounds.maxLng
-  }
-
-  return params
+/** Body shape for POST /mapping-buildings. Mirrors the export payload plus typed bounds. */
+export interface MappingBuildingsPayload {
+  filters: ExportMappingByFilterPayload['filters']
+  map_center: { lat: number; lng: number }
+  bounds: MapBounds | null
 }
 
 /**
- * Get mapping buildings with filters
+ * Build the POST body for the buildings fetch. Filters are projected by the shared
+ * `buildExportPayload` so mapping and export stay in sync; bounds are mapping-only.
+ */
+export function buildMappingBuildingsPayload(
+  filters: MappingFilters | undefined,
+  mapCenter: { lat: number; lng: number } | undefined,
+  bounds: MapBounds | null | undefined,
+): MappingBuildingsPayload {
+  const base = buildExportPayload(filters ?? {}, mapCenter ?? { lat: 0, lng: 0 })
+
+  return {
+    filters: base.filters,
+    map_center: base.map_center,
+    bounds: bounds ?? null,
+  }
+}
+
+/**
+ * Get mapping buildings with filters. POSTs a JSON body so large polygons
+ * (hundreds of points) cannot overflow Nginx URL-size limits.
  * @param filters - Mapping filters
  * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
  * @param bounds - Optional map viewport bounds; when set, backend returns only buildings in view
@@ -132,28 +55,11 @@ export function getMappingBuildings(
   mapCenter?: { lat: number; lng: number },
   bounds?: MapBounds | null,
 ): Promise<ApiResponse<MappingResponse>> {
-  const params = buildFilterParams(filters, mapCenter, bounds)
+  const payload = buildMappingBuildingsPayload(filters, mapCenter, bounds)
 
-  return getApi<ApiResponse<MappingResponse>>(
+  return postApi<ApiResponse<MappingResponse>>(
     apiConfig.endpoints.mapping_buildings,
-    params,
-  )
-}
-
-/**
- * Get cached mapping buildings (for performance)
- * @param filters - Mapping filters
- * @param mapCenter - Map center coordinates (used as fallback for lat/lng when radius is set)
- */
-export function getCachedMappingBuildings(
-  filters?: MappingFilters,
-  mapCenter?: { lat: number; lng: number },
-): Promise<ApiResponse<MappingResponse>> {
-  const params = buildFilterParams(filters, mapCenter)
-
-  return getApi<ApiResponse<MappingResponse>>(
-    apiConfig.endpoints.mapping_buildings_cache,
-    params,
+    payload,
   )
 }
 

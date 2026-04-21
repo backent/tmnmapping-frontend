@@ -260,25 +260,9 @@ export const useMappingStore = defineStore('mapping', {
      * Set polygon filter (drawn on map). Clears draw mode and fetches buildings.
      */
     async setPolygon(path: { lat: number; lng: number }[] | null) {
-      console.log('[mapping store] setPolygon called', {
-        pathLen: path?.length ?? null,
-        prevPolygonLen: this.filters.polygon?.length,
-        mapBounds: this.mapBounds,
-      })
-
       this.filters.polygon = path ?? undefined
       this.drawPolygonActive = false
-      try {
-        await this.fetchBuildings()
-        console.log('[mapping store] setPolygon fetchBuildings resolved', {
-          resultCount: this.buildings.length,
-          totals: this.totals,
-        })
-      }
-      catch (err) {
-        console.error('[mapping store] setPolygon fetchBuildings rejected', err)
-        throw err
-      }
+      await this.fetchBuildings()
     },
 
     /**
@@ -295,7 +279,6 @@ export const useMappingStore = defineStore('mapping', {
      * MapView's watcher, regardless of prior state.
      */
     setFitBoundsToPolygon(value: boolean = true) {
-      console.log('[mapping store] setFitBoundsToPolygon called', { value, prevCounter: this.fitBoundsToPolygon })
       if (value)
         this.fitBoundsToPolygon += 1
     },
