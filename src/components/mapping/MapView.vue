@@ -736,7 +736,7 @@ onBeforeUnmount(() => {
 
     <!-- Loading Overlay -->
     <div
-      v-if="mappingStore.isLoading"
+      v-if="mappingStore.isLoadingVisible"
       class="map-loading-overlay"
     >
       <div class="loading-content">

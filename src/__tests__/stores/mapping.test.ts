@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useMappingStore } from '@/stores/mapping'
+import { __resetLoadingSmoothingForTests, useMappingStore } from '@/stores/mapping'
 
 import { getMappingBuildings } from '@/http/mapping'
 
@@ -32,6 +32,7 @@ describe('useMappingStore fit-to-polygon counter', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    __resetLoadingSmoothingForTests()
     vi.mocked(getMappingBuildings).mockResolvedValue({ data: { data: [], totals: {} } })
   })
 
@@ -86,10 +87,62 @@ describe('useMappingStore fit-to-polygon counter', () => {
   })
 })
 
+describe('useMappingStore loading smoothing', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    __resetLoadingSmoothingForTests()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.resetAllMocks()
+  })
+
+  // Regression: on fast responses the loader would flash for a single frame.
+  // A fetch that resolves before the show-delay must never flip isLoadingVisible.
+  it('does not show the overlay when the fetch resolves before the show-delay', async () => {
+    vi.useFakeTimers()
+    vi.mocked(getMappingBuildings).mockResolvedValue({ data: { data: [], totals: {} } })
+
+    const store = useMappingStore()
+
+    await store.fetchBuildings()
+
+    expect(store.isLoading).toBe(false)
+    expect(store.isLoadingVisible).toBe(false)
+  })
+
+  it('shows the overlay when the fetch takes longer than the show-delay', async () => {
+    vi.useFakeTimers()
+    let resolveFetch: (v: any) => void = () => {}
+
+    vi.mocked(getMappingBuildings).mockImplementation(
+      () => new Promise(resolve => { resolveFetch = resolve }),
+    )
+
+    const store = useMappingStore()
+    const pending = store.fetchBuildings()
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(store.isLoadingVisible).toBe(true)
+
+    resolveFetch({ data: { data: [], totals: {} } })
+    await pending
+
+    // Still visible: minimum-visible window not yet elapsed.
+    expect(store.isLoadingVisible).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(400)
+    expect(store.isLoadingVisible).toBe(false)
+  })
+})
+
 describe('useMappingStore.setPolygon', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    __resetLoadingSmoothingForTests()
     vi.mocked(getMappingBuildings).mockResolvedValue({ data: { data: [], totals: {} } })
   })
 

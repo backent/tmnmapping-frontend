@@ -25,6 +25,71 @@ import type { POI } from '@/types/poi'
 /** Map viewport bounds for bounds-based fetching */
 export interface MapBounds { minLat: number; minLng: number; maxLat: number; maxLng: number }
 
+// Loading-overlay smoothing: show the loader only when a fetch takes longer than
+// LOADING_SHOW_DELAY_MS, then keep it visible for at least LOADING_MIN_VISIBLE_MS.
+// This prevents a flicker on fast responses without making slow ones feel slower.
+const LOADING_SHOW_DELAY_MS = 200
+const LOADING_MIN_VISIBLE_MS = 400
+
+let loadingShowTimer: ReturnType<typeof setTimeout> | null = null
+let loadingHideTimer: ReturnType<typeof setTimeout> | null = null
+let loadingShownAt = 0
+let loadingActiveRequests = 0
+
+interface LoadingTarget { isLoadingVisible: boolean }
+
+function markLoadingStart(store: LoadingTarget) {
+  loadingActiveRequests += 1
+  if (loadingHideTimer) {
+    clearTimeout(loadingHideTimer)
+    loadingHideTimer = null
+  }
+  if (store.isLoadingVisible || loadingShowTimer)
+    return
+  loadingShowTimer = setTimeout(() => {
+    store.isLoadingVisible = true
+    loadingShownAt = Date.now()
+    loadingShowTimer = null
+  }, LOADING_SHOW_DELAY_MS)
+}
+
+function markLoadingEnd(store: LoadingTarget) {
+  loadingActiveRequests = Math.max(0, loadingActiveRequests - 1)
+  if (loadingActiveRequests > 0)
+    return
+  if (loadingShowTimer) {
+    clearTimeout(loadingShowTimer)
+    loadingShowTimer = null
+    return
+  }
+  if (store.isLoadingVisible) {
+    const remaining = Math.max(0, LOADING_MIN_VISIBLE_MS - (Date.now() - loadingShownAt))
+
+    loadingHideTimer = setTimeout(() => {
+      store.isLoadingVisible = false
+      loadingHideTimer = null
+    }, remaining)
+  }
+}
+
+/**
+ * Test-only: reset the module-level loading-smoothing state. Tests that run
+ * fetchBuildings with fake timers should call this in beforeEach so state
+ * from a previous test doesn't leak.
+ */
+export function __resetLoadingSmoothingForTests() {
+  if (loadingShowTimer) {
+    clearTimeout(loadingShowTimer)
+    loadingShowTimer = null
+  }
+  if (loadingHideTimer) {
+    clearTimeout(loadingHideTimer)
+    loadingHideTimer = null
+  }
+  loadingShownAt = 0
+  loadingActiveRequests = 0
+}
+
 interface MappingState {
   buildings: MappingBuilding[]
 
@@ -33,6 +98,8 @@ interface MappingState {
   filterOptions: MappingFilterOptions | null
   filters: MappingFilters
   isLoading: boolean
+  /** Smoothed loading signal for UI — delay-then-show + minimum-visible. Use this for spinners. */
+  isLoadingVisible: boolean
   isSearching: boolean
   totals: Record<string, number> // Dynamic totals map - key is building type (lowercase), value is count
   selectedBuilding: MappingBuilding | null
@@ -65,6 +132,7 @@ export const useMappingStore = defineStore('mapping', {
       lcd_presence: ['TMN'], // Empty array shows all LCD presence statuses
     },
     isLoading: false,
+    isLoadingVisible: false,
     isSearching: false,
     totals: {},
     selectedBuilding: null,
@@ -126,6 +194,7 @@ export const useMappingStore = defineStore('mapping', {
      */
     async fetchBuildings() {
       this.isLoading = true
+      markLoadingStart(this)
 
       try {
         const response = await getMappingBuildings(this.filters, this.mapCenter, this.mapBounds)
@@ -159,6 +228,7 @@ export const useMappingStore = defineStore('mapping', {
       }
       finally {
         this.isLoading = false
+        markLoadingEnd(this)
       }
     },
 
