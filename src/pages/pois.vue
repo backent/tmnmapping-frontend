@@ -34,6 +34,15 @@ interface DuplicateRow {
 const duplicateDialog = ref(false)
 const duplicateRows = ref<DuplicateRow[]>([])
 
+// Import metadata-mismatch error dialog
+interface MismatchRow {
+  brand: string
+  field: string
+  rows: number[]
+}
+const mismatchDialog = ref(false)
+const mismatchRows = ref<MismatchRow[]>([])
+
 const pois = computed(() => poiStore.pois)
 const isLoading = computed(() => poiStore.isLoading)
 const totalRecords = computed(() => poiStore.pagination.total)
@@ -143,7 +152,12 @@ const handleFileSelected = async (event: Event) => {
   }
   catch (error: any) {
     const dupes = error?.details?.extras?.duplicates as DuplicateRow[] | undefined
-    if (dupes && dupes.length > 0) {
+    const mismatches = error?.details?.extras?.mismatches as MismatchRow[] | undefined
+    if (mismatches && mismatches.length > 0) {
+      mismatchRows.value = mismatches
+      mismatchDialog.value = true
+    }
+    else if (dupes && dupes.length > 0) {
       duplicateRows.value = dupes
       duplicateDialog.value = true
     }
@@ -441,6 +455,62 @@ const handleExport = async () => {
           <VBtn
             color="primary"
             @click="duplicateDialog = false"
+          >
+            Close
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- Metadata mismatch dialog (import validation) -->
+    <VDialog
+      v-model="mismatchDialog"
+      max-width="800"
+      scrollable
+    >
+      <VCard>
+        <VCardTitle class="d-flex align-center gap-2">
+          <VIcon
+            icon="ri-error-warning-line"
+            color="error"
+          />
+          <span>Import failed: metadata mismatch</span>
+        </VCardTitle>
+        <VCardText>
+          <p class="mb-4 text-body-2">
+            All rows of the same brand must share the same Category, Sub-Category, and Mother Brand. Please review the rows below.
+          </p>
+          <VTable density="compact">
+            <thead>
+              <tr>
+                <th class="text-uppercase">
+                  Brand
+                </th>
+                <th class="text-uppercase">
+                  Field
+                </th>
+                <th class="text-uppercase">
+                  Rows to check
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(m, idx) in mismatchRows"
+                :key="idx"
+              >
+                <td>{{ m.brand }}</td>
+                <td>{{ m.field }}</td>
+                <td>{{ m.rows.join(', ') }}</td>
+              </tr>
+            </tbody>
+          </VTable>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            @click="mismatchDialog = false"
           >
             Close
           </VBtn>

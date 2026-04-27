@@ -45,20 +45,8 @@ const handleEdit = (index: number) => {
         <VListItemSubtitle>
           Lat: {{ point.latitude.toFixed(6) }}, Lng: {{ point.longitude.toFixed(6) }}
         </VListItemSubtitle>
-        <VListItemSubtitle v-if="point.category || point.sub_category || point.mother_brand || point.branch">
-          <span v-if="point.category">Category: {{ point.category }}</span>
-          <span
-            v-if="point.sub_category"
-            class="ms-2"
-          >Sub-Category: {{ point.sub_category }}</span>
-          <span
-            v-if="point.mother_brand"
-            class="ms-2"
-          >Mother Brand: {{ point.mother_brand }}</span>
-          <span
-            v-if="point.branch"
-            class="ms-2"
-          >Branch: {{ point.branch }}</span>
+        <VListItemSubtitle v-if="point.branch">
+          <span>Branch: {{ point.branch }}</span>
         </VListItemSubtitle>
 
         <template #append>

@@ -40,21 +40,6 @@ export const routes = [
         component: () => import('@/pages/poi-form.vue'),
       },
       {
-        path: 'poi-points',
-        name: 'poi-points',
-        component: () => import('@/pages/poi-points.vue'),
-      },
-      {
-        path: 'poi-points/new',
-        name: 'poi-point-new',
-        component: () => import('@/pages/poi-point-form.vue'),
-      },
-      {
-        path: 'poi-points/:id/edit',
-        name: 'poi-point-edit',
-        component: () => import('@/pages/poi-point-form.vue'),
-      },
-      {
         path: 'sales-packages',
         name: 'sales-packages',
         component: () => import('@/pages/sales-packages.vue'),
