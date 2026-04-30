@@ -23,6 +23,7 @@ declare module 'vue' {
     LocationFilter: typeof import('./src/components/mapping/LocationFilter.vue')['default']
     MapCenterMarker: typeof import('./src/components/mapping/MapCenterMarker.vue')['default']
     MapRadiusCircle: typeof import('./src/components/mapping/MapRadiusCircle.vue')['default']
+    MapSearchedLocationMarker: typeof import('./src/components/mapping/MapSearchedLocationMarker.vue')['default']
     MapView: typeof import('./src/components/mapping/MapView.vue')['default']
     MoreBtn: typeof import('./src/@core/components/MoreBtn.vue')['default']
     PlaceAutocomplete: typeof import('./src/components/poi/PlaceAutocomplete.vue')['default']

@@ -21,21 +21,25 @@ const BUILDING_TYPE_LABEL: Record<string, string> = {
 
 const BASE_MARKER_WIDTH = 30
 const BASE_MARKER_HEIGHT = 40
-const BASE_MARKER_ZOOM = 14
+export const BASE_MARKER_ZOOM = 14
 const MARKER_SCALE_MIN = 0.45
-// Capped at 1.0 so markers never exceed the original 30×40 size — larger
-// pins crowd the map at high zoom and hurt readability.
+// Capped at 1.0 so markers never exceed their base size — larger pins crowd
+// the map at high zoom and hurt readability.
 const MARKER_SCALE_MAX = 1.0
 
 /**
  * Scale factor anchored at 1.0 when zoom === BASE_MARKER_ZOOM (14).
  * Doubles every 3 zoom levels (loosely tracks tile doubling), clamped so
- * markers don't vanish at low zoom. Upper bound is 1× (base size) so
- * markers stay the original size when zooming in.
+ * markers don't vanish at low zoom and don't bloat at high zoom.
  */
-export function computeMarkerSize(zoom: number): { width: number; height: number } {
+export function computeMarkerScale(zoom: number): number {
   const raw = 2 ** ((zoom - BASE_MARKER_ZOOM) / 3)
-  const factor = Math.min(MARKER_SCALE_MAX, Math.max(MARKER_SCALE_MIN, raw))
+
+  return Math.min(MARKER_SCALE_MAX, Math.max(MARKER_SCALE_MIN, raw))
+}
+
+export function computeMarkerSize(zoom: number): { width: number; height: number } {
+  const factor = computeMarkerScale(zoom)
 
   return {
     width: Math.round(BASE_MARKER_WIDTH * factor),

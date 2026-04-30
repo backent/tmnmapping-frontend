@@ -9,6 +9,7 @@ import { getMarkerIconConfig } from '@/utils/markerUtils'
 import type { MappingBuilding, MappingFilters } from '@/types/mapping'
 import MapRadiusCircle from '@/components/mapping/MapRadiusCircle.vue'
 import MapCenterMarker from '@/components/mapping/MapCenterMarker.vue'
+import MapSearchedLocationMarker from '@/components/mapping/MapSearchedLocationMarker.vue'
 
 interface Props {
   buildings: MappingBuilding[]
@@ -204,10 +205,11 @@ watch(() => props.buildings, () => {
     updateMarkers()
 })
 
-// Update center when it changes
+// Update center when it changes — panTo gives a smooth animated transition
+// instead of the instant jump that setCenter would produce.
 watch(() => props.center, () => {
   if (map.value && isMapLoaded.value)
-    map.value.setCenter(props.center)
+    map.value.panTo(props.center)
 })
 
 // Watch selected POIs: update dot markers, circles, and fit bounds
@@ -732,6 +734,13 @@ onBeforeUnmount(() => {
       :map="map"
       :position="props.center"
       :visible="showCenterMarker"
+    />
+
+    <!-- Pin at the location chosen via the LocationFilter autocomplete -->
+    <MapSearchedLocationMarker
+      v-if="map"
+      :map="map"
+      :position="mappingStore.searchedLocation"
     />
 
     <!-- Loading Overlay -->

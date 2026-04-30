@@ -123,6 +123,7 @@ watch(() => locationSearchText.value, newValue => {
     showPredictions.value = false
     selectedIndex.value = -1
     justSelected.value = false
+    mappingStore.clearSearchedLocation()
 
     return
   }
@@ -173,6 +174,7 @@ const selectPlace = async (prediction: google.maps.places.AutocompletePrediction
 
           selected.value = []
           mappingStore.setMapCenter(lat, lng)
+          mappingStore.setSearchedLocation(lat, lng)
           emit('placeSelected', place)
 
           createSessionToken()

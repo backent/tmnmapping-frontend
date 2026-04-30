@@ -49,6 +49,7 @@ const handleMarkerClick = (building: any) => {
 
 const handleMapDoubleClick = (lat: number, lng: number) => {
   mappingStore.setMapCenter(lat, lng)
+  mappingStore.setSearchedLocation(lat, lng)
   mappingStore.fetchBuildings()
 }
 </script>

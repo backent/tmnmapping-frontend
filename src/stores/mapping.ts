@@ -108,6 +108,9 @@ interface MappingState {
     lng: number
   }
 
+  /** Coordinates of the location chosen via the LocationFilter autocomplete; null = no marker */
+  searchedLocation: { lat: number; lng: number } | null
+
   /** Map viewport bounds; when set, fetch returns only buildings in view */
   mapBounds: MapBounds | null
   radius: number // in kilometers
@@ -141,6 +144,7 @@ export const useMappingStore = defineStore('mapping', {
       lat: -6.2,
       lng: 106.816666,
     },
+    searchedLocation: null,
     radius: 0,
     yearRange: [1980, new Date().getFullYear()],
     potentialClients: [],
@@ -251,6 +255,7 @@ export const useMappingStore = defineStore('mapping', {
         lat: -6.2,
         lng: 106.816666,
       }
+      this.searchedLocation = null
       this.radius = 0
       this.selectedPOIs = []
       this.drawPolygonActive = false
@@ -271,6 +276,14 @@ export const useMappingStore = defineStore('mapping', {
       this.mapCenter = { lat, lng }
       this.filters.lat = lat
       this.filters.lng = lng
+    },
+
+    setSearchedLocation(lat: number, lng: number) {
+      this.searchedLocation = { lat, lng }
+    },
+
+    clearSearchedLocation() {
+      this.searchedLocation = null
     },
 
     /**
