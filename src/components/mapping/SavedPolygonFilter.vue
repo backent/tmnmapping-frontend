@@ -13,12 +13,14 @@ onMounted(async () => {
 })
 
 const items = computed(() => {
-  return savedPolygonStore.savedPolygons.map(p => ({
-    title: p.name,
-    subtitle: p.points.length ? `${p.points.length} points` : '',
-    value: p.id,
-    raw: p,
-  }))
+  return [...savedPolygonStore.savedPolygons]
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }))
+    .map(p => ({
+      title: p.name,
+      subtitle: p.points.length ? `${p.points.length} points` : '',
+      value: p.id,
+      raw: p,
+    }))
 })
 
 const selectedId = ref<number | null>(null)
