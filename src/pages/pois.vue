@@ -166,6 +166,16 @@ watch([filterCategoryIds, filterSubCategoryIds, filterMotherBrandIds], () => {
   fetchPOIs()
 })
 
+const clearFilters = () => {
+  filterCategoryIds.value = []
+  filterSubCategoryIds.value = []
+  filterMotherBrandIds.value = []
+  searchQuery.value = ''
+  currentPage.value = 1
+  updateURL()
+  fetchPOIs()
+}
+
 // Fetch POIs and dropdown options on mount
 onMounted(async () => {
   await Promise.all([
@@ -391,20 +401,38 @@ const handleExport = async () => {
             </VCol>
           </VRow>
 
-          <!-- Search -->
-          <VTextField
-            v-model="searchQuery"
-            label="Search by brand"
-            placeholder="Type to search..."
-            prepend-inner-icon="ri-search-line"
-            variant="outlined"
-            density="compact"
-            clearable
-            class="mb-4"
-            style="max-width: 400px"
-            @input="handleSearch"
-            @click:clear="searchQuery = ''; handleSearch()"
-          />
+          <!-- Search and Clear Filters -->
+          <VRow class="mb-4">
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model="searchQuery"
+                label="Search by brand"
+                placeholder="Type to search..."
+                prepend-inner-icon="ri-search-line"
+                clearable
+                density="compact"
+                hide-details
+                @input="handleSearch"
+                @click:clear="searchQuery = ''; handleSearch()"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="2"
+            >
+              <VBtn
+                color="secondary"
+                variant="outlined"
+                block
+                @click="clearFilters"
+              >
+                Clear Filters
+              </VBtn>
+            </VCol>
+          </VRow>
 
           <!-- Hidden file input for import -->
           <input
