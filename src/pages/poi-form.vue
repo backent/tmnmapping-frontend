@@ -251,24 +251,6 @@ const submit = async () => {
     return
   }
 
-  if (!form.value.category_id) {
-    errorMessage.value = 'Category is required'
-
-    return
-  }
-
-  if (!form.value.sub_category_id) {
-    errorMessage.value = 'Sub-Category is required'
-
-    return
-  }
-
-  if (!form.value.mother_brand_id) {
-    errorMessage.value = 'Mother Brand is required'
-
-    return
-  }
-
   if (form.value.points.length === 0) {
     errorMessage.value = 'At least one point is required'
 
@@ -442,7 +424,7 @@ onUnmounted(() => {
                 label="Category"
                 variant="outlined"
                 :disabled="isSaving"
-                :rules="[v => !!v || 'Category is required']"
+                clearable
               />
             </VCol>
             <VCol
@@ -457,7 +439,7 @@ onUnmounted(() => {
                 label="Sub-Category"
                 variant="outlined"
                 :disabled="isSaving"
-                :rules="[v => !!v || 'Sub-Category is required']"
+                clearable
               />
             </VCol>
             <VCol
@@ -472,7 +454,7 @@ onUnmounted(() => {
                 label="Mother Brand"
                 variant="outlined"
                 :disabled="isSaving"
-                :rules="[v => !!v || 'Mother Brand is required']"
+                clearable
               />
             </VCol>
 
