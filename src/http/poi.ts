@@ -58,11 +58,28 @@ export function importPOIs(file: File): Promise<ApiResponse<POI[]>> {
   )
 }
 
+export interface ExportPOIFilters {
+  search?: string
+  category_ids?: string
+  sub_category_ids?: string
+  mother_brand_ids?: string
+}
+
 // GET /pois/export - Export POIs as xlsx
-export async function exportPOIs(search?: string): Promise<Blob> {
+export async function exportPOIs(filters?: ExportPOIFilters): Promise<Blob> {
   const params = new URLSearchParams()
-  if (search)
-    params.set('search', search)
+
+  if (filters?.search)
+    params.set('search', filters.search)
+
+  if (filters?.category_ids)
+    params.set('category_ids', filters.category_ids)
+
+  if (filters?.sub_category_ids)
+    params.set('sub_category_ids', filters.sub_category_ids)
+
+  if (filters?.mother_brand_ids)
+    params.set('mother_brand_ids', filters.mother_brand_ids)
 
   const queryString = params.toString()
   const url = `${apiConfig.baseUrl}${apiConfig.endpoints.pois_export}${queryString ? `?${queryString}` : ''}`

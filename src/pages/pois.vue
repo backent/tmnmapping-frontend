@@ -1,23 +1,60 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useCategoryStore } from '@/stores/category'
+import { useMotherBrandStore } from '@/stores/motherbrand'
 import { usePOIStore } from '@/stores/poi'
+import { useSubCategoryStore } from '@/stores/subcategory'
 import type { POI } from '@/types/poi'
 import type { PaginationParams } from '@/types/api'
 
 const router = useRouter()
+const route = useRoute()
 const poiStore = usePOIStore()
+const categoryStore = useCategoryStore()
+const subCategoryStore = useSubCategoryStore()
+const motherBrandStore = useMotherBrandStore()
+
+// Helpers to read state from URL query
+const parseQueryString = (value: unknown, fallback = ''): string => {
+  if (value === undefined || value === null)
+    return fallback
+  return Array.isArray(value) ? String(value[0] ?? fallback) : String(value)
+}
+
+const parseQueryInt = (value: unknown, fallback: number): number => {
+  const str = parseQueryString(value)
+  const n = Number.parseInt(str, 10)
+
+  return Number.isFinite(n) ? n : fallback
+}
+
+const parseQueryIdArray = (value: unknown): number[] => {
+  const str = parseQueryString(value)
+  if (!str)
+    return []
+
+  return str
+    .split(',')
+    .map(v => Number.parseInt(v.trim(), 10))
+    .filter(n => Number.isFinite(n))
+}
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
-// Pagination state
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+// Pagination state (initialized from URL)
+const currentPage = ref(parseQueryInt(route.query.page, 1))
+const itemsPerPage = ref(parseQueryInt(route.query.perPage, 10))
 
-// Search state
-const searchQuery = ref('')
+// Search state (initialized from URL)
+const searchQuery = ref(parseQueryString(route.query.search))
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Filter state (multi-select dropdowns, initialized from URL)
+const filterCategoryIds = ref<number[]>(parseQueryIdArray(route.query.category_ids))
+const filterSubCategoryIds = ref<number[]>(parseQueryIdArray(route.query.sub_category_ids))
+const filterMotherBrandIds = ref<number[]>(parseQueryIdArray(route.query.mother_brand_ids))
 
 // Import state
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -48,12 +85,42 @@ const isLoading = computed(() => poiStore.isLoading)
 const totalRecords = computed(() => poiStore.pagination.total)
 const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.value) || 1)
 
-// Fetch POIs with pagination and search
+// Push current state to URL (without adding history entry)
+const updateURL = () => {
+  const query: Record<string, string | number> = {}
+
+  if (currentPage.value > 1)
+    query.page = currentPage.value
+
+  if (itemsPerPage.value !== 10)
+    query.perPage = itemsPerPage.value
+
+  if (searchQuery.value.trim())
+    query.search = searchQuery.value.trim()
+
+  if (filterCategoryIds.value.length > 0)
+    query.category_ids = filterCategoryIds.value.join(',')
+
+  if (filterSubCategoryIds.value.length > 0)
+    query.sub_category_ids = filterSubCategoryIds.value.join(',')
+
+  if (filterMotherBrandIds.value.length > 0)
+    query.mother_brand_ids = filterMotherBrandIds.value.join(',')
+
+  router.push({ query, replace: true })
+}
+
+// Fetch POIs with pagination, search, and filters
 const fetchPOIs = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
 
-    const params: PaginationParams & { search?: string } = {
+    const params: PaginationParams & {
+      search?: string
+      category_ids?: string
+      sub_category_ids?: string
+      mother_brand_ids?: string
+    } = {
       take: itemsPerPage.value,
       skip,
       orderBy: 'created_at',
@@ -62,6 +129,15 @@ const fetchPOIs = async () => {
 
     if (searchQuery.value.trim())
       params.search = searchQuery.value.trim()
+
+    if (filterCategoryIds.value.length > 0)
+      params.category_ids = filterCategoryIds.value.join(',')
+
+    if (filterSubCategoryIds.value.length > 0)
+      params.sub_category_ids = filterSubCategoryIds.value.join(',')
+
+    if (filterMotherBrandIds.value.length > 0)
+      params.mother_brand_ids = filterMotherBrandIds.value.join(',')
 
     await poiStore.fetchPOIs(params)
   }
@@ -78,24 +154,39 @@ const handleSearch = () => {
     clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
     currentPage.value = 1
+    updateURL()
     fetchPOIs()
   }, 300)
 }
 
-// Fetch POIs on mount
+// Refetch when filters change (reset to first page)
+watch([filterCategoryIds, filterSubCategoryIds, filterMotherBrandIds], () => {
+  currentPage.value = 1
+  updateURL()
+  fetchPOIs()
+})
+
+// Fetch POIs and dropdown options on mount
 onMounted(async () => {
-  await fetchPOIs()
+  await Promise.all([
+    fetchPOIs(),
+    categoryStore.fetchDropdown(),
+    subCategoryStore.fetchDropdown(),
+    motherBrandStore.fetchDropdown(),
+  ])
 })
 
 // Handle page change
 const handlePageChange = async (page: number) => {
   currentPage.value = page
+  updateURL()
   await fetchPOIs()
 }
 
 // Handle items per page change
 const handleItemsPerPageChange = async () => {
   currentPage.value = 1
+  updateURL()
   await fetchPOIs()
 }
 
@@ -175,11 +266,16 @@ const handleFileSelected = async (event: Event) => {
   }
 }
 
-// Handle export
+// Handle export (uses currently-applied filters and search)
 const handleExport = async () => {
   isExporting.value = true
   try {
-    await poiStore.exportPOIs(searchQuery.value.trim() || undefined)
+    await poiStore.exportPOIs({
+      search: searchQuery.value.trim() || undefined,
+      category_ids: filterCategoryIds.value.length > 0 ? filterCategoryIds.value.join(',') : undefined,
+      sub_category_ids: filterSubCategoryIds.value.length > 0 ? filterSubCategoryIds.value.join(',') : undefined,
+      mother_brand_ids: filterMotherBrandIds.value.length > 0 ? filterMotherBrandIds.value.join(',') : undefined,
+    })
     snackbarMessage.value = 'Export downloaded successfully'
     snackbarColor.value = 'success'
     snackbar.value = true
@@ -240,6 +336,61 @@ const handleExport = async () => {
         </VCardTitle>
 
         <VCardText>
+          <!-- Filters -->
+          <VRow class="mb-4">
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VAutocomplete
+                v-model="filterCategoryIds"
+                :items="categoryStore.dropdownItems"
+                item-title="name"
+                item-value="id"
+                label="Category"
+                placeholder="All"
+                multiple
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VAutocomplete
+                v-model="filterSubCategoryIds"
+                :items="subCategoryStore.dropdownItems"
+                item-title="name"
+                item-value="id"
+                label="Sub-Category"
+                placeholder="All"
+                multiple
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VAutocomplete
+                v-model="filterMotherBrandIds"
+                :items="motherBrandStore.dropdownItems"
+                item-title="name"
+                item-value="id"
+                label="Mother Brand"
+                placeholder="All"
+                multiple
+                clearable
+                density="compact"
+                hide-details
+              />
+            </VCol>
+          </VRow>
+
           <!-- Search -->
           <VTextField
             v-model="searchQuery"

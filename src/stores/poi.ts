@@ -10,6 +10,7 @@ import {
   importPOIs,
   updatePOI,
 } from '@/http/poi'
+import type { ExportPOIFilters } from '@/http/poi'
 import type { CreatePOIRequest, POI, UpdatePOIRequest } from '@/types/poi'
 import type { PaginationParams } from '@/types/api'
 
@@ -173,9 +174,9 @@ export const usePOIStore = defineStore('poi', {
       }
     },
 
-    async exportPOIs(search?: string) {
+    async exportPOIs(filters?: ExportPOIFilters) {
       try {
-        const blob = await exportPOIs(search)
+        const blob = await exportPOIs(filters)
         const filename = `POI_Export_${dayjs().format('DD-MM-YYYY')}.xlsx`
 
         saveAs(blob, filename)
