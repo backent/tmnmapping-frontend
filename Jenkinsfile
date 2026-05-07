@@ -69,7 +69,7 @@ pipeline {
                                 -v "$(pwd):/app" \
                                 -w /app \
                                 node:20-alpine \
-                                sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile && pnpm run test"
+                                sh -c "corepack enable && corepack prepare pnpm@10.20.0 --activate && pnpm install --frozen-lockfile && pnpm run test"
                         '''
                     }
                 }
