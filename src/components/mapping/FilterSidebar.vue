@@ -20,8 +20,8 @@ import SavePolygonDialog from './SavePolygonDialog.vue'
 import SavedPolygonFilter from './SavedPolygonFilter.vue'
 import { exportMappingData } from '@/utils/exportUtils'
 import { useAuthStore } from '@/stores/auth'
-import { useBuildingStore } from '@/stores/building'
 import { useMappingStore } from '@/stores/mapping'
+import { BUILDING_TYPE_CODES } from '@/config/buildingType'
 
 interface Props {
   reporting?: boolean
@@ -32,7 +32,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const mappingStore = useMappingStore()
-const buildingStore = useBuildingStore()
 const authStore = useAuthStore()
 const savePolygonDialogOpen = ref(false)
 const isExporting = ref(false)
@@ -93,65 +92,21 @@ const handleExport = async () => {
   }
 }
 
-// Helper function to generate initial from building type name
-// Examples: "Apartment" -> "A", "Mixed Use" -> "MU", "Office Building" -> "OB"
-const getBuildingTypeInitial = (typeName: string): string => {
-  // Handle special cases
-  const specialCases: Record<string, string> = {
-    'other': 'OT',
-    'mixed use': 'MU',
-    'office building': 'OB',
-  }
-
-  const lowerName = typeName.toLowerCase()
-
-  if (specialCases[lowerName])
-    return specialCases[lowerName]
-
-  // For single word types, return first letter
-  if (!typeName.includes(' '))
-    return typeName.charAt(0).toUpperCase()
-
-  // For multi-word types, return first letter of each word
-  return typeName
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase())
-    .join('')
-}
-
-// Helper function to map building type name to totals key
-// Examples: "Apartment" -> "apartment", "Other" -> "other"
-const getTotalsKey = (typeName: string): string => {
-  // Handle special case for "Other" -> "other" (not "others")
-  if (typeName.toLowerCase() === 'other')
-    return 'other'
-
-  // Convert to lowercase for most cases
-  return typeName.toLowerCase()
-}
-
-// Computed property for dynamic building type totals based on API data
-// Shows all building types from /api/building-filter-options, even if count is 0
+// Building type chips are driven by a fixed config (src/config/buildingType.ts).
+// The ERP sync collapses any unknown type to "Other" upstream, so the list is authoritative;
+// names not in the config are not surfaced even if they appear in API responses.
+// Zero-count types are hidden — the 4-column grid then auto-packs the remaining chips
+// in config order (max 4 per row, no fixed slot per code).
 const buildingTypeTotals = computed(() => {
   const totals = mappingStore.totals
-  const buildingTypes = buildingStore.filterOptions?.building_type || []
 
-  return buildingTypes
-    .map(typeName => {
-      const totalsKey = getTotalsKey(typeName)
-
-      // Get total from the dynamic totals map (defaults to 0 if not found)
-      const total = totals[totalsKey] || 0
-
-      return {
-        name: typeName,
-        initial: getBuildingTypeInitial(typeName),
-        total,
-        key: totalsKey,
-      }
-    })
-
-  // Removed filter - show all building types from filter options, even with 0 counts
+  return BUILDING_TYPE_CODES
+    .map(({ code, name }) => ({
+      name,
+      code,
+      total: totals[name.toLowerCase()] || 0,
+    }))
+    .filter(t => t.total > 0)
 })
 </script>
 
@@ -165,10 +120,11 @@ const buildingTypeTotals = computed(() => {
       <div class="chip-grid pb-2 pt-1 px-1">
         <VChip
           v-for="type in buildingTypeTotals"
-          :key="type.key"
+          :key="type.code"
           class="ma-1 justify-center"
+          :title="type.name"
         >
-          {{ type.initial }}: {{ type.total }}
+          {{ type.code }}: {{ type.total }}
         </VChip>
       </div>
     </div>
