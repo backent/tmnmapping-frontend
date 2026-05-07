@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { BUILDING_TYPE_CODES } from '@/config/buildingType'
 import { useBuildingStore } from '@/stores/building'
 import type { BuildingType } from '@/types/mapping'
 
@@ -16,22 +17,22 @@ const emit = defineEmits<Emits>()
 
 const buildingStore = useBuildingStore()
 
-// Fetch filter options if not already loaded
 onMounted(async () => {
   if (!buildingStore.filterOptions)
     await buildingStore.fetchFilterOptions()
 })
 
-// Transform backend building_type array to autocomplete format
+// Show only types that exist in the DB, ordered by the canonical config so
+// the dropdown matches the chip grid order on the same page.
 const items = computed(() => {
-  const backendTypes = buildingStore.filterOptions?.building_type || []
+  const present = new Set(buildingStore.filterOptions?.building_type || [])
 
-  // Map backend values to autocomplete format
-  // Backend returns array of strings like ['Apartment', 'Office', 'Hotel', ...]
-  return backendTypes.map(type => ({
-    title: type,
-    value: type as BuildingType,
-  }))
+  return BUILDING_TYPE_CODES
+    .filter(({ name }) => present.has(name))
+    .map(({ name }) => ({
+      title: name,
+      value: name as BuildingType,
+    }))
 })
 
 const selected = computed({

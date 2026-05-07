@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useBuildingStore } from '@/stores/building'
+import { BUILDING_TYPE_CODES } from '@/config/buildingType'
 import type { Building } from '@/types/building'
 
 const router = useRouter()
@@ -77,6 +78,17 @@ const isLoading = computed(() => buildingStore.isLoading)
 const isSyncing = computed(() => buildingStore.isSyncing)
 const totalRecords = computed(() => buildingStore.pagination.total)
 const filterOptions = computed(() => buildingStore.filterOptions)
+
+// Building type options: filter the canonical config to the names actually present
+// in the DB (preserves prior "DB-driven visibility") while preserving config order
+// so the dropdown matches the mapping page chip grid.
+const buildingTypeOptions = computed(() => {
+  const present = new Set(filterOptions.value?.building_type || [])
+
+  return BUILDING_TYPE_CODES
+    .filter(({ name }) => present.has(name))
+    .map(({ name }) => name)
+})
 
 // Update URL query parameters
 const updateURL = () => {
@@ -472,7 +484,7 @@ onMounted(async () => {
             >
               <VAutocomplete
                 v-model="filterBuildingType"
-                :items="filterOptions?.building_type || []"
+                :items="buildingTypeOptions"
                 label="Building Type"
                 placeholder="All"
                 multiple
