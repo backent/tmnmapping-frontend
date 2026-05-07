@@ -1,93 +1,121 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { usePOIStore } from '@/stores/poi'
+import { computed, ref } from 'vue'
+import POIPickerDialog from './POIPickerDialog.vue'
+import { useMappingStore } from '@/stores/mapping'
+import type { POI } from '@/types/poi'
 
 interface Props {
   modelValue: number[] | undefined
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: number[]): void
+  (e: 'update:modelValue', ids: number[], pois: POI[]): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const poiStore = usePOIStore()
+const mappingStore = useMappingStore()
 
-// Fetch all POIs for dropdown (without pagination)
-onMounted(async () => {
-  if (poiStore.pois.length === 0) {
-    try {
-      // Fetch all POIs without pagination limit
-      await poiStore.fetchPOIs({ take: 1000, skip: 0 })
-    }
-    catch (error) {
-      console.error('Error fetching POIs:', error)
-    }
-  }
-})
+const dialogOpen = ref(false)
 
-// Transform POIs to autocomplete items
-const items = computed(() => {
-  return poiStore.pois.map(poi => ({
-    title: poi.brand,
-    value: poi.id,
-    color: poi.color,
-  }))
-})
+const selectedIds = computed(() => props.modelValue ?? [])
 
-const selected = computed({
-  get: () => props.modelValue ?? [],
-  set: (value: number[]) => emit('update:modelValue', value ?? []),
-})
+// Hydrated POI objects for the currently-applied selection. Source of truth is
+// `mappingStore.selectedPOIs` (already maintained as `POI[]` by the store).
+const selectedPOIs = computed<POI[]>(() => mappingStore.selectedPOIs ?? [])
+
+function openPicker() {
+  dialogOpen.value = true
+}
+
+function handleApply(payload: { ids: number[]; pois: POI[] }) {
+  emit('update:modelValue', payload.ids, payload.pois)
+}
 </script>
 
 <template>
   <VDivider />
   <VSubheader>Point of Interest</VSubheader>
   <div class="pa-3">
-    <VAutocomplete
-      v-model="selected"
-      :items="items"
-      label="Select POI(s)"
-      placeholder="Choose a POI..."
-      multiple
-      clearable
-      chips
-      variant="outlined"
-      density="compact"
-      :loading="poiStore.isLoading"
+    <!-- Display-only field; clicking opens the picker dialog. -->
+    <div
+      class="poi-display"
+      role="button"
+      tabindex="0"
+      @click="openPicker"
+      @keydown.enter="openPicker"
+      @keydown.space.prevent="openPicker"
     >
-      <template #item="{ props: itemProps, item }">
-        <VListItem
-          v-bind="itemProps"
-          :title="item.raw.title"
-        >
-          <template #prepend>
-            <VAvatar
-              :color="item.raw.color"
-              size="24"
-              class="me-2"
-            />
-          </template>
-        </VListItem>
-      </template>
-      <template #chip="{ item, props: chipProps }">
+      <div
+        v-if="selectedIds.length === 0"
+        class="text-medium-emphasis text-body-2"
+      >
+        Select POI(s)…
+      </div>
+      <div
+        v-else
+        class="d-flex flex-wrap gap-1"
+      >
         <VChip
-          v-bind="chipProps"
-          :prepend-avatar="undefined"
+          v-for="poi in selectedPOIs"
+          :key="poi.id"
+          size="small"
+          variant="tonal"
         >
           <template #prepend>
             <VAvatar
-              :color="item.raw.color"
+              :color="poi.color"
               size="16"
               class="me-1"
             />
           </template>
-          {{ item.raw.title }}
+          {{ poi.brand }}
         </VChip>
-      </template>
-    </VAutocomplete>
+      </div>
+      <VIcon
+        icon="ri-arrow-drop-down-line"
+        class="poi-display-icon"
+      />
+    </div>
+
+    <POIPickerDialog
+      v-model="dialogOpen"
+      :selected-ids="selectedIds"
+      :selected-pois="selectedPOIs"
+      @apply="handleApply"
+    />
   </div>
 </template>
+
+<style scoped>
+.poi-display {
+  position: relative;
+  min-height: 40px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+  padding: 6px 32px 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+}
+
+.poi-display:hover {
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.poi-display:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
+}
+
+.poi-display-icon {
+  position: absolute;
+  inset-inline-end: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+</style>

@@ -320,7 +320,7 @@ const buildingTypeTotals = computed(() => {
             <!-- POI Filter (above Radius) -->
             <POIFilter
               :model-value="mappingStore.filters.poi_ids"
-              @update:model-value="mappingStore.setSelectedPOIs($event)"
+              @update:model-value="(ids, pois) => mappingStore.setSelectedPOIs(ids, pois)"
             />
 
             <!-- Radius -->

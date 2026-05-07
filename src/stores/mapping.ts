@@ -299,8 +299,11 @@ export const useMappingStore = defineStore('mapping', {
 
     /**
      * Set selected POIs (multi-select). Pass empty array to clear.
+     * `hydratedPOIs` lets callers pass full POI objects when they already have them
+     * (e.g. from a paginated picker dialog), avoiding a fallback fetch when the
+     * selected ids are not currently in `poiStore.pois`.
      */
-    async setSelectedPOIs(poiIds: number[]) {
+    async setSelectedPOIs(poiIds: number[], hydratedPOIs?: POI[]) {
       if (poiIds.length === 0) {
         this.selectedPOIs = []
         this.filters.poi_ids = undefined
@@ -316,13 +319,20 @@ export const useMappingStore = defineStore('mapping', {
       try {
         const poiStore = usePOIStore()
 
-        // Ensure POI list is loaded
-        if (poiStore.pois.length === 0)
-          await poiStore.fetchPOIs({ take: 1000, skip: 0 })
+        const fromHydrated = (hydratedPOIs ?? []).filter(p => poiIds.includes(p.id))
+        const stillMissing = poiIds.filter(id => !fromHydrated.some(p => p.id === id))
 
-        const selectedPOIs = poiIds
-          .map(id => poiStore.pois.find(p => p.id === id))
-          .filter((p): p is POI => p !== undefined)
+        let fromStore: POI[] = []
+        if (stillMissing.length > 0) {
+          if (poiStore.pois.length === 0)
+            await poiStore.fetchPOIs({ take: 1000, skip: 0 })
+
+          fromStore = stillMissing
+            .map(id => poiStore.pois.find(p => p.id === id))
+            .filter((p): p is POI => p !== undefined)
+        }
+
+        const selectedPOIs = [...fromHydrated, ...fromStore]
 
         this.selectedPOIs = selectedPOIs
         this.filters.poi_ids = selectedPOIs.map(p => p.id)
