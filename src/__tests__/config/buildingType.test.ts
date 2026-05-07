@@ -11,7 +11,7 @@ describe('BUILDING_TYPE_CODES', () => {
       { code: 'GC', name: 'Golf Course' },
       { code: 'TP', name: 'Tennis & Padel' },
       { code: 'YP', name: 'Yoga Pilates' },
-      { code: 'DN', name: 'Dinning' },
+      { code: 'DN', name: 'Dining' },
       { code: 'SR', name: 'Spa & Reflexology' },
       { code: 'OT', name: 'Other' },
     ])
