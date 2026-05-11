@@ -1,6 +1,28 @@
 pipeline {
     agent any
 
+    // ── Build Parameters ──────────────────────────────────────────────────────
+    // DEPLOY_TYPE:
+    //   NORMAL        – full pipeline: build, test, push, deploy, tag & bump
+    //   VERSION_ONLY  – skip build/test/push/bump; just (re)deploy an already
+    //                   pushed image tag onto the server. Useful for rollbacks
+    //                   or redeploying a previously-built version.
+    // TARGET_VERSION:
+    //   Required when DEPLOY_TYPE = VERSION_ONLY (e.g. "1.4.0"). Ignored for
+    //   NORMAL deployments, which read the version from the VERSION file.
+    parameters {
+        choice(
+            name: 'DEPLOY_TYPE',
+            choices: ['NORMAL', 'VERSION_ONLY'],
+            description: 'NORMAL = full build & deploy. VERSION_ONLY = only switch the server to TARGET_VERSION (no build/push/bump).'
+        )
+        string(
+            name: 'TARGET_VERSION',
+            defaultValue: '',
+            description: 'Image tag to deploy when DEPLOY_TYPE = VERSION_ONLY (e.g. 1.4.0). Leave empty for NORMAL deployments.'
+        )
+    }
+
     stages {
 
         // ── 1. Checkout ───────────────────────────────────────────────────────
@@ -11,7 +33,10 @@ pipeline {
         }
 
         // ── 2. Guard – skip builds triggered by the version-bump commit ───────
+        //     Only relevant for NORMAL deployments; VERSION_ONLY runs are
+        //     manually triggered so we never want to skip them.
         stage('Check Skip CI') {
+            when { expression { params.DEPLOY_TYPE == 'NORMAL' } }
             steps {
                 script {
                     def commitMsg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
@@ -27,18 +52,27 @@ pipeline {
         stage('Read Version & Config') {
             steps {
                 script {
-                    env.APP_VERSION = readFile('VERSION').trim()
+                    if (params.DEPLOY_TYPE == 'VERSION_ONLY') {
+                        if (!params.TARGET_VERSION?.trim()) {
+                            error('VERSION_ONLY deployment requires a non-empty TARGET_VERSION parameter.')
+                        }
+                        env.APP_VERSION = params.TARGET_VERSION.trim()
+                        echo "Version-only deployment: ${env.APP_VERSION}"
+                    } else {
+                        env.APP_VERSION = readFile('VERSION').trim()
+                        echo "Building version: ${env.APP_VERSION}"
+                    }
                     // Credential ID: "tmn-app-frontend-image-name" (Secret text) – Docker image repo (e.g. account/image-name)
                     withCredentials([string(credentialsId: 'tmn-app-frontend-image-name', variable: 'IMG')]) {
                         env.IMAGE_NAME = IMG
                     }
-                    echo "Building version: ${env.APP_VERSION}"
                 }
             }
         }
 
         // ── 4. Build & Type Check (parallel) ──────────────────────────────────
         stage('Build & Test') {
+            when { expression { params.DEPLOY_TYPE == 'NORMAL' } }
             parallel {
 
                 stage('Build Image') {
@@ -77,8 +111,9 @@ pipeline {
             }
         }
 
-        // ── 3. Push Image ─────────────────────────────────────────────────────
+        // ── 5. Push Image ─────────────────────────────────────────────────────
         stage('Push Image') {
+            when { expression { params.DEPLOY_TYPE == 'NORMAL' } }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-backent-cred',
@@ -91,7 +126,7 @@ pipeline {
             }
         }
 
-        // ── 4. Deploy to Server ───────────────────────────────────────────────
+        // ── 6. Deploy to Server ───────────────────────────────────────────────
         stage('Deploy to Server') {
             steps {
                 // Credential IDs (all "Secret text"):
@@ -122,8 +157,9 @@ pipeline {
             }
         }
 
-        // ── 5. Tag Release & Bump Minor Version ───────────────────────────────
+        // ── 7. Tag Release & Bump Minor Version ───────────────────────────────
         stage('Tag & Bump Version') {
+            when { expression { params.DEPLOY_TYPE == 'NORMAL' } }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'tmn-mapping-github-cred',
@@ -189,7 +225,7 @@ pipeline {
             sh 'docker logout || true'
         }
         success {
-            echo "Deployed ${env.IMAGE_NAME}:${env.APP_VERSION} successfully."
+            echo "Deployed ${env.IMAGE_NAME}:${env.APP_VERSION} successfully (${params.DEPLOY_TYPE})."
         }
         failure {
             echo "Pipeline failed. Image ${env.IMAGE_NAME}:${env.APP_VERSION} was NOT deployed."
