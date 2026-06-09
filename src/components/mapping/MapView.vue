@@ -89,7 +89,9 @@ onMounted(async () => {
   try {
     const loader = new Loader({
       apiKey,
-      version: 'weekly',
+      // Pinned to 3.64: DrawingManager was removed in 3.65. Temporary — see stash@{0}
+      // "manual polygon draw" for the version-independent fix that replaces DrawingManager.
+      version: '3.64',
       libraries: ['places', 'geometry', 'drawing'],
     })
 
