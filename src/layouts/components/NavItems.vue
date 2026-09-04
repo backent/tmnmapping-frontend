@@ -10,6 +10,7 @@ const authStore = useAuthStore()
 // for anyone who types the URL directly.
 const canManageRestrictions = computed(() => authStore.can('building-restrictions.view'))
 const canManageMasterData = computed(() => authStore.can('master-data.view'))
+const canManageUsers = computed(() => authStore.can('users.view'))
 </script>
 
 <template>
@@ -120,6 +121,22 @@ const canManageMasterData = computed(() => authStore.can('master-data.view'))
         title: 'Branches',
         icon: 'ri-store-line',
         to: '/branches',
+      }"
+    />
+  </template>
+
+  <!-- Administration -->
+  <template v-if="canManageUsers">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Administration',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Users',
+        icon: 'ri-user-settings-line',
+        to: '/users',
       }"
     />
   </template>

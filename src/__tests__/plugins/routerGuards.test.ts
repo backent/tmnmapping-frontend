@@ -151,12 +151,22 @@ describe('route permissions', () => {
     '/mother-brands/:id/edit',
     '/branches/new',
     '/branches/:id/edit',
+    '/users/new',
+    '/users/:id/edit',
   ])('gates the form route %s', path => {
     const route = flat.find(r => r.path === path)
 
     expect(route, `route ${path} is missing from the table`).toBeDefined()
     expect(route!.permission, `route ${path} is not gated`).toBeDefined()
     expect(roleCan(ROLES.SALES, route!.permission as Permission)).toBe(false)
+  })
+
+  it('gates the users list, not just its forms', () => {
+    const route = flat.find(r => r.path === '/users')
+
+    expect(route?.permission).toBe('users.view')
+    expect(roleCan(ROLES.SALES, 'users.view')).toBe(false)
+    expect(roleCan(ROLES.ADMIN, 'users.view')).toBe(true)
   })
 
   // These stay open: the mapping page needs the same data for every role.

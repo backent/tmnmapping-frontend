@@ -101,6 +101,12 @@ export const apiConfig = {
     branches_import: '/branches-import',
     branches_export: '/branches-export',
 
+    users_list: '/users',
+    users_get: '/users/:id',
+    users_create: '/users',
+    users_update: '/users/:id',
+    users_delete: '/users/:id',
+
     // Dashboard report endpoints
     dashboard_acquisition: '/dashboard/acquisition',
     dashboard_building_proposal: '/dashboard/building-proposal',

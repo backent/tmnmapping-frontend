@@ -149,6 +149,24 @@ export const routes = [
         component: () => import('@/pages/branch-form.vue'),
         meta: { permission: 'master-data.manage' },
       },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('@/pages/users.vue'),
+        meta: { permission: 'users.view' },
+      },
+      {
+        path: 'users/new',
+        name: 'user-new',
+        component: () => import('@/pages/user-form.vue'),
+        meta: { permission: 'users.manage' },
+      },
+      {
+        path: 'users/:id/edit',
+        name: 'user-edit',
+        component: () => import('@/pages/user-form.vue'),
+        meta: { permission: 'users.manage' },
+      },
     ],
   },
   {
