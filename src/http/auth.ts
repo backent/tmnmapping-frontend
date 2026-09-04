@@ -14,13 +14,7 @@ export interface LoginCredentials {
 }
 
 export interface LoginResponse {
-  user: {
-    id: number
-    username: string
-    name: string
-    role: string
-    [key: string]: any
-  }
+  user: User
 }
 
 export interface User {
@@ -28,6 +22,10 @@ export interface User {
   username: string
   name: string
   role: string
+
+  /** Quotation capabilities, orthogonal to `role`. See backend migration 015. */
+  can_create_quotations?: boolean
+  sales_group?: string | null
   last_login?: string
   [key: string]: any
 }

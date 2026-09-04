@@ -1,6 +1,15 @@
 <script lang="ts" setup>
 import VerticalNavSectionTitle from '@/@layouts/components/VerticalNavSectionTitle.vue'
 import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+// Sections whose screens exist to administer data rather than to consume it.
+// Hidden from roles that cannot open them; the router guard enforces the same rule
+// for anyone who types the URL directly.
+const canManageRestrictions = computed(() => authStore.can('building-restrictions.view'))
+const canManageMasterData = computed(() => authStore.can('master-data.view'))
 </script>
 
 <template>
@@ -63,51 +72,55 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   />
 
   <!-- Restrictions -->
-  <VerticalNavSectionTitle
-    :item="{
-      heading: 'Restrictions',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Building Restrictions',
-      icon: 'ri-shield-line',
-      to: '/building-restrictions',
-    }"
-  />
+  <template v-if="canManageRestrictions">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Restrictions',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Building Restrictions',
+        icon: 'ri-shield-line',
+        to: '/building-restrictions',
+      }"
+    />
+  </template>
 
   <!-- Master Data -->
-  <VerticalNavSectionTitle
-    :item="{
-      heading: 'Master Data',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Categories',
-      icon: 'ri-folder-line',
-      to: '/categories',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Sub Categories',
-      icon: 'ri-folder-2-line',
-      to: '/sub-categories',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Mother Brands',
-      icon: 'ri-briefcase-line',
-      to: '/mother-brands',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Branches',
-      icon: 'ri-store-line',
-      to: '/branches',
-    }"
-  />
+  <template v-if="canManageMasterData">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Master Data',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Categories',
+        icon: 'ri-folder-line',
+        to: '/categories',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Sub Categories',
+        icon: 'ri-folder-2-line',
+        to: '/sub-categories',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Mother Brands',
+        icon: 'ri-briefcase-line',
+        to: '/mother-brands',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Branches',
+        icon: 'ri-store-line',
+        to: '/branches',
+      }"
+    />
+  </template>
 </template>

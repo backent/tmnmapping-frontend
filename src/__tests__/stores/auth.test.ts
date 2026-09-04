@@ -27,25 +27,43 @@ const adminUser: User = {
   role: 'admin',
 }
 
-const authorUser: User = {
+const salesUser: User = {
   id: 2,
-  username: 'author1',
-  name: 'Author User',
-  role: 'author',
+  username: 'sales1',
+  name: 'Sales User',
+  role: 'sales',
+  can_create_quotations: true,
+  sales_group: 'sales_team',
 }
 
-const approverUser: User = {
+const headOfSalesUser: User = {
   id: 3,
-  username: 'approver1',
-  name: 'Approver User',
+  username: 'hos1',
+  name: 'Head Of Sales User',
+  role: 'head_of_sales',
+  can_create_quotations: true,
+}
+
+const ceoUser: User = {
+  id: 4,
+  username: 'ceo',
+  name: 'CEO User',
+  role: 'ceo',
+}
+
+// Role stored before migration 015 rewrote the column.
+const legacyApproverUser: User = {
+  id: 5,
+  username: 'legacy',
+  name: 'Legacy Approver',
   role: 'approver',
 }
 
-const guestUser: User = {
-  id: 4,
-  username: 'guest1',
-  name: 'Guest User',
-  role: 'guest',
+const unknownRoleUser: User = {
+  id: 6,
+  username: 'wizard',
+  name: 'Unknown Role User',
+  role: 'wizard',
 }
 
 // ---------------------------------------------------------------------------
@@ -91,6 +109,35 @@ describe('useAuthStore', () => {
   // -------------------------------------------------------------------------
 
   describe('getters', () => {
+    describe('role', () => {
+      it('returns the canonical role', () => {
+        const store = useAuthStore()
+
+        store.currentUser = salesUser
+        expect(store.role).toBe('sales')
+      })
+
+      it('maps a legacy role onto the current vocabulary', () => {
+        const store = useAuthStore()
+
+        store.currentUser = legacyApproverUser
+        expect(store.role).toBe('head_of_sales')
+      })
+
+      it('returns null for an unrecognised role rather than a default', () => {
+        const store = useAuthStore()
+
+        store.currentUser = unknownRoleUser
+        expect(store.role).toBeNull()
+      })
+
+      it('returns null when no user is set', () => {
+        const store = useAuthStore()
+
+        expect(store.role).toBeNull()
+      })
+    })
+
     describe('isAdmin', () => {
       it('returns true when role is "admin"', () => {
         const store = useAuthStore()
@@ -102,7 +149,7 @@ describe('useAuthStore', () => {
       it('returns false for other roles', () => {
         const store = useAuthStore()
 
-        store.currentUser = authorUser
+        store.currentUser = salesUser
         expect(store.isAdmin).toBe(false)
       })
 
@@ -113,51 +160,120 @@ describe('useAuthStore', () => {
       })
     })
 
-    describe('isAuthor', () => {
-      it('returns true when role is "author"', () => {
+    describe('isSales', () => {
+      it('returns true when role is "sales"', () => {
         const store = useAuthStore()
 
-        store.currentUser = authorUser
-        expect(store.isAuthor).toBe(true)
+        store.currentUser = salesUser
+        expect(store.isSales).toBe(true)
       })
 
-      it('returns false for other roles', () => {
+      it('returns false for an approver role', () => {
         const store = useAuthStore()
 
-        store.currentUser = adminUser
-        expect(store.isAuthor).toBe(false)
+        store.currentUser = headOfSalesUser
+        expect(store.isSales).toBe(false)
       })
     })
 
     describe('isApprover', () => {
-      it('returns true when role is "approver"', () => {
+      it.each([
+        ['head_of_sales', headOfSalesUser],
+        ['ceo', ceoUser],
+      ])('returns true for %s', (_role, user) => {
         const store = useAuthStore()
 
-        store.currentUser = approverUser
+        store.currentUser = user
         expect(store.isApprover).toBe(true)
       })
 
-      it('returns false for other roles', () => {
+      // Approval authority follows the sales hierarchy, not system administration.
+      it('returns false for admin', () => {
         const store = useAuthStore()
 
         store.currentUser = adminUser
         expect(store.isApprover).toBe(false)
       })
-    })
 
-    describe('isGuest', () => {
-      it('returns true when role is "guest"', () => {
+      it('returns false for sales', () => {
         const store = useAuthStore()
 
-        store.currentUser = guestUser
-        expect(store.isGuest).toBe(true)
+        store.currentUser = salesUser
+        expect(store.isApprover).toBe(false)
       })
+    })
 
-      it('returns false for other roles', () => {
+    describe('can', () => {
+      it('grants management permissions to admin', () => {
         const store = useAuthStore()
 
         store.currentUser = adminUser
-        expect(store.isGuest).toBe(false)
+        expect(store.can('master-data.manage')).toBe(true)
+        expect(store.can('pois.manage')).toBe(true)
+      })
+
+      it('denies management permissions to sales', () => {
+        const store = useAuthStore()
+
+        store.currentUser = salesUser
+        expect(store.can('master-data.manage')).toBe(false)
+        expect(store.can('pois.manage')).toBe(false)
+      })
+
+      it('grants read permissions to every role', () => {
+        const store = useAuthStore()
+
+        store.currentUser = salesUser
+        expect(store.can('buildings.view')).toBe(true)
+        expect(store.can('mapping.view')).toBe(true)
+      })
+
+      it('denies everything when the role is unrecognised', () => {
+        const store = useAuthStore()
+
+        store.currentUser = unknownRoleUser
+        expect(store.can('buildings.view')).toBe(false)
+        expect(store.can('master-data.manage')).toBe(false)
+      })
+
+      it('denies everything when no user is set', () => {
+        const store = useAuthStore()
+
+        expect(store.can('buildings.view')).toBe(false)
+      })
+    })
+
+    describe('hasAnyRole', () => {
+      it('matches when the role is in the list', () => {
+        const store = useAuthStore()
+
+        store.currentUser = ceoUser
+        expect(store.hasAnyRole(['sales', 'ceo'])).toBe(true)
+      })
+
+      it('does not match when the role is absent', () => {
+        const store = useAuthStore()
+
+        store.currentUser = ceoUser
+        expect(store.hasAnyRole(['sales', 'admin'])).toBe(false)
+      })
+    })
+
+    describe('canCreateQuotations', () => {
+      it('reflects the capability flag, not the role', () => {
+        const store = useAuthStore()
+
+        store.currentUser = salesUser
+        expect(store.canCreateQuotations).toBe(true)
+
+        store.currentUser = ceoUser
+        expect(store.canCreateQuotations).toBe(false)
+      })
+
+      it('is false when no user is set', () => {
+        const store = useAuthStore()
+
+        expect(store.canCreateQuotations).toBe(false)
       })
     })
 
