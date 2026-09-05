@@ -25,7 +25,11 @@ export const ALL_ROLES: Role[] = [
   ROLES.ADMIN,
 ]
 
-/** Roles that act on a quotation approval queue. `admin` is deliberately excluded. */
+/**
+ * Roles that act on a quotation approval queue. `admin` is deliberately excluded.
+ * Mirrors `services/quotation/roles.go`; move this alongside the quotation UI when
+ * Phase 3 gives it a home.
+ */
 export const APPROVER_ROLES: Role[] = [
   ROLES.HEAD_OF_SALES,
   ROLES.HEAD_OF_BUSINESS_CONTROL,
@@ -64,47 +68,17 @@ export function normalizeRole(role: string | null | undefined): Role | null {
 }
 
 /**
- * Permissions, each mapped to the roles that hold it.
+ * A permission key, as defined by the backend in `models/permission.go`.
  *
- * `*.manage` permissions match a server-enforced rule: the corresponding write
- * endpoints are wrapped in `RequireRole(models.RoleAdmin)`.
+ * The frontend deliberately does not keep its own copy of which roles hold which
+ * permission. `/current-user` returns the caller's permissions and the auth store
+ * checks membership, so the policy is written in exactly one place and the two
+ * halves of the app cannot drift apart.
  *
- * `*.view` permissions are UI-only. The server still allows every authenticated role
- * to read this data, because the mapping page loads the same records through the
- * dropdown endpoints. Gating the management screens is a navigation decision, not a
- * security boundary.
+ * Keys ending in `.screen` are navigation-only: no route enforces them, they decide
+ * which sections of the menu appear.
  */
-export const PERMISSIONS = {
-  'buildings.view': ALL_ROLES,
-  'buildings.manage': [ROLES.ADMIN],
-
-  'mapping.view': ALL_ROLES,
-
-  'pois.view': ALL_ROLES,
-  'pois.manage': [ROLES.ADMIN],
-
-  'sales-packages.view': ALL_ROLES,
-  'sales-packages.manage': [ROLES.ADMIN],
-
-  'building-restrictions.view': [ROLES.ADMIN],
-  'building-restrictions.manage': [ROLES.ADMIN],
-
-  'master-data.view': [ROLES.ADMIN],
-  'master-data.manage': [ROLES.ADMIN],
-
-  'users.view': [ROLES.ADMIN],
-  'users.manage': [ROLES.ADMIN],
-} as const satisfies Record<string, readonly Role[]>
-
-export type Permission = keyof typeof PERMISSIONS
-
-/** Whether `role` holds `permission`. A null/unknown role holds nothing. */
-export function roleCan(role: Role | null, permission: Permission): boolean {
-  if (!role)
-    return false
-
-  return (PERMISSIONS[permission] as readonly Role[]).includes(role)
-}
+export type Permission = string
 
 /** Whether `role` is one of `allowed`. A null/unknown role never matches. */
 export function roleHasAny(role: Role | null, allowed: readonly Role[]): boolean {

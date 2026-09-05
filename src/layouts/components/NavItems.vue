@@ -8,8 +8,8 @@ const authStore = useAuthStore()
 // Sections whose screens exist to administer data rather than to consume it.
 // Hidden from roles that cannot open them; the router guard enforces the same rule
 // for anyone who types the URL directly.
-const canManageRestrictions = computed(() => authStore.can('building-restrictions.view'))
-const canManageMasterData = computed(() => authStore.can('master-data.view'))
+const canManageRestrictions = computed(() => authStore.can('building-restrictions.screen'))
+const canManageMasterData = computed(() => authStore.can('master-data.screen'))
 const canManageUsers = computed(() => authStore.can('users.view'))
 </script>
 

@@ -23,6 +23,12 @@ export interface User {
   name: string
   role: string
 
+  /**
+   * Permission keys this user's role holds, resolved by the backend from
+   * `models.Permissions`. The single source of truth for what the UI may show.
+   */
+  permissions?: string[]
+
   /** Quotation capabilities, orthogonal to `role`. See backend migration 015. */
   can_create_quotations?: boolean
   sales_group?: string | null

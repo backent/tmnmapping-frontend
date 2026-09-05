@@ -2,11 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_ROLES,
   APPROVER_ROLES,
-  PERMISSIONS,
   ROLES,
   isValidRole,
   normalizeRole,
-  roleCan,
   roleHasAny,
 } from '@/config/roles'
 import type { Role } from '@/config/roles'
@@ -53,42 +51,6 @@ describe('APPROVER_ROLES', () => {
       ROLES.HEAD_OF_BUSINESS_CONTROL,
       ROLES.CEO,
     ])
-  })
-})
-
-describe('roleCan', () => {
-  it('grants every "manage" permission to admin only', () => {
-    const managePermissions = Object.keys(PERMISSIONS)
-      .filter(permission => permission.endsWith('.manage')) as (keyof typeof PERMISSIONS)[]
-
-    expect(managePermissions.length).toBeGreaterThan(0)
-
-    for (const permission of managePermissions) {
-      expect(roleCan(ROLES.ADMIN, permission)).toBe(true)
-
-      for (const role of ALL_ROLES.filter(r => r !== ROLES.ADMIN))
-        expect(roleCan(role, permission), `${role} should not hold ${permission}`).toBe(false)
-    }
-  })
-
-  it('grants shared read permissions to every role', () => {
-    for (const role of ALL_ROLES) {
-      expect(roleCan(role, 'buildings.view')).toBe(true)
-      expect(roleCan(role, 'mapping.view')).toBe(true)
-      expect(roleCan(role, 'pois.view')).toBe(true)
-      expect(roleCan(role, 'sales-packages.view')).toBe(true)
-    }
-  })
-
-  it('restricts the administration screens to admin', () => {
-    expect(roleCan(ROLES.SALES, 'master-data.view')).toBe(false)
-    expect(roleCan(ROLES.SALES, 'building-restrictions.view')).toBe(false)
-    expect(roleCan(ROLES.ADMIN, 'master-data.view')).toBe(true)
-  })
-
-  it('denies everything for a null role', () => {
-    for (const permission of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[])
-      expect(roleCan(null, permission)).toBe(false)
   })
 })
 

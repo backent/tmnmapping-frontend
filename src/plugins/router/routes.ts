@@ -63,7 +63,7 @@ export const routes = [
         path: 'building-restrictions',
         name: 'building-restrictions',
         component: () => import('@/pages/building-restrictions.vue'),
-        meta: { permission: 'building-restrictions.view' },
+        meta: { permission: 'building-restrictions.screen' },
       },
       {
         path: 'building-restrictions/new',
@@ -81,7 +81,7 @@ export const routes = [
         path: 'categories',
         name: 'categories',
         component: () => import('@/pages/categories.vue'),
-        meta: { permission: 'master-data.view' },
+        meta: { permission: 'master-data.screen' },
       },
       {
         path: 'categories/new',
@@ -99,7 +99,7 @@ export const routes = [
         path: 'sub-categories',
         name: 'sub-categories',
         component: () => import('@/pages/sub-categories.vue'),
-        meta: { permission: 'master-data.view' },
+        meta: { permission: 'master-data.screen' },
       },
       {
         path: 'sub-categories/new',
@@ -117,7 +117,7 @@ export const routes = [
         path: 'mother-brands',
         name: 'mother-brands',
         component: () => import('@/pages/mother-brands.vue'),
-        meta: { permission: 'master-data.view' },
+        meta: { permission: 'master-data.screen' },
       },
       {
         path: 'mother-brands/new',
@@ -135,7 +135,7 @@ export const routes = [
         path: 'branches',
         name: 'branches',
         component: () => import('@/pages/branches.vue'),
-        meta: { permission: 'master-data.view' },
+        meta: { permission: 'master-data.screen' },
       },
       {
         path: 'branches/new',

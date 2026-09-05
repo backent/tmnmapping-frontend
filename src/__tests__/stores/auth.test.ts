@@ -25,6 +25,7 @@ const adminUser: User = {
   username: 'admin',
   name: 'Admin User',
   role: 'admin',
+  permissions: ['buildings.view', 'buildings.manage', 'master-data.manage', 'pois.manage', 'users.view'],
 }
 
 const salesUser: User = {
@@ -34,6 +35,7 @@ const salesUser: User = {
   role: 'sales',
   can_create_quotations: true,
   sales_group: 'sales_team',
+  permissions: ['buildings.view', 'mapping.view', 'pois.view'],
 }
 
 const headOfSalesUser: User = {
@@ -204,7 +206,7 @@ describe('useAuthStore', () => {
     })
 
     describe('can', () => {
-      it('grants management permissions to admin', () => {
+      it('grants what the backend listed', () => {
         const store = useAuthStore()
 
         store.currentUser = adminUser
@@ -212,7 +214,7 @@ describe('useAuthStore', () => {
         expect(store.can('pois.manage')).toBe(true)
       })
 
-      it('denies management permissions to sales', () => {
+      it('denies what the backend left out', () => {
         const store = useAuthStore()
 
         store.currentUser = salesUser
@@ -220,7 +222,7 @@ describe('useAuthStore', () => {
         expect(store.can('pois.manage')).toBe(false)
       })
 
-      it('grants read permissions to every role', () => {
+      it('grants the reads the backend listed', () => {
         const store = useAuthStore()
 
         store.currentUser = salesUser
@@ -228,7 +230,9 @@ describe('useAuthStore', () => {
         expect(store.can('mapping.view')).toBe(true)
       })
 
-      it('denies everything when the role is unrecognised', () => {
+      // A session that predates the permissions field holds nothing, rather than
+      // being shown screens whose requests would come back 403.
+      it('denies everything when the response carried no permissions', () => {
         const store = useAuthStore()
 
         store.currentUser = unknownRoleUser
@@ -240,6 +244,21 @@ describe('useAuthStore', () => {
         const store = useAuthStore()
 
         expect(store.can('buildings.view')).toBe(false)
+      })
+    })
+
+    describe('permissions', () => {
+      it('exposes the raw list', () => {
+        const store = useAuthStore()
+
+        store.currentUser = salesUser
+        expect(store.permissions).toEqual(['buildings.view', 'mapping.view', 'pois.view'])
+      })
+
+      it('is an empty list when signed out', () => {
+        const store = useAuthStore()
+
+        expect(store.permissions).toEqual([])
       })
     })
 

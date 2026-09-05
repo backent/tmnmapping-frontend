@@ -6,7 +6,7 @@
 import { defineStore } from 'pinia'
 import { getMe, postLogin, postLogout } from '@/http/auth'
 import type { LoginCredentials, User } from '@/http/auth'
-import { APPROVER_ROLES, ROLES, normalizeRole, roleCan, roleHasAny } from '@/config/roles'
+import { APPROVER_ROLES, ROLES, normalizeRole, roleHasAny } from '@/config/roles'
 import type { Permission, Role } from '@/config/roles'
 
 interface AuthState {
@@ -53,12 +53,22 @@ export const useAuthStore = defineStore('auth', {
       return roleHasAny(this.role, APPROVER_ROLES)
     },
 
+    /** Permission keys the backend says this user holds. */
+    permissions: (state): string[] => {
+      return state.currentUser?.permissions ?? []
+    },
+
     /**
      * Check whether the user holds a permission.
      * Used by route meta and the nav to hide what the API would reject.
+     *
+     * The list comes from the server, so this can never disagree with what the
+     * API actually enforces. A user whose session predates the permissions field
+     * holds nothing and will be bounced to /not-authorized rather than shown a
+     * screen that 403s — deploy backend and frontend together.
      */
-    can() {
-      return (permission: Permission): boolean => roleCan(this.role, permission)
+    can(): (permission: Permission) => boolean {
+      return (permission: Permission): boolean => this.permissions.includes(permission)
     },
 
     /**

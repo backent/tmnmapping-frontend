@@ -1,21 +1,41 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveNavigation } from '@/plugins/router/guards'
 import type { AuthGuardStore } from '@/plugins/router/guards'
-import { PERMISSIONS, ROLES, roleCan } from '@/config/roles'
-import type { Permission, Role } from '@/config/roles'
+import type { Permission } from '@/config/roles'
 import { routes } from '@/plugins/router/routes'
 
 /**
- * Build a stand-in for the auth store. `role` drives `can()` through the same
- * permission map the real store uses, so the guard tests stay honest if the map moves.
+ * Permissions the backend hands an admin. The guard only ever does a membership
+ * check, so the tests supply the list directly rather than re-deriving it — the
+ * mapping from role to permission is the backend's business and is tested there.
  */
-function makeStore(overrides: Partial<AuthGuardStore> & { role?: Role | null } = {}): AuthGuardStore {
-  const { role = ROLES.ADMIN, ...rest } = overrides
+const ADMIN_PERMISSIONS = [
+  'buildings.view', 'buildings.manage',
+  'mapping.view',
+  'pois.view', 'pois.manage',
+  'sales-packages.view', 'sales-packages.manage',
+  'building-restrictions.view', 'building-restrictions.manage', 'building-restrictions.screen',
+  'master-data.view', 'master-data.manage', 'master-data.screen',
+  'users.view', 'users.manage',
+]
+
+/** What a sales user gets: reads only, and none of the management screens. */
+const SALES_PERMISSIONS = [
+  'buildings.view',
+  'mapping.view',
+  'pois.view',
+  'sales-packages.view',
+  'building-restrictions.view',
+  'master-data.view',
+]
+
+function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[] } = {}): AuthGuardStore {
+  const { permissions = ADMIN_PERMISSIONS, ...rest } = overrides
 
   return {
     isAuthenticated: true,
-    currentUser: { id: 1, role },
-    can: (permission: Permission) => roleCan(role, permission),
+    currentUser: { id: 1 },
+    can: (permission: Permission) => permissions.includes(permission),
     fetchCurrentUser: vi.fn().mockResolvedValue({}),
     ...rest,
   }
@@ -61,27 +81,28 @@ describe('resolveNavigation', () => {
 
   describe('authorization', () => {
     it('allows a route with no permission for any role', async () => {
-      const store = makeStore({ role: ROLES.SALES })
+      const store = makeStore({ permissions: SALES_PERMISSIONS })
 
       expect(await resolveNavigation(to('/dashboard'), store)).toBe(true)
       expect(await resolveNavigation(to('/mapping'), store)).toBe(true)
     })
 
     it('allows a permitted route', async () => {
-      const store = makeStore({ role: ROLES.ADMIN })
+      const store = makeStore()
 
       expect(await resolveNavigation(to('/categories/new', 'master-data.manage'), store)).toBe(true)
     })
 
     it('redirects to /not-authorized when the role lacks the permission', async () => {
-      const store = makeStore({ role: ROLES.SALES })
+      const store = makeStore({ permissions: SALES_PERMISSIONS })
 
       expect(await resolveNavigation(to('/categories/new', 'master-data.manage'), store))
         .toBe('/not-authorized')
     })
 
-    it('denies a route when the stored role is unrecognised', async () => {
-      const store = makeStore({ role: null })
+    // An unrecognised role gets an empty permission list from the backend.
+    it('denies a route when the user holds no permissions', async () => {
+      const store = makeStore({ permissions: [] })
 
       expect(await resolveNavigation(to('/pois/new', 'pois.manage'), store)).toBe('/not-authorized')
     })
@@ -89,8 +110,8 @@ describe('resolveNavigation', () => {
     // Without this exemption a denied user would bounce between the target route
     // and the landing page forever.
     it('lets a denied user reach /not-authorized whatever their role', async () => {
-      expect(await resolveNavigation(to('/not-authorized'), makeStore({ role: ROLES.SALES }))).toBe(true)
-      expect(await resolveNavigation(to('/not-authorized'), makeStore({ role: null }))).toBe(true)
+      expect(await resolveNavigation(to('/not-authorized'), makeStore({ permissions: SALES_PERMISSIONS }))).toBe(true)
+      expect(await resolveNavigation(to('/not-authorized'), makeStore({ permissions: [] }))).toBe(true)
     })
 
     it('still requires a session for /not-authorized', async () => {
@@ -126,10 +147,14 @@ function flatten(records: RouteRecord[], prefix = ''): { path: string; permissio
 describe('route permissions', () => {
   const flat = flatten(routes as RouteRecord[])
 
-  it('only references permissions that exist', () => {
+  // Every key a route names must be one the backend actually issues, or the guard
+  // will reject everyone forever. This list mirrors models/permission.go.
+  const BACKEND_PERMISSIONS = [...new Set([...ADMIN_PERMISSIONS, ...SALES_PERMISSIONS])]
+
+  it('only references permissions the backend issues', () => {
     for (const route of flat) {
       if (route.permission)
-        expect(Object.keys(PERMISSIONS)).toContain(route.permission)
+        expect(BACKEND_PERMISSIONS).toContain(route.permission)
     }
   })
 
@@ -158,15 +183,15 @@ describe('route permissions', () => {
 
     expect(route, `route ${path} is missing from the table`).toBeDefined()
     expect(route!.permission, `route ${path} is not gated`).toBeDefined()
-    expect(roleCan(ROLES.SALES, route!.permission as Permission)).toBe(false)
+    expect(SALES_PERMISSIONS).not.toContain(route!.permission)
   })
 
   it('gates the users list, not just its forms', () => {
     const route = flat.find(r => r.path === '/users')
 
     expect(route?.permission).toBe('users.view')
-    expect(roleCan(ROLES.SALES, 'users.view')).toBe(false)
-    expect(roleCan(ROLES.ADMIN, 'users.view')).toBe(true)
+    expect(SALES_PERMISSIONS).not.toContain('users.view')
+    expect(ADMIN_PERMISSIONS).toContain('users.view')
   })
 
   // These stay open: the mapping page needs the same data for every role.
