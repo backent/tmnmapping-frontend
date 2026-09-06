@@ -259,7 +259,7 @@ onUnmounted(() => {
                 v-model="form.sales_group"
                 :items="SALES_GROUP_OPTIONS"
                 label="Sales group"
-                hint="Scopes which customers appear in the quotation wizard. Optional."
+                hint="Reporting attribute: which sales population this owner belongs to. No rule reads it yet."
                 persistent-hint
                 clearable
                 :disabled="isSaving"

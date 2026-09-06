@@ -111,6 +111,14 @@ export const ROLE_OPTIONS = ALL_ROLES.map(role => ({
   value: role,
 }))
 
+/**
+ * Sales groups.
+ *
+ * Descriptive only. The reference spec defines this as "records whether a commercial
+ * owner belongs to Sales Team, Everyone Can Be Sales, or Freelancer" and nothing in
+ * the prototype reads it — customer visibility is scoped by `sales_assignments`
+ * (customer + brand -> sales PIC), not by this field.
+ */
 export const SALES_GROUPS = {
   SALES_TEAM: 'sales_team',
   EVERYONE_SALES: 'everyone_sales',
