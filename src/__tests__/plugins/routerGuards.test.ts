@@ -17,6 +17,9 @@ const ADMIN_PERMISSIONS = [
   'building-restrictions.view', 'building-restrictions.manage', 'building-restrictions.screen',
   'master-data.view', 'master-data.manage', 'master-data.screen',
   'users.view', 'users.manage',
+  'customers.view', 'customers.manage',
+  'brands.view', 'brands.manage',
+  'sales-assignments.view', 'sales-assignments.manage',
 ]
 
 /** What a sales user gets: reads only, and none of the management screens. */
@@ -27,6 +30,9 @@ const SALES_PERMISSIONS = [
   'sales-packages.view',
   'building-restrictions.view',
   'master-data.view',
+  'customers.view',
+  'brands.view',
+  'sales-assignments.view',
 ]
 
 function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[] } = {}): AuthGuardStore {
@@ -178,6 +184,12 @@ describe('route permissions', () => {
     '/branches/:id/edit',
     '/users/new',
     '/users/:id/edit',
+    '/customers/new',
+    '/customers/:id/edit',
+    '/advertiser-brands/new',
+    '/advertiser-brands/:id/edit',
+    '/sales-assignments/new',
+    '/sales-assignments/:id/edit',
   ])('gates the form route %s', path => {
     const route = flat.find(r => r.path === path)
 
@@ -192,6 +204,19 @@ describe('route permissions', () => {
     expect(route?.permission).toBe('users.view')
     expect(SALES_PERMISSIONS).not.toContain('users.view')
     expect(ADMIN_PERMISSIONS).toContain('users.view')
+  })
+
+  // Sales need to read advertiser master data to raise a quotation, so the list
+  // pages are open to every role while only admin may edit them.
+  it.each([
+    ['/customers', 'customers.view'],
+    ['/advertiser-brands', 'brands.view'],
+    ['/sales-assignments', 'sales-assignments.view'],
+  ])('lets any role read %s', (path, permission) => {
+    const route = flat.find(r => r.path === path)
+
+    expect(route?.permission).toBe(permission)
+    expect(SALES_PERMISSIONS).toContain(permission)
   })
 
   // These stay open: the mapping page needs the same data for every role.

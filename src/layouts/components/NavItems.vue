@@ -11,6 +11,11 @@ const authStore = useAuthStore()
 const canManageRestrictions = computed(() => authStore.can('building-restrictions.screen'))
 const canManageMasterData = computed(() => authStore.can('master-data.screen'))
 const canManageUsers = computed(() => authStore.can('users.view'))
+
+// Advertiser master data sits under Sales: it is what a quotation is raised for.
+const canViewCustomers = computed(() => authStore.can('customers.view'))
+const canViewBrands = computed(() => authStore.can('brands.view'))
+const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
 </script>
 
 <template>
@@ -69,6 +74,30 @@ const canManageUsers = computed(() => authStore.can('users.view'))
       title: 'Sales Packages',
       icon: 'ri-price-tag-3-line',
       to: '/sales-packages',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewCustomers"
+    :item="{
+      title: 'Customers',
+      icon: 'ri-user-star-line',
+      to: '/customers',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewBrands"
+    :item="{
+      title: 'Brands',
+      icon: 'ri-bookmark-3-line',
+      to: '/advertiser-brands',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewAssignments"
+    :item="{
+      title: 'Sales Assignments',
+      icon: 'ri-user-shared-line',
+      to: '/sales-assignments',
     }"
   />
 
