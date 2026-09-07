@@ -16,6 +16,7 @@ const canManageUsers = computed(() => authStore.can('users.view'))
 const canViewCustomers = computed(() => authStore.can('customers.view'))
 const canViewBrands = computed(() => authStore.can('brands.view'))
 const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
+const canViewRateCards = computed(() => authStore.can('rate-cards.view'))
 </script>
 
 <template>
@@ -98,6 +99,14 @@ const canViewAssignments = computed(() => authStore.can('sales-assignments.view'
       title: 'Sales Assignments',
       icon: 'ri-user-shared-line',
       to: '/sales-assignments',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewRateCards"
+    :item="{
+      title: 'Rate Cards',
+      icon: 'ri-money-dollar-circle-line',
+      to: '/rate-cards',
     }"
   />
 

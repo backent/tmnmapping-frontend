@@ -204,6 +204,18 @@ export const routes = [
         meta: { permission: 'sales-assignments.manage' },
       },
       {
+        path: 'rate-cards',
+        name: 'rate-cards',
+        component: () => import('@/pages/rate-cards.vue'),
+        meta: { permission: 'rate-cards.view' },
+      },
+      {
+        path: 'rate-cards/:id',
+        name: 'rate-card-detail',
+        component: () => import('@/pages/rate-card-detail.vue'),
+        meta: { permission: 'rate-cards.view' },
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('@/pages/users.vue'),
