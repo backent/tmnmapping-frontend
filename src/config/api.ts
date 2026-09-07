@@ -130,7 +130,7 @@ export const apiConfig = {
 
     rate_cards_list: '/rate-cards',
     rate_cards_get: '/rate-cards/:id',
-    rate_cards_current: '/rate-cards/current',
+    rate_cards_current: '/rate-cards-current',
     rate_cards_create: '/rate-cards',
     rate_cards_update: '/rate-cards/:id',
     rate_cards_delete: '/rate-cards/:id',
