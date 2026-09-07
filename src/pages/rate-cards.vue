@@ -147,9 +147,9 @@ const handleDelete = async () => {
             variant="tonal"
             class="mb-4"
           >
-            Every price is a <strong>four-week rate</strong>. A campaign of N weeks is
-            charged price × N ÷ 4. Only a draft can be edited — publishing freezes a
-            version so approved quotations never re-price.
+            Every price is a <strong>weekly rate</strong>, matching the rate card
+            spreadsheet. A campaign of N weeks is charged price × N. Only a draft can
+            be edited — publishing freezes a version so approved quotations never re-price.
           </VAlert>
 
           <div

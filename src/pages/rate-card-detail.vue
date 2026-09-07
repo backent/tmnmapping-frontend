@@ -250,7 +250,7 @@ const handlePublish = async () => {
       <VCardText>
         <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-4">
           <div class="text-body-2 text-disabled">
-            Prices are per four weeks, in {{ version?.currency || 'IDR' }}.
+            Prices are per week, in {{ version?.currency || 'IDR' }}.
           </div>
           <ImportExportToolbar
             :entity-label="tab === 'building' ? 'Building prices' : 'Package prices'"
@@ -289,7 +289,7 @@ const handlePublish = async () => {
                   City
                 </th>
                 <th class="text-uppercase text-end">
-                  Price / 4 weeks
+                  Price / week
                 </th>
                 <th
                   v-if="isEditable"
@@ -315,7 +315,7 @@ const handlePublish = async () => {
                 <td>{{ price.building_type || '—' }}</td>
                 <td>{{ price.citytown || '—' }}</td>
                 <td class="text-end font-weight-medium">
-                  {{ formatIdr(price.price_idr_per_4_weeks) }}
+                  {{ formatIdr(price.price_idr_per_week) }}
                 </td>
                 <td
                   v-if="isEditable"
@@ -326,7 +326,7 @@ const handlePublish = async () => {
                     size="small"
                     color="primary"
                     variant="text"
-                    @click="openEdit(price.building_id, price.building_name, price.price_idr_per_4_weeks)"
+                    @click="openEdit(price.building_id, price.building_name, price.price_idr_per_week)"
                   >
                     <VIcon icon="ri-edit-line" />
                   </VBtn>
@@ -363,7 +363,7 @@ const handlePublish = async () => {
                   Buildings
                 </th>
                 <th class="text-uppercase text-end">
-                  Price / 4 weeks
+                  Price / week
                 </th>
                 <th
                   v-if="isEditable"
@@ -388,7 +388,7 @@ const handlePublish = async () => {
                   <span v-else>{{ price.building_count }}</span>
                 </td>
                 <td class="text-end font-weight-medium">
-                  {{ formatIdr(price.price_idr_per_4_weeks) }}
+                  {{ formatIdr(price.price_idr_per_week) }}
                 </td>
                 <td
                   v-if="isEditable"
@@ -399,7 +399,7 @@ const handlePublish = async () => {
                     size="small"
                     color="primary"
                     variant="text"
-                    @click="openEdit(price.sales_package_id, price.sales_package_name, price.price_idr_per_4_weeks)"
+                    @click="openEdit(price.sales_package_id, price.sales_package_name, price.price_idr_per_week)"
                   >
                     <VIcon icon="ri-edit-line" />
                   </VBtn>
@@ -451,10 +451,10 @@ const handlePublish = async () => {
         <VCardText>
           <VTextField
             v-model.number="editingPrice"
-            label="Price per 4 weeks (IDR)"
+            label="Price per week (IDR)"
             type="number"
             min="0"
-            hint="Whole rupiah. A campaign of N weeks is charged this × N ÷ 4."
+            hint="Whole rupiah. A campaign of N weeks is charged this × N."
             persistent-hint
           />
         </VCardText>

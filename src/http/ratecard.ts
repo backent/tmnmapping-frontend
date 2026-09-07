@@ -74,7 +74,7 @@ export function getBuildingPrices(versionId: number, params?: PaginationParams):
 export function upsertBuildingPrice(versionId: number, buildingId: number, price: number): Promise<ApiResponse<BuildingPrice>> {
   return putApi<ApiResponse<BuildingPrice>>(
     apiConfig.endpoints.rate_cards_building_prices,
-    { building_id: buildingId, price_idr_per_4_weeks: price },
+    { building_id: buildingId, price_idr_per_week: price },
     { id: versionId })
 }
 
@@ -108,7 +108,7 @@ export function getPackagePrices(versionId: number, params?: PaginationParams): 
 export function upsertPackagePrice(versionId: number, packageId: number, price: number): Promise<ApiResponse<PackagePrice>> {
   return putApi<ApiResponse<PackagePrice>>(
     apiConfig.endpoints.rate_cards_package_prices,
-    { sales_package_id: packageId, price_idr_per_4_weeks: price },
+    { sales_package_id: packageId, price_idr_per_week: price },
     { id: versionId })
 }
 

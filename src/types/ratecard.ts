@@ -1,8 +1,9 @@
 /**
  * The advertising rate card: what an advertiser pays TMN.
  *
- * Every price is a FOUR-WEEK rate. A campaign of N weeks is charged
- * `price × N / 4`, so the field name says so rather than relying on a comment.
+ * Every price is a PER-WEEK rate, matching the rate card source spreadsheet. A
+ * campaign of N weeks is charged `price × N`. Storing the same period the source
+ * document uses means a number here can be checked against the spreadsheet directly.
  */
 
 export type RateCardStatus = 'draft' | 'current' | 'historical'
@@ -48,7 +49,7 @@ export interface BuildingPrice {
   building_iris_code: string
   building_type: string
   citytown: string
-  price_idr_per_4_weeks: number
+  price_idr_per_week: number
   created_at: string
   updated_at: string
 }
@@ -58,7 +59,7 @@ export interface PackagePrice {
   rate_card_version_id: number
   sales_package_id: number
   sales_package_name: string
-  price_idr_per_4_weeks: number
+  price_idr_per_week: number
   building_count: number
   created_at: string
   updated_at: string
