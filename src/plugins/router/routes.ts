@@ -273,6 +273,13 @@ export const routes = [
         component: () => import('@/pages/not-authorized.vue'),
       },
       {
+        // Printed on the blank layout so the app chrome stays out of the page.
+        path: 'quotations/:id/document',
+        name: 'quotation-document',
+        component: () => import('@/pages/quotation-document.vue'),
+        meta: { permission: 'quotations.view' },
+      },
+      {
         path: '/:pathMatch(.*)*',
         component: () => import('@/pages/[...error].vue'),
       },

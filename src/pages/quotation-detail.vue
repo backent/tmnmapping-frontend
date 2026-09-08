@@ -154,6 +154,16 @@ const actionColor = (action: string) => ({
           <VSpacer />
 
           <VBtn
+            variant="outlined"
+            @click="router.push({ name: 'quotation-document', params: { id: String(quotation.id) } })"
+          >
+            <VIcon
+              icon="ri-file-text-line"
+              class="me-1"
+            />
+            Document
+          </VBtn>
+          <VBtn
             v-if="canEdit"
             variant="outlined"
             @click="router.push({ name: 'quotation-edit', params: { id: String(quotation.id) } })"
@@ -333,8 +343,10 @@ const actionColor = (action: string) => ({
             </VCardText>
           </VCard>
 
-          <!-- Building appendix. On the real document this ships as a separate
-               attachment; showing it here saves opening another file. -->
+          <!--
+            Building appendix. On the real document this ships as a separate
+            attachment; showing it here saves opening another file.
+          -->
           <VCard
             v-if="placement?.items.length || bonus?.items.length"
             class="mb-4"
