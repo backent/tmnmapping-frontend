@@ -17,6 +17,7 @@ const canViewCustomers = computed(() => authStore.can('customers.view'))
 const canViewBrands = computed(() => authStore.can('brands.view'))
 const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
 const canViewRateCards = computed(() => authStore.can('rate-cards.view'))
+const canViewQuotations = computed(() => authStore.can('quotations.view'))
 </script>
 
 <template>
@@ -68,6 +69,14 @@ const canViewRateCards = computed(() => authStore.can('rate-cards.view'))
   <VerticalNavSectionTitle
     :item="{
       heading: 'Sales',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewQuotations"
+    :item="{
+      title: 'Quotations',
+      icon: 'ri-file-list-3-line',
+      to: '/quotations',
     }"
   />
   <VerticalNavLink

@@ -146,6 +146,17 @@ export const apiConfig = {
     rate_cards_package_prices_export: '/rate-cards/:id/package-prices-export',
     rate_cards_package_prices_template: '/rate-card-package-prices-template',
 
+    quotations_list: '/quotations',
+    quotations_get: '/quotations/:id',
+    quotations_create: '/quotations',
+    quotations_update: '/quotations/:id',
+    quotations_delete: '/quotations/:id',
+    quotations_submit: '/quotations/:id/submit',
+    quotations_approve: '/quotations/:id/approve',
+    quotations_return: '/quotations/:id/return',
+    quotations_pricing_preview: '/quotations-pricing-preview',
+    quotations_dashboard: '/quotations-dashboard',
+
     users_list: '/users',
     users_get: '/users/:id',
     users_create: '/users',

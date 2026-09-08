@@ -204,6 +204,30 @@ export const routes = [
         meta: { permission: 'sales-assignments.manage' },
       },
       {
+        path: 'quotations',
+        name: 'quotations',
+        component: () => import('@/pages/quotations.vue'),
+        meta: { permission: 'quotations.view' },
+      },
+      {
+        path: 'quotations/new',
+        name: 'quotation-new',
+        component: () => import('@/pages/quotation-form.vue'),
+        meta: { permission: 'quotations.manage' },
+      },
+      {
+        path: 'quotations/:id',
+        name: 'quotation-detail',
+        component: () => import('@/pages/quotation-detail.vue'),
+        meta: { permission: 'quotations.view' },
+      },
+      {
+        path: 'quotations/:id/edit',
+        name: 'quotation-edit',
+        component: () => import('@/pages/quotation-form.vue'),
+        meta: { permission: 'quotations.manage' },
+      },
+      {
         path: 'rate-cards',
         name: 'rate-cards',
         component: () => import('@/pages/rate-cards.vue'),

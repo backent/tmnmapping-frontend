@@ -21,6 +21,7 @@ const ADMIN_PERMISSIONS = [
   'brands.view', 'brands.manage',
   'sales-assignments.view', 'sales-assignments.manage',
   'rate-cards.view', 'rate-cards.manage', 'rate-cards.publish',
+  'quotations.view', 'quotations.manage',
 ]
 
 /** What a sales user gets: reads only, and none of the management screens. */
@@ -35,6 +36,7 @@ const SALES_PERMISSIONS = [
   'brands.view',
   'sales-assignments.view',
   'rate-cards.view',
+  'quotations.view', 'quotations.manage',
 ]
 
 function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[] } = {}): AuthGuardStore {
@@ -215,6 +217,7 @@ describe('route permissions', () => {
     ['/advertiser-brands', 'brands.view'],
     ['/sales-assignments', 'sales-assignments.view'],
     ['/rate-cards', 'rate-cards.view'],
+    ['/quotations', 'quotations.view'],
   ])('lets any role read %s', (path, permission) => {
     const route = flat.find(r => r.path === path)
 
