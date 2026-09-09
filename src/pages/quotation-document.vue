@@ -425,7 +425,7 @@ const print = () => window.print()
 }
 
 .doc-subtitle { font-weight: 700; margin-block-end: 4px; }
-.doc-terms { margin: 0; padding-inline-start: 16px; }
+.doc-terms { margin: 0; padding-inline-start: 24px; }
 .doc-terms li { margin-block-end: 3px; }
 
 .doc-totals__grand { font-weight: 700; border-block-start: 1px solid #000; }
@@ -474,6 +474,15 @@ const print = () => window.print()
     orphans: 3;
     widows: 3;
   }
+
+  /*
+    The layout's background printed as a grey band under the document, because the
+    app wrapper fills the viewport and the document does not. Paper is white.
+  */
+  :global(html),
+  :global(body),
+  :global(.v-application),
+  :global(.v-application__wrap) { background: #fff !important; }
 
   @page { size: A4; margin: 12mm; }
 }
