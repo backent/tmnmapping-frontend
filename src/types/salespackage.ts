@@ -8,16 +8,39 @@ export interface BuildingRef {
   building_type: string
 }
 
+export type SalesPackageStatus = 'active' | 'inactive'
+
+export const SALES_PACKAGE_STATUS_OPTIONS: { title: string; value: SalesPackageStatus }[] = [
+  { title: 'Active', value: 'active' },
+  { title: 'Inactive', value: 'inactive' },
+]
+
 export interface SalesPackage {
   id: number
+  package_code: string
   name: string
+  description: string
+  status: SalesPackageStatus
+
+  // Set independently, not summed from the member buildings: a package is a priced
+  // resource in its own right, and the quotation copies these onto the selection.
+  screen_count: number
+  traffic: number
+  impressions: number
+
   buildings: BuildingRef[]
   created_at: string
   updated_at: string
 }
 
 export interface CreateSalesPackageRequest {
+  package_code: string
   name: string
+  description: string
+  status: SalesPackageStatus
+  screen_count: number
+  traffic: number
+  impressions: number
   building_ids: number[]
 }
 

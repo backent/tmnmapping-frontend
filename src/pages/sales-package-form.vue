@@ -2,7 +2,8 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
-import type { BuildingRef, CreateSalesPackageRequest } from '@/types/salespackage'
+import { SALES_PACKAGE_STATUS_OPTIONS } from '@/types/salespackage'
+import type { BuildingRef, CreateSalesPackageRequest, SalesPackageStatus } from '@/types/salespackage'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,12 +13,29 @@ const isEdit = computed(() => !!route.params.id)
 const packageId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
 interface SalesPackageForm {
+  package_code: string
   name: string
+  description: string
+  status: SalesPackageStatus
+
+  // A package carries its own figures rather than summing its buildings -- the
+  // quotation copies these onto the selection, and the printed document shows the
+  // screen count. Leaving them at zero prints "0 screens" on a real quotation.
+  screen_count: number
+  traffic: number
+  impressions: number
+
   buildings: BuildingRef[]
 }
 
 const form = ref<SalesPackageForm>({
+  package_code: '',
   name: '',
+  description: '',
+  status: 'active',
+  screen_count: 0,
+  traffic: 0,
+  impressions: 0,
   buildings: [],
 })
 
@@ -39,7 +57,13 @@ const fetchPackage = async () => {
     const pkg = salesPackageStore.currentPackage
     if (pkg) {
       form.value = {
+        package_code: pkg.package_code,
         name: pkg.name,
+        description: pkg.description ?? '',
+        status: pkg.status ?? 'active',
+        screen_count: pkg.screen_count ?? 0,
+        traffic: pkg.traffic ?? 0,
+        impressions: pkg.impressions ?? 0,
         buildings: pkg.buildings,
       }
     }
@@ -60,6 +84,11 @@ onMounted(async () => {
 
 const submit = async () => {
   errorMessage.value = ''
+  if (!form.value.package_code.trim()) {
+    errorMessage.value = 'Package code is required'
+
+    return
+  }
   if (!form.value.name.trim()) {
     errorMessage.value = 'Name is required'
 
@@ -72,7 +101,13 @@ const submit = async () => {
   }
 
   const payload: CreateSalesPackageRequest = {
-    name: form.value.name,
+    package_code: form.value.package_code.trim(),
+    name: form.value.name.trim(),
+    description: form.value.description,
+    status: form.value.status,
+    screen_count: form.value.screen_count || 0,
+    traffic: form.value.traffic || 0,
+    impressions: form.value.impressions || 0,
     building_ids: form.value.buildings.map(b => b.id),
   }
 
@@ -148,11 +183,98 @@ onUnmounted(() => {
 
         <VForm @submit.prevent="submit">
           <VRow>
-            <VCol cols="12">
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model="form.package_code"
+                label="Package code"
+                required
+                :disabled="isSaving"
+                hint="Unique. Existing packages were given SP-0001 style codes."
+                persistent-hint
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="5"
+            >
               <VTextField
                 v-model="form.name"
                 label="Name"
                 required
+                :disabled="isSaving"
+                hint="The package price sheet matches on this name exactly."
+                persistent-hint
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="3"
+            >
+              <VSelect
+                v-model="form.status"
+                :items="SALES_PACKAGE_STATUS_OPTIONS"
+                label="Status"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol cols="12">
+              <VTextarea
+                v-model="form.description"
+                label="Description"
+                rows="2"
+                auto-grow
+                :disabled="isSaving"
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <VDivider class="mb-3" />
+              <div class="text-subtitle-2 mb-1">
+                Package figures
+              </div>
+              <div class="text-caption text-medium-emphasis mb-3">
+                Set independently of the member buildings -- a package is priced as a
+                resource in its own right. A quotation copies these onto its
+                selection, and the printed document shows the screen count, so
+                leaving them at zero prints a quotation reading "0 screens".
+              </div>
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model.number="form.screen_count"
+                label="Screen count"
+                type="number"
+                min="0"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model.number="form.traffic"
+                label="Traffic"
+                type="number"
+                min="0"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model.number="form.impressions"
+                label="Impressions"
+                type="number"
+                min="0"
                 :disabled="isSaving"
               />
             </VCol>
