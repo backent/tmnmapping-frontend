@@ -15,10 +15,18 @@ const userStore = useUserStore()
 const isEdit = computed(() => !!route.params.id)
 const itemId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
-const form = ref<SalesAssignmentPayload>({
-  customer_id: 0,
-  brand_id: 0,
-  sales_user_id: 0,
+// The payload requires the three ids; the form has to represent "not chosen yet",
+// and 0 is not that -- no option carries it, so VSelect renders a literal "0".
+type AssignmentDraft = Omit<SalesAssignmentPayload, 'customer_id' | 'brand_id' | 'sales_user_id'> & {
+  customer_id: number | null
+  brand_id: number | null
+  sales_user_id: number | null
+}
+
+const form = ref<AssignmentDraft>({
+  customer_id: null,
+  brand_id: null,
+  sales_user_id: null,
   status: 'active',
   registration_date: '',
   expiry_date: '',
@@ -87,7 +95,7 @@ onMounted(async () => {
 // Changing customer invalidates the brand choice.
 watch(() => form.value.customer_id, (next, previous) => {
   if (previous !== undefined && next !== previous)
-    form.value.brand_id = 0
+    form.value.brand_id = null
 })
 
 const submit = async () => {
@@ -104,12 +112,21 @@ const submit = async () => {
     return
   }
 
+  // The guard above proves these three, but the state models "not chosen yet"
+  // as null, so narrow them into the payload explicitly.
+  const payload: SalesAssignmentPayload = {
+    ...form.value,
+    customer_id: form.value.customer_id,
+    brand_id: form.value.brand_id,
+    sales_user_id: form.value.sales_user_id,
+  }
+
   isSaving.value = true
   try {
     if (isEdit.value && itemId.value)
-      await store.update(itemId.value, form.value)
+      await store.update(itemId.value, payload)
     else
-      await store.create(form.value)
+      await store.create(payload)
 
     router.push({ name: 'sales-assignments' })
   }

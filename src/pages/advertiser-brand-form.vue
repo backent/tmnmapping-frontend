@@ -12,7 +12,11 @@ const customerStore = useCustomerStore()
 const isEdit = computed(() => !!route.params.id)
 const itemId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
-const form = ref<BrandPayload>({ code: '', customer_id: 0, name: '', category: '', status: 'active' })
+// customer_id is required on the payload, but the form must represent "not chosen
+// yet", and 0 is not that -- no option carries it, so VSelect renders a literal "0".
+type BrandDraft = Omit<BrandPayload, 'customer_id'> & { customer_id: number | null }
+
+const form = ref<BrandDraft>({ code: '', customer_id: null, name: '', category: '', status: 'active' })
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -73,18 +77,21 @@ const submit = async () => {
 
     return
   }
-  if (!form.value.customer_id) {
+  const customerId = form.value.customer_id
+  if (!customerId) {
     errorMessage.value = 'Customer is required'
 
     return
   }
 
+  const payload: BrandPayload = { ...form.value, customer_id: customerId }
+
   isSaving.value = true
   try {
     if (isEdit.value && itemId.value)
-      await store.update(itemId.value, form.value)
+      await store.update(itemId.value, payload)
     else
-      await store.create(form.value)
+      await store.create(payload)
 
     router.push({ name: 'advertiser-brands' })
   }

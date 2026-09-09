@@ -5,7 +5,7 @@ import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import { useRateCardStore } from '@/stores/ratecard'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { formatIdr } from '@/types/quotation'
-import type { SelectionPayload } from '@/types/quotation'
+import type { QuotationPayload, SelectionPayload } from '@/types/quotation'
 import { getBuildingPrices } from '@/http/ratecard'
 import type { BuildingPrice } from '@/types/ratecard'
 
@@ -37,8 +37,8 @@ const snackbarColor = ref<'success' | 'error'>('success')
 const errorMessage = ref('')
 
 const form = ref({
-  customer_id: 0,
-  brand_id: 0,
+  customer_id: null as number | null,
+  brand_id: null as number | null,
   attention_to: '',
   job_title: '',
   contact_phone: '',
@@ -260,8 +260,20 @@ const previous = () => {
 const save = async (thenSubmit: boolean) => {
   errorMessage.value = ''
   try {
-    const payload = {
+    // Narrow the two ids the payload requires. The wizard cannot reach save
+    // without them, but the state models "not chosen yet" as null.
+    const customerId = form.value.customer_id
+    const brandId = form.value.brand_id
+    if (!customerId || !brandId) {
+      errorMessage.value = 'Choose a customer and a brand'
+
+      return
+    }
+
+    const payload: QuotationPayload = {
       ...form.value,
+      customer_id: customerId,
+      brand_id: brandId,
       placement: selectionPayload(placement.value),
       bonus: wantsBonus.value ? selectionPayload(bonus.value) : null,
     }
@@ -343,7 +355,7 @@ const save = async (thenSubmit: boolean) => {
                 :items="customerOptions"
                 label="Customer"
                 class="mb-4"
-                @update:model-value="form.brand_id = 0"
+                @update:model-value="form.brand_id = null"
               />
               <VSelect
                 v-model="form.brand_id"
@@ -424,6 +436,7 @@ const save = async (thenSubmit: boolean) => {
                   <VBtn
                     v-for="option in MODE_OPTIONS"
                     :key="option.value"
+                    :color="(step === 1 ? placement : bonus).mode === option.value ? 'primary' : 'default'"
                     :variant="(step === 1 ? placement : bonus).mode === option.value ? 'flat' : 'outlined'"
                     @click="(step === 1 ? placement : bonus).mode = option.value"
                   >
