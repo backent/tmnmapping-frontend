@@ -20,7 +20,17 @@ export interface AuthGuardStore {
   isAuthenticated: boolean
   currentUser: unknown
   can: (permission: Permission) => boolean
+  canCreateQuotations: boolean
   fetchCurrentUser: () => Promise<unknown>
+}
+
+/**
+ * Per-user capabilities, as opposed to permissions, which are per role. The backend
+ * sends the effective answer on the current user, including the admin exemption, so
+ * this maps a route to the field rather than re-deriving any policy.
+ */
+const CAPABILITY_CHECKS: Record<string, (store: AuthGuardStore) => boolean> = {
+  'create-quotations': store => store.canCreateQuotations,
 }
 
 /**
@@ -58,6 +68,13 @@ export async function resolveNavigation(
   const permission = to.meta.permission as Permission | undefined
 
   if (permission && !authStore.can(permission))
+    return '/not-authorized'
+
+  // A capability the role holds but this particular account does not. Without this
+  // the user reaches a form whose save can only ever come back 403.
+  const capability = to.meta.capability as string | undefined
+
+  if (capability && !CAPABILITY_CHECKS[capability]?.(authStore))
     return '/not-authorized'
 
   return true

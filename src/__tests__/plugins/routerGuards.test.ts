@@ -10,18 +10,32 @@ import { routes } from '@/plugins/router/routes'
  * mapping from role to permission is the backend's business and is tested there.
  */
 const ADMIN_PERMISSIONS = [
-  'buildings.view', 'buildings.manage',
+  'buildings.view',
+  'buildings.manage',
   'mapping.view',
-  'pois.view', 'pois.manage',
-  'sales-packages.view', 'sales-packages.manage',
-  'building-restrictions.view', 'building-restrictions.manage', 'building-restrictions.screen',
-  'master-data.view', 'master-data.manage', 'master-data.screen',
-  'users.view', 'users.manage',
-  'customers.view', 'customers.manage',
-  'brands.view', 'brands.manage',
-  'sales-assignments.view', 'sales-assignments.manage',
-  'rate-cards.view', 'rate-cards.manage', 'rate-cards.publish',
-  'quotations.view', 'quotations.manage',
+  'pois.view',
+  'pois.manage',
+  'sales-packages.view',
+  'sales-packages.manage',
+  'building-restrictions.view',
+  'building-restrictions.manage',
+  'building-restrictions.screen',
+  'master-data.view',
+  'master-data.manage',
+  'master-data.screen',
+  'users.view',
+  'users.manage',
+  'customers.view',
+  'customers.manage',
+  'brands.view',
+  'brands.manage',
+  'sales-assignments.view',
+  'sales-assignments.manage',
+  'rate-cards.view',
+  'rate-cards.manage',
+  'rate-cards.publish',
+  'quotations.view',
+  'quotations.manage',
 ]
 
 /** What a sales user gets: reads only, and none of the management screens. */
@@ -36,7 +50,8 @@ const SALES_PERMISSIONS = [
   'brands.view',
   'sales-assignments.view',
   'rate-cards.view',
-  'quotations.view', 'quotations.manage',
+  'quotations.view',
+  'quotations.manage',
 ]
 
 function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[] } = {}): AuthGuardStore {
@@ -46,6 +61,7 @@ function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[]
     isAuthenticated: true,
     currentUser: { id: 1 },
     can: (permission: Permission) => permissions.includes(permission),
+    canCreateQuotations: true,
     fetchCurrentUser: vi.fn().mockResolvedValue({}),
     ...rest,
   }
@@ -153,6 +169,38 @@ function flatten(records: RouteRecord[], prefix = ''): { path: string; permissio
     ]
   })
 }
+
+describe('per-user capabilities', () => {
+  const newQuotation = { path: '/quotations/new', meta: { permission: 'quotations.manage' as Permission, capability: 'create-quotations' } }
+
+  // The role grants the screen; the account does not. Without this the user fills in
+  // a six step wizard whose save can only come back 403.
+  it('refuses a route whose capability the account lacks', async () => {
+    const store = makeStore({ canCreateQuotations: false })
+
+    await expect(resolveNavigation(newQuotation, store)).resolves.toBe('/not-authorized')
+  })
+
+  it('allows it when the account holds the capability', async () => {
+    const store = makeStore({ canCreateQuotations: true })
+
+    await expect(resolveNavigation(newQuotation, store)).resolves.toBe(true)
+  })
+
+  // The permission is still checked first, so a role that cannot see quotations at
+  // all is refused whatever its capability says.
+  it('still refuses when the permission is missing', async () => {
+    const store = makeStore({ permissions: [], canCreateQuotations: true })
+
+    await expect(resolveNavigation(newQuotation, store)).resolves.toBe('/not-authorized')
+  })
+
+  it('ignores the capability check on routes that declare none', async () => {
+    const store = makeStore({ canCreateQuotations: false })
+
+    await expect(resolveNavigation(to('/quotations', 'quotations.view'), store)).resolves.toBe(true)
+  })
+})
 
 describe('route permissions', () => {
   const flat = flatten(routes as RouteRecord[])

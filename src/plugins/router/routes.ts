@@ -213,7 +213,9 @@ export const routes = [
         path: 'quotations/new',
         name: 'quotation-new',
         component: () => import('@/pages/quotation-form.vue'),
-        meta: { permission: 'quotations.manage' },
+
+        // The capability is per user, not per role, so it cannot be a permission.
+        meta: { permission: 'quotations.manage', capability: 'create-quotations' },
       },
       {
         path: 'quotations/:id',

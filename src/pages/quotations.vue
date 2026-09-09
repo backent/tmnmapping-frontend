@@ -103,8 +103,10 @@ const open = (item: Quotation) =>
 
 <template>
   <VRow>
-    <!-- Metric grid. The three pending statuses collapse into one number: what a
-         seller needs to know is whether it is with them or with an approver. -->
+    <!--
+      Metric grid. The three pending statuses collapse into one number: what a
+      seller needs to know is whether it is with them or with an approver.
+    -->
     <VCol cols="12">
       <VRow dense>
         <VCol
@@ -141,6 +143,7 @@ const open = (item: Quotation) =>
         <VCardTitle class="d-flex align-center justify-space-between flex-wrap gap-2">
           <span>Quotations</span>
           <VBtn
+            v-if="authStore.canCreateQuotations"
             color="primary"
             @click="router.push({ name: 'quotation-new' })"
           >
