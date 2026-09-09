@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useQuotationStore } from '@/stores/quotation'
-import { useCustomerStore, useAdvertiserBrandStore } from '@/stores/advertiser'
+import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import { useRateCardStore } from '@/stores/ratecard'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { formatIdr } from '@/types/quotation'
@@ -47,15 +47,28 @@ const form = ref({
   tax_rate: 0.11,
 })
 
+const MODE_OPTIONS = [
+  { value: 'building' as const, label: 'Individual buildings' },
+  { value: 'package' as const, label: 'Sales package' },
+]
+
 // Placement is required; bonus is optional and starts off.
 const placement = ref<SelectionPayload>({
-  mode: 'building', building_ids: [], sales_package_id: 0,
-  tvc_duration_seconds: 15, weeks: 4, spots: 180,
+  mode: 'building',
+  building_ids: [],
+  tvc_duration_seconds: 15,
+  weeks: 4,
+  spots: 180,
 })
+
 const wantsBonus = ref(false)
+
 const bonus = ref<SelectionPayload>({
-  mode: 'building', building_ids: [], sales_package_id: 0,
-  tvc_duration_seconds: 15, weeks: 4, spots: 180,
+  mode: 'building',
+  building_ids: [],
+  tvc_duration_seconds: 15,
+  weeks: 4,
+  spots: 180,
 })
 
 const priceableBuildings = ref<BuildingPrice[]>([])
@@ -159,10 +172,14 @@ onMounted(async () => {
     const q = store.currentItem
     if (q) {
       form.value = {
-        customer_id: q.customer_id, brand_id: q.brand_id,
-        attention_to: q.attention_to, job_title: q.job_title,
-        contact_phone: q.contact_phone, contact_email: q.contact_email,
-        discount: q.discount, tax_rate: q.tax_rate,
+        customer_id: q.customer_id,
+        brand_id: q.brand_id,
+        attention_to: q.attention_to,
+        job_title: q.job_title,
+        contact_phone: q.contact_phone,
+        contact_email: q.contact_email,
+        discount: q.discount,
+        tax_rate: q.tax_rate,
       }
 
       const p = q.selections.find(s => s.kind === 'placement')
@@ -171,7 +188,9 @@ onMounted(async () => {
           mode: p.mode,
           building_ids: p.items.map(i => i.building_id),
           sales_package_id: p.sales_package_id,
-          tvc_duration_seconds: p.tvc_duration_seconds, weeks: p.weeks, spots: p.spots,
+          tvc_duration_seconds: p.tvc_duration_seconds,
+          weeks: p.weeks,
+          spots: p.spots,
         }
       }
 
@@ -182,7 +201,9 @@ onMounted(async () => {
           mode: b.mode,
           building_ids: b.items.map(i => i.building_id),
           sales_package_id: b.sales_package_id,
-          tvc_duration_seconds: b.tvc_duration_seconds, weeks: b.weeks, spots: b.spots,
+          tvc_duration_seconds: b.tvc_duration_seconds,
+          weeks: b.weeks,
+          spots: b.spots,
         }
       }
 
@@ -390,19 +411,25 @@ const save = async (thenSubmit: boolean) => {
               />
 
               <template v-if="step === 1 || wantsBonus">
-                <VBtnToggle
-                  v-model="(step === 1 ? placement : bonus).mode"
-                  mandatory
+                <!--
+                  VBtnGroup, not VBtnToggle: the template's _button.scss forces
+                  every .v-btn-toggle .v-btn to a 44px square with !important,
+                  assuming toggles hold icons. Text labels overlap inside it.
+                -->
+                <VBtnGroup
+                  divided
                   density="comfortable"
                   class="mb-4"
                 >
-                  <VBtn value="building">
-                    Individual buildings
+                  <VBtn
+                    v-for="option in MODE_OPTIONS"
+                    :key="option.value"
+                    :variant="(step === 1 ? placement : bonus).mode === option.value ? 'flat' : 'outlined'"
+                    @click="(step === 1 ? placement : bonus).mode = option.value"
+                  >
+                    {{ option.label }}
                   </VBtn>
-                  <VBtn value="package">
-                    Sales package
-                  </VBtn>
-                </VBtnToggle>
+                </VBtnGroup>
 
                 <template v-if="(step === 1 ? placement : bonus).mode === 'package'">
                   <VSelect
