@@ -365,12 +365,6 @@ const actionColor = (action: string) => ({
                       Region / type
                     </th>
                     <th class="text-uppercase text-end">
-                      Daily traffic
-                    </th>
-                    <th class="text-uppercase text-end">
-                      Monthly impressions
-                    </th>
-                    <th class="text-uppercase text-end">
                       Rate / week
                     </th>
                   </tr>
@@ -387,12 +381,6 @@ const actionColor = (action: string) => ({
                       <td>{{ item.building_name }}</td>
                       <td class="text-body-2">
                         {{ item.citytown || '—' }} · {{ item.building_type || '—' }}
-                      </td>
-                      <td class="text-end">
-                        {{ item.traffic.toLocaleString() }}
-                      </td>
-                      <td class="text-end">
-                        {{ item.impressions.toLocaleString() }}
                       </td>
                       <td class="text-end">
                         {{ formatIdr(item.unit_price_idr) }}

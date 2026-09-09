@@ -170,28 +170,6 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
         v-if="placement || bonus"
         class="py-3"
       >
-        <div
-          v-for="row in [
-            { label: 'Placement', selection: placement },
-            { label: 'Bonus', selection: bonus },
-          ].filter(r => r.selection)"
-          :key="row.label"
-          class="mb-2"
-        >
-          <div class="text-caption text-disabled">
-            {{ row.label }}
-          </div>
-          <!--
-            screen_count is deliberately not shown. Nothing confirms it is a real
-            figure, and in building mode it is derived as one per building, which the
-            rate card shows undercounts by 79%. See
-            backend/docs/QUOTATION_DOCUMENT_ANALYSIS.md §4.2.
-          -->
-          <div class="text-body-2">
-            {{ row.selection!.traffic.toLocaleString() }} traffic ·
-            {{ row.selection!.impressions.toLocaleString() }} impressions
-          </div>
-        </div>
       </VCardText>
 
       <VDivider />

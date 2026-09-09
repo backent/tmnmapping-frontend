@@ -230,54 +230,14 @@ onUnmounted(() => {
               />
             </VCol>
 
-            <VCol cols="12">
-              <VDivider class="mb-3" />
-              <div class="text-subtitle-2 mb-1">
-                Package figures
-              </div>
-              <div class="text-caption text-medium-emphasis mb-3">
-                Set independently of the member buildings -- a package is priced as a
-                resource in its own right. A quotation copies these onto its
-                selection, and the printed document shows the screen count, so
-                leaving them at zero prints a quotation reading "0 screens".
-              </div>
-            </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model.number="form.screen_count"
-                label="Screen count"
-                type="number"
-                min="0"
-                :disabled="isSaving"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model.number="form.traffic"
-                label="Traffic"
-                type="number"
-                min="0"
-                :disabled="isSaving"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model.number="form.impressions"
-                label="Impressions"
-                type="number"
-                min="0"
-                :disabled="isSaving"
-              />
-            </VCol>
+            <!--
+              Screen count, traffic and impressions are still sent (as zeros) and
+              still stored, but have no input here: nothing displays them any more.
+              Audience is absent for 95% of sellable buildings, and screen count is
+              unverified. Both come back with the inputs the moment the rate card
+              upload carries real figures.
+              See backend/docs/QUOTATION_DOCUMENT_ANALYSIS.md §4.2 and §4.3.
+            -->
             <VCol cols="12">
               <VDivider class="my-2" />
               <BuildingSelectField
