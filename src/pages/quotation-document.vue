@@ -216,11 +216,14 @@ const print = () => window.print()
         </thead>
         <tbody>
           <tr v-if="placement">
+            <!--
+              The template shows a count here ("950") but nothing labels what it
+              counts, and our value is one-per-building, which is wrong for 85% of
+              buildings. Not printed until the business says what it should be.
+              See backend/docs/QUOTATION_DOCUMENT_ANALYSIS.md §4.2.
+            -->
             <td>
               <strong>{{ selectionLabel('placement') }}</strong>
-              <div class="doc-muted">
-                {{ placement.screen_count }} screens
-              </div>
             </td>
             <td>{{ placement.tvc_duration_seconds }} Secs</td>
             <td>{{ placement.spots }} Spot</td>
@@ -243,7 +246,7 @@ const print = () => window.print()
             <td>
               <strong>Bonus</strong>
               <div class="doc-muted">
-                {{ selectionLabel('bonus') }} · {{ bonus.screen_count }} screens
+                {{ selectionLabel('bonus') }}
               </div>
             </td>
             <td>{{ bonus.tvc_duration_seconds }} Secs</td>

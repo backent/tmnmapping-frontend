@@ -181,8 +181,13 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
           <div class="text-caption text-disabled">
             {{ row.label }}
           </div>
+          <!--
+            screen_count is deliberately not shown. Nothing confirms it is a real
+            figure, and in building mode it is derived as one per building, which the
+            rate card shows undercounts by 79%. See
+            backend/docs/QUOTATION_DOCUMENT_ANALYSIS.md §4.2.
+          -->
           <div class="text-body-2">
-            {{ row.selection!.screen_count }} screen{{ row.selection!.screen_count === 1 ? '' : 's' }} ·
             {{ row.selection!.traffic.toLocaleString() }} traffic ·
             {{ row.selection!.impressions.toLocaleString() }} impressions
           </div>
