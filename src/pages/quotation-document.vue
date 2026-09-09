@@ -78,6 +78,10 @@ const typeLine = (kind: 'placement' | 'bonus') => {
 
 const needsApproval = computed(() => (quotation.value?.discount ?? 0) > 0)
 
+// Pricing is computed on submit, not on save, so a draft's figures are all zero.
+// Say so loudly rather than let a zero-value quotation look finished.
+const isUnpriced = computed(() => quotation.value?.status === 'draft')
+
 const print = () => window.print()
 </script>
 
@@ -116,6 +120,14 @@ const print = () => window.print()
       v-if="quotation"
       class="qd"
     >
+      <div
+        v-if="isUnpriced"
+        class="qd-draft"
+      >
+        DRAFT — NOT YET PRICED. Figures stay zero until this quotation is submitted
+        for approval. Do not send to a client.
+      </div>
+
       <!--
         Letterhead. The template carries the TMN mark and the Focus Media Group
         and Sinarmas partner marks; none of those asset files exist in this
@@ -494,6 +506,16 @@ const print = () => window.print()
   font-family: Calibri, Carlito, "Segoe UI", sans-serif;
   font-size: 8.5px;
   line-height: 1.3;
+}
+
+.qd-draft {
+  border: 1.5px solid #b00020;
+  background: #ffe6ea;
+  color: #b00020;
+  font-weight: 700;
+  text-align: center;
+  padding: 1.5mm;
+  margin-block-end: 2mm;
 }
 
 .qd-muted { color: #444; }
