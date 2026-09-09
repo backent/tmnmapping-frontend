@@ -436,6 +436,45 @@ const print = () => window.print()
 @media print {
   .quotation-doc { padding: 0; max-inline-size: none; }
 
+  /*
+    Chrome ships with "Background graphics" OFF, which would silently drop the table
+    header shading, the total row and the NEED APPROVAL flag -- the document would
+    print looking unfinished. Force them.
+  */
+  .quotation-doc,
+  .quotation-doc * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /*
+    Without these the browser is free to slice through a line item, a clause or the
+    totals, which is where the cut words and half-drawn borders come from. The table
+    may still break BETWEEN rows -- it has to, it is 1500 buildings long in the
+    worst case -- but never through one.
+  */
+  .doc-lines tr,
+  .doc-kv tr,
+  .doc-terms li { break-inside: avoid; }
+
+  .doc-head,
+  .doc-parties,
+  .doc-totals,
+  .doc-sign { break-inside: avoid; }
+
+  /* A heading stranded at the foot of a page with its list overleaf. */
+  .doc-subtitle { break-after: avoid; }
+
+  /* If the line items do run over, repeat the column headers on the next page. */
+  .doc-lines thead { display: table-header-group; }
+
+  /* No single dangling line of a paragraph. */
+  .quotation-doc p,
+  .doc-terms li {
+    orphans: 3;
+    widows: 3;
+  }
+
   @page { size: A4; margin: 12mm; }
 }
 </style>
