@@ -258,6 +258,16 @@ const print = () => window.print()
         v-if="placement"
         class="qd-lines"
       >
+        <colgroup>
+          <col style="inline-size: 14%">
+          <col style="inline-size: 9%">
+          <col style="inline-size: 11%">
+          <col style="inline-size: 16%">
+          <col style="inline-size: 13%">
+          <col style="inline-size: 13%">
+          <col style="inline-size: 8%">
+          <col style="inline-size: 16%">
+        </colgroup>
         <thead>
           <tr class="qd-lines__head--placement">
             <th>{{ columnHead('placement') }}</th>
@@ -303,6 +313,16 @@ const print = () => window.print()
 
       <!-- Bonus, its own table with a peach header, then the shared TOTAL row -->
       <table class="qd-lines qd-lines--bonus">
+        <colgroup>
+          <col style="inline-size: 14%">
+          <col style="inline-size: 9%">
+          <col style="inline-size: 11%">
+          <col style="inline-size: 16%">
+          <col style="inline-size: 13%">
+          <col style="inline-size: 13%">
+          <col style="inline-size: 8%">
+          <col style="inline-size: 16%">
+        </colgroup>
         <thead v-if="bonus">
           <tr class="qd-lines__head--bonus">
             <th>{{ columnHead('bonus') }}</th>
@@ -530,7 +550,7 @@ const print = () => window.print()
 .qd-kv--right td:first-child { inline-size: 40%; }
 
 /* Line items */
-.qd-lines { inline-size: 100%; border-collapse: collapse; margin-block-end: 2mm; }
+.qd-lines { inline-size: 100%; border-collapse: collapse; table-layout: fixed; margin-block-end: 2mm; }
 .qd-lines th,
 .qd-lines td { border: 1px solid #000; padding: 1mm 1.5mm; }
 .qd-lines th { text-align: center; font-weight: 700; }
