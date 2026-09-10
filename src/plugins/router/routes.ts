@@ -236,6 +236,16 @@ export const routes = [
         meta: { permission: 'building-prices.view' },
       },
       {
+        // The Rate Cards screens were replaced by Prices on 2026-09-10. Old links
+        // and bookmarks land somewhere useful instead of the not-found page.
+        path: 'rate-cards',
+        redirect: '/building-prices',
+      },
+      {
+        path: 'rate-cards/:id',
+        redirect: '/building-prices',
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('@/pages/users.vue'),

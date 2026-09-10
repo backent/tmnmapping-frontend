@@ -186,6 +186,7 @@ const preview = ref<ImportResult | null>(null)
 const pendingFile = ref<File | null>(null)
 
 const changeCount = computed(() => (preview.value?.created ?? 0) + (preview.value?.updated ?? 0))
+const leftOut = computed(() => preview.value?.errors ?? [])
 
 // A refused upload comes back as a 400 whose body is still the per-row result.
 const rejected = (error: any): ImportResult | null => {
@@ -235,7 +236,11 @@ const applyImport = async () => {
 
     cancelImport()
     await load()
-    notify(`Prices applied: ${result?.created ?? 0} new, ${result?.updated ?? 0} changed.`)
+
+    const skipped = result?.errors?.length ?? 0
+
+    notify(`Prices applied: ${result?.created ?? 0} new, ${result?.updated ?? 0} changed${
+      skipped ? `, ${skipped} row${skipped === 1 ? '' : 's'} left out.` : '.'}`)
   }
   catch (error: any) {
     const result = rejected(error)
@@ -475,7 +480,7 @@ const handleExport = async () => {
     <!-- Preview an upload before applying it -->
     <VDialog
       v-model="previewDialog"
-      max-width="520"
+      max-width="680"
       persistent
     >
       <VCard>
@@ -516,8 +521,54 @@ const handleExport = async () => {
                   {{ preview.skipped ?? 0 }}
                 </td>
               </tr>
+              <tr>
+                <td :class="leftOut.length ? 'text-error' : ''">
+                  Left out (problems below)
+                </td>
+                <td
+                  class="text-end"
+                  :class="leftOut.length ? 'text-error' : ''"
+                >
+                  {{ leftOut.length }}
+                </td>
+              </tr>
             </tbody>
           </VTable>
+
+          <!--
+            Rows that cannot be applied are listed, not a reason to refuse the file:
+            the valid rows still apply.
+          -->
+          <template v-if="leftOut.length">
+            <div class="text-subtitle-2 text-error mt-4 mb-1">
+              These {{ leftOut.length }} row{{ leftOut.length === 1 ? '' : 's' }} will be left out
+            </div>
+            <VTable
+              density="compact"
+              class="border rounded"
+            >
+              <tbody>
+                <tr
+                  v-for="(problem, index) in leftOut.slice(0, 8)"
+                  :key="index"
+                >
+                  <td class="text-no-wrap">
+                    Row {{ problem.row }}
+                  </td>
+                  <td class="text-no-wrap">
+                    {{ problem.value || '(blank)' }}
+                  </td>
+                  <td>{{ problem.message }}</td>
+                </tr>
+              </tbody>
+            </VTable>
+            <div
+              v-if="leftOut.length > 8"
+              class="text-caption text-medium-emphasis mt-1"
+            >
+              …and {{ leftOut.length - 8 }} more.
+            </div>
+          </template>
           <p
             v-if="changeCount === 0"
             class="mt-3 text-medium-emphasis"
@@ -542,7 +593,7 @@ const handleExport = async () => {
             :disabled="changeCount === 0"
             @click="applyImport"
           >
-            Apply
+            Apply {{ changeCount }} change{{ changeCount === 1 ? '' : 's' }}
           </VBtn>
         </VCardActions>
       </VCard>
