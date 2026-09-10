@@ -83,7 +83,7 @@ export interface ImportError {
 /**
  * Outcome of an upload. Imports are all-or-nothing, so `imported: false` always
  * means nothing was written and `errors` explains why.
-  *
+ *
  * Building prices are the exception: a price upload lists its rejected rows in
  * `errors` and still applies the valid ones, and is always previewed first.
  */
