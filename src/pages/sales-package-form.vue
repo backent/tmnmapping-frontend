@@ -3,11 +3,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
 import { SALES_PACKAGE_STATUS_OPTIONS } from '@/types/salespackage'
+import { useRateCardStore } from '@/stores/ratecard'
+import { getBuildingPrices } from '@/http/ratecard'
+import { formatIdr } from '@/types/quotation'
 import type { BuildingRef, CreateSalesPackageRequest, SalesPackageStatus } from '@/types/salespackage'
 
 const route = useRoute()
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
+const rateCardStore = useRateCardStore()
 
 const isEdit = computed(() => !!route.params.id)
 const packageId = computed(() => (isEdit.value ? Number(route.params.id) : null))
@@ -24,6 +28,7 @@ interface SalesPackageForm {
   screen_count: number
   traffic: number
   impressions: number
+  price_idr_per_week: number
 
   buildings: BuildingRef[]
 }
@@ -36,8 +41,41 @@ const form = ref<SalesPackageForm>({
   screen_count: 0,
   traffic: 0,
   impressions: 0,
+  price_idr_per_week: 0,
   buildings: [],
 })
+
+// Prices of every building we can quote, so the form can suggest what this
+// package's member buildings add up to. A package is priced independently -- the
+// suggestion is a starting point, never enforced.
+const buildingRates = ref<Record<number, number>>({})
+
+const suggestedPrice = computed(() =>
+  form.value.buildings.reduce((sum, b) => sum + (buildingRates.value[b.id] ?? 0), 0))
+
+const pricedCount = computed(() =>
+  form.value.buildings.filter(b => buildingRates.value[b.id] !== undefined).length)
+
+const applySuggestion = () => {
+  form.value.price_idr_per_week = suggestedPrice.value
+}
+
+const loadBuildingRates = async () => {
+  try {
+    const current = await rateCardStore.fetchCurrentVersion()
+    if (!current)
+      return
+
+    const response = await getBuildingPrices(current.id, { take: 100000, skip: 0 })
+    const map: Record<number, number> = {}
+    for (const price of response.data || [])
+      map[price.building_id] = price.price_idr_per_week
+    buildingRates.value = map
+  }
+  catch {
+    // A missing rate card only costs the suggestion, not the form.
+  }
+}
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -64,6 +102,7 @@ const fetchPackage = async () => {
         screen_count: pkg.screen_count ?? 0,
         traffic: pkg.traffic ?? 0,
         impressions: pkg.impressions ?? 0,
+        price_idr_per_week: pkg.price_idr_per_week ?? 0,
         buildings: pkg.buildings,
       }
     }
@@ -78,6 +117,7 @@ const fetchPackage = async () => {
 }
 
 onMounted(async () => {
+  await loadBuildingRates()
   if (isEdit.value)
     await fetchPackage()
 })
@@ -108,6 +148,7 @@ const submit = async () => {
     screen_count: form.value.screen_count || 0,
     traffic: form.value.traffic || 0,
     impressions: form.value.impressions || 0,
+    price_idr_per_week: form.value.price_idr_per_week || 0,
     building_ids: form.value.buildings.map(b => b.id),
   }
 
@@ -238,6 +279,69 @@ onUnmounted(() => {
               upload carries real figures.
               See backend/docs/QUOTATION_DOCUMENT_ANALYSIS.md §4.2 and §4.3.
             -->
+
+            <VCol cols="12">
+              <VDivider class="mb-3" />
+              <div class="text-subtitle-2 mb-1">
+                Price
+              </div>
+              <div class="text-caption text-medium-emphasis mb-3">
+                What the advertiser pays for one week of the whole package. A
+                package is priced in its own right, so this does not have to match
+                what its buildings add up to -- the suggestion is a starting point.
+              </div>
+            </VCol>
+            <VCol
+              cols="12"
+              md="5"
+            >
+              <VTextField
+                v-model.number="form.price_idr_per_week"
+                label="Price per week (IDR)"
+                type="number"
+                min="0"
+                :disabled="isSaving"
+                :hint="form.price_idr_per_week > 0 ? '' : 'A package priced at 0 cannot be quoted.'"
+                persistent-hint
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="7"
+              class="d-flex align-center"
+            >
+              <div v-if="form.buildings.length">
+                <div class="text-caption text-medium-emphasis">
+                  Its {{ pricedCount }} priced building{{ pricedCount === 1 ? '' : 's' }}
+                  add up to
+                </div>
+                <div class="d-flex align-center gap-2">
+                  <span class="text-body-1 font-weight-medium">{{ formatIdr(suggestedPrice) }}</span>
+                  <VBtn
+                    size="small"
+                    variant="tonal"
+                    :disabled="isSaving || suggestedPrice === 0"
+                    @click="applySuggestion"
+                  >
+                    Use this
+                  </VBtn>
+                </div>
+                <div
+                  v-if="pricedCount < form.buildings.length"
+                  class="text-caption text-warning"
+                >
+                  {{ form.buildings.length - pricedCount }} of
+                  {{ form.buildings.length }} have no price yet, so the total is
+                  lower than the real one.
+                </div>
+              </div>
+              <div
+                v-else
+                class="text-caption text-medium-emphasis"
+              >
+                Add buildings below to see what they add up to.
+              </div>
+            </VCol>
             <VCol cols="12">
               <VDivider class="my-2" />
               <BuildingSelectField

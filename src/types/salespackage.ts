@@ -28,6 +28,9 @@ export interface SalesPackage {
   traffic: number
   impressions: number
 
+  /** What the advertiser pays for one week of the whole package. */
+  price_idr_per_week: number
+
   buildings: BuildingRef[]
   created_at: string
   updated_at: string
@@ -41,6 +44,7 @@ export interface CreateSalesPackageRequest {
   screen_count: number
   traffic: number
   impressions: number
+  price_idr_per_week: number
   building_ids: number[]
 }
 
