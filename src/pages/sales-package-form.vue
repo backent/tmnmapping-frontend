@@ -3,15 +3,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
 import { SALES_PACKAGE_STATUS_OPTIONS } from '@/types/salespackage'
-import { useRateCardStore } from '@/stores/ratecard'
-import { getBuildingPrices } from '@/http/ratecard'
+import { getAllBuildingPrices } from '@/http/buildingprice'
 import { formatIdr } from '@/types/quotation'
 import type { BuildingRef, CreateSalesPackageRequest, SalesPackageStatus } from '@/types/salespackage'
 
 const route = useRoute()
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
-const rateCardStore = useRateCardStore()
 
 const isEdit = computed(() => !!route.params.id)
 const packageId = computed(() => (isEdit.value ? Number(route.params.id) : null))
@@ -62,18 +60,14 @@ const applySuggestion = () => {
 
 const loadBuildingRates = async () => {
   try {
-    const current = await rateCardStore.fetchCurrentVersion()
-    if (!current)
-      return
-
-    const response = await getBuildingPrices(current.id, { take: 100000, skip: 0 })
+    const response = await getAllBuildingPrices()
     const map: Record<number, number> = {}
     for (const price of response.data || [])
       map[price.building_id] = price.price_idr_per_week
     buildingRates.value = map
   }
   catch {
-    // A missing rate card only costs the suggestion, not the form.
+    // Missing prices only cost the suggestion, not the form.
   }
 }
 

@@ -16,7 +16,7 @@ const canManageUsers = computed(() => authStore.can('users.view'))
 const canViewCustomers = computed(() => authStore.can('customers.view'))
 const canViewBrands = computed(() => authStore.can('brands.view'))
 const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
-const canViewRateCards = computed(() => authStore.can('rate-cards.view'))
+const canViewPrices = computed(() => authStore.can('building-prices.view'))
 const canViewQuotations = computed(() => authStore.can('quotations.view'))
 </script>
 
@@ -111,11 +111,11 @@ const canViewQuotations = computed(() => authStore.can('quotations.view'))
     }"
   />
   <VerticalNavLink
-    v-if="canViewRateCards"
+    v-if="canViewPrices"
     :item="{
-      title: 'Rate Cards',
+      title: 'Prices',
       icon: 'ri-money-dollar-circle-line',
-      to: '/rate-cards',
+      to: '/building-prices',
     }"
   />
 

@@ -269,12 +269,6 @@ const actionColor = (action: string) => ({
                     </td>
                     <td>{{ quotation.valid_until || '—' }}</td>
                   </tr>
-                  <tr>
-                    <td class="text-body-2">
-                      Rate card
-                    </td>
-                    <td>{{ quotation.rate_card_version_code || '—' }}</td>
-                  </tr>
                 </tbody>
               </VTable>
             </VCardText>

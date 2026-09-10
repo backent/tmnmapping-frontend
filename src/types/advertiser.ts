@@ -90,6 +90,15 @@ export interface ImportResult {
   updated: number
   imported: boolean
   errors: ImportError[]
+
+  /** Valid rows deliberately not applied, e.g. a price of 0. */
+  skipped?: number
+
+  /** Rows that already matched. Reported by previews. */
+  unchanged?: number
+
+  /** A preview: every row was checked and counted, nothing written. */
+  dry_run?: boolean
 }
 
 export const STATUS_OPTIONS: { title: string; value: MasterDataStatus }[] = [

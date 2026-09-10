@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useQuotationStore } from '@/stores/quotation'
+import { useSalesPackageStore } from '@/stores/salespackage'
+import { getAllBuildingPrices } from '@/http/buildingprice'
+import type { BuildingPrice } from '@/types/buildingprice'
 import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
-import { useRateCardStore } from '@/stores/ratecard'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { formatIdr } from '@/types/quotation'
 import type { QuotationPayload, SelectionPayload } from '@/types/quotation'
-import { getBuildingPrices } from '@/http/ratecard'
-import type { BuildingPrice } from '@/types/ratecard'
 
 const route = useRoute()
 const router = useRouter()
 const store = useQuotationStore()
 const customerStore = useCustomerStore()
 const brandStore = useAdvertiserBrandStore()
-const rateCardStore = useRateCardStore()
+const salesPackageStore = useSalesPackageStore()
 
 const isEdit = computed(() => !!route.params.id)
 const quotationId = computed(() => (isEdit.value ? Number(route.params.id) : null))
@@ -82,11 +82,15 @@ const brandOptions = computed(() =>
     .filter(b => b.customer_id === form.value.customer_id)
     .map(b => ({ title: `${b.name} (${b.code})`, value: b.id })))
 
+// Only a package that carries its own price can be quoted -- the rest would be
+// refused on submit. Inactive packages are not offered either.
 const packageOptions = computed(() =>
-  rateCardStore.packagePrices.map(p => ({
-    title: `${p.sales_package_name} — ${formatIdr(p.price_idr_per_week)}/wk`,
-    value: p.sales_package_id,
-  })))
+  salesPackageStore.packages
+    .filter(p => p.status !== 'inactive' && p.price_idr_per_week > 0)
+    .map(p => ({
+      title: `${p.name} — ${formatIdr(p.price_idr_per_week)}/wk`,
+      value: p.id,
+    })))
 
 const filteredBuildings = computed(() => {
   const term = buildingSearch.value.trim().toLowerCase()
@@ -142,22 +146,11 @@ watch([placement, bonus, wantsBonus, () => form.value.discount, () => form.value
   refreshPreview, { deep: true })
 
 const loadReferenceData = async () => {
-  await Promise.all([
+  const [, , buildings] = await Promise.all([
     customerStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
     brandStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
-    rateCardStore.fetchCurrentVersion(),
-  ])
-
-  const current = rateCardStore.currentVersion
-  if (!current) {
-    errorMessage.value = 'No rate card has been published yet, so nothing can be priced.'
-
-    return
-  }
-
-  const [buildings] = await Promise.all([
-    getBuildingPrices(current.id, { take: 100000, skip: 0 }),
-    rateCardStore.fetchPackagePrices(current.id, { take: 1000, skip: 0 }),
+    getAllBuildingPrices(),
+    salesPackageStore.fetchSalesPackages({ take: 1000, skip: 0 }),
   ])
 
   priceableBuildings.value = buildings.data || []
@@ -449,7 +442,7 @@ const save = async (thenSubmit: boolean) => {
                     v-model="(step === 1 ? placement : bonus).sales_package_id"
                     :items="packageOptions"
                     label="Sales package"
-                    :hint="packageOptions.length ? 'A package is priced as one resource.' : 'No package has a price in the published rate card yet.'"
+                    :hint="packageOptions.length ? 'A package is priced as one resource.' : 'No package has a price yet. Set one on the sales package.'"
                     persistent-hint
                   />
                 </template>
@@ -464,7 +457,7 @@ const save = async (thenSubmit: boolean) => {
                     class="mb-2"
                   />
                   <div class="text-caption text-disabled mb-2">
-                    Only buildings priced in the published rate card can be quoted.
+                    Only buildings with a price can be quoted.
                     {{ priceableBuildings.length }} available.
                   </div>
                   <VList
@@ -636,7 +629,7 @@ const save = async (thenSubmit: boolean) => {
                 variant="tonal"
                 class="mt-4"
               >
-                Submitting re-prices everything against the published rate card and sends
+                Submitting re-prices everything at current prices and sends
                 it to the approver shown on the right. You can still edit it if it comes back.
               </VAlert>
             </div>

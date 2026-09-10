@@ -31,9 +31,8 @@ const ADMIN_PERMISSIONS = [
   'brands.manage',
   'sales-assignments.view',
   'sales-assignments.manage',
-  'rate-cards.view',
-  'rate-cards.manage',
-  'rate-cards.publish',
+  'building-prices.view',
+  'building-prices.manage',
   'quotations.view',
   'quotations.manage',
 ]
@@ -49,7 +48,7 @@ const SALES_PERMISSIONS = [
   'customers.view',
   'brands.view',
   'sales-assignments.view',
-  'rate-cards.view',
+  'building-prices.view',
   'quotations.view',
   'quotations.manage',
 ]
@@ -264,7 +263,7 @@ describe('route permissions', () => {
     ['/customers', 'customers.view'],
     ['/advertiser-brands', 'brands.view'],
     ['/sales-assignments', 'sales-assignments.view'],
-    ['/rate-cards', 'rate-cards.view'],
+    ['/building-prices', 'building-prices.view'],
     ['/quotations', 'quotations.view'],
   ])('lets any role read %s', (path, permission) => {
     const route = flat.find(r => r.path === path)
