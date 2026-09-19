@@ -201,6 +201,7 @@ describe('getMarkerIconConfig', () => {
 
         vi.stubGlobal('google', { maps: { Size: SizeMock, Point: makePointCtor() } })
         getMarkerIconConfig(makeBuilding(), [], false, 11)
+
         const [w, h] = SizeMock.mock.calls[0] as [number, number]
 
         expect(w).toBeLessThan(30)

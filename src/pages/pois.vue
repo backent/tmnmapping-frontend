@@ -18,6 +18,7 @@ const motherBrandStore = useMotherBrandStore()
 const parseQueryString = (value: unknown, fallback = ''): string => {
   if (value === undefined || value === null)
     return fallback
+
   return Array.isArray(value) ? String(value[0] ?? fallback) : String(value)
 }
 
