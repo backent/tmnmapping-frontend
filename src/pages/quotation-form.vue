@@ -17,6 +17,7 @@ import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { formatIdr } from '@/types/quotation'
 import { hasBrandContact, mergeBrandContact } from '@/utils/brandContact'
+import { DEFAULT_VAT_PERCENT, vatPercentToRate, vatRateToPercent } from '@/utils/vat'
 import {
   SPOTS_OPTIONS,
   TVC_DURATION_OPTIONS,
@@ -62,8 +63,54 @@ const form = ref({
   contact_phone: '',
   contact_email: '',
   discount: 0,
-  tax_rate: 0.11,
+  tax_rate: DEFAULT_VAT_PERCENT / 100,
 })
+
+/**
+ * VAT as the seller types it: 11 means 11%.
+ *
+ * `form.tax_rate` keeps the fraction the API expects (0.11) and only changes when
+ * this holds a usable percentage, so a half-typed or cleared field never reaches the
+ * server. Previously the field took the fraction directly, and clearing it sent ""
+ * to a Go float64, which failed with a 500.
+ */
+const vatPercent = ref<number | string>(vatRateToPercent(form.value.tax_rate))
+
+watch(vatPercent, value => {
+  const rate = vatPercentToRate(value)
+  if (rate !== null)
+    form.value.tax_rate = rate
+})
+
+// Loading an existing quotation replaces the form; the field follows the stored rate.
+watch(() => form.value.tax_rate, rate => {
+  if (vatPercentToRate(vatPercent.value) !== rate)
+    vatPercent.value = vatRateToPercent(rate)
+})
+
+/**
+ * The discount as a number the API can decode. An emptied field holds "" (Vue's
+ * v-model.number keeps unparseable input as a string), and "" into a Go float64 is a
+ * 500. With the slider gone the text field is the only control, so this matters more.
+ */
+const discountNumber = (): number => {
+  const value = Number(form.value.discount)
+
+  return Number.isFinite(value) ? value : 0
+}
+
+const discountError = computed(() => {
+  const raw = String(form.value.discount ?? '').trim()
+  const value = Number(raw)
+
+  return raw === '' || !Number.isFinite(value) || value < 0 || value > 100
+    ? 'Customer discount must be between 0 and 100%'
+    : ''
+})
+
+const vatError = computed(() => (vatPercentToRate(vatPercent.value) === null
+  ? 'VAT must be more than 0% and at most 100%'
+  : ''))
 
 const durationOptions = TVC_DURATION_OPTIONS.map(value => ({ title: durationLabel(value), value }))
 const spotsOptions = SPOTS_OPTIONS.map(value => ({ title: spotsLabel(value), value }))
@@ -291,7 +338,7 @@ const refreshPreview = () => {
   previewTimeout = setTimeout(async () => {
     try {
       await store.refreshPreview({
-        discount: form.value.discount,
+        discount: discountNumber(),
         tax_rate: form.value.tax_rate,
         placement: selectionPayload(placement.value),
         bonus: wantsBonus.value ? selectionPayload(bonus.value) : null,
@@ -389,6 +436,8 @@ const stepError = computed(() => {
     case 3:
       return campaignError(placement.value, 'Placement')
         || (wantsBonus.value ? campaignError(bonus.value, 'Bonus') : '')
+    case 4:
+      return discountError.value || vatError.value
     default:
       return ''
   }
@@ -425,6 +474,7 @@ const save = async (thenSubmit: boolean) => {
 
     const payload: QuotationPayload = {
       ...form.value,
+      discount: discountNumber(),
       customer_id: customerId,
       brand_id: brandId,
       placement: selectionPayload(placement.value),
@@ -884,32 +934,28 @@ const save = async (thenSubmit: boolean) => {
 
             <!-- 5. Discount -->
             <div v-else-if="step === 4">
-              <VSlider
-                v-model="form.discount"
-                :min="0"
-                :max="100"
-                :step="0.5"
-                thumb-label="always"
-                class="mt-8 mb-2"
-              />
               <VTextField
                 v-model.number="form.discount"
                 label="Customer discount (%)"
                 type="number"
                 min="0"
                 max="100"
+                suffix="%"
+                :error-messages="discountError"
                 hint="Applies to Placement only. This is the figure that decides who approves — not the effective discount."
                 persistent-hint
                 class="mb-4"
               />
               <VTextField
-                v-model.number="form.tax_rate"
-                label="VAT rate"
+                v-model="vatPercent"
+                label="VAT (%)"
                 type="number"
                 step="0.01"
                 min="0"
-                max="1"
-                hint="0.11 = 11%, charged on nett. Stored per quotation so an approved one keeps its rate."
+                max="100"
+                suffix="%"
+                :error-messages="vatError"
+                hint="Enter 11 for 11%. Charged on nett, and stored per quotation so an approved one keeps its rate."
                 persistent-hint
               />
             </div>

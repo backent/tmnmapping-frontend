@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatIdr } from '@/types/quotation'
+import { formatVatPercent } from '@/utils/vat'
 import type { ApprovalHint, Pricing, Selection } from '@/types/quotation'
 
 /**
@@ -146,7 +147,7 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
             </tr>
             <tr>
               <td class="text-body-2">
-                VAT ({{ (taxRate * 100).toFixed(0) }}% of nett)
+                VAT ({{ formatVatPercent(taxRate) }}% of nett)
               </td>
               <td class="text-end">
                 {{ formatIdr(pricing.tax) }}
