@@ -16,7 +16,17 @@ const itemId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 // yet", and 0 is not that -- no option carries it, so VSelect renders a literal "0".
 type BrandDraft = Omit<BrandPayload, 'customer_id'> & { customer_id: number | null }
 
-const form = ref<BrandDraft>({ code: '', customer_id: null, name: '', category: '', status: 'active' })
+const form = ref<BrandDraft>({
+  code: '',
+  customer_id: null,
+  name: '',
+  category: '',
+  status: 'active',
+  attention_to: '',
+  job_title: '',
+  contact_phone: '',
+  contact_email: '',
+})
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -48,6 +58,10 @@ const fetchItem = async () => {
         name: item.name,
         category: item.category,
         status: item.status,
+        attention_to: item.attention_to,
+        job_title: item.job_title,
+        contact_phone: item.contact_phone,
+        contact_email: item.contact_email,
       }
     }
   }
@@ -65,6 +79,22 @@ onMounted(async () => {
     await fetchItem()
 })
 
+const CONTACT_FIELDS: { key: 'attention_to' | 'job_title' | 'contact_phone' | 'contact_email'; label: string }[] = [
+  { key: 'attention_to', label: 'Attention To' },
+  { key: 'job_title', label: 'Job Title' },
+  { key: 'contact_phone', label: 'Contact Phone' },
+  { key: 'contact_email', label: 'Contact Email' },
+]
+
+const missingContact = (): string => {
+  for (const field of CONTACT_FIELDS) {
+    if (!form.value[field.key].trim())
+      return `${field.label} is required`
+  }
+
+  return ''
+}
+
 const submit = async () => {
   errorMessage.value = ''
   if (!form.value.code.trim()) {
@@ -80,6 +110,15 @@ const submit = async () => {
   const customerId = form.value.customer_id
   if (!customerId) {
     errorMessage.value = 'Customer is required'
+
+    return
+  }
+
+  // A quotation is addressed to a person and the printed document carries all four,
+  // so the brand must name one. The API refuses a blank; saying so here is kinder.
+  const contactError = missingContact()
+  if (contactError) {
+    errorMessage.value = contactError
 
     return
   }
@@ -204,6 +243,68 @@ onUnmounted(() => store.clearCurrentItem())
                 :disabled="isSaving"
               />
             </VCol>
+            <!--
+              Quotation contact. Held on the brand because the same person is quoted
+              campaign after campaign; the wizard prefills from here, and each
+              quotation then keeps its own copy so editing this never rewrites a
+              document already sent.
+            -->
+            <VCol cols="12">
+              <VDivider class="mb-4" />
+              <div class="text-subtitle-1 mb-1">
+                Quotation contact
+              </div>
+              <div class="text-caption text-disabled mb-3">
+                Printed on every quotation raised for this brand. The seller can still
+                override it on an individual quotation.
+              </div>
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="form.attention_to"
+                label="Attention To"
+                placeholder="Budi Santoso"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="form.job_title"
+                label="Job Title"
+                placeholder="Marketing Director"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="form.contact_phone"
+                label="Contact Phone"
+                placeholder="+62 812 3456 7890"
+                :disabled="isSaving"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="form.contact_email"
+                label="Contact Email"
+                type="email"
+                placeholder="budi@example.com"
+                :disabled="isSaving"
+              />
+            </VCol>
+
             <VCol
               cols="12"
               class="d-flex gap-2"

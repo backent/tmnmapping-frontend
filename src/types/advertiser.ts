@@ -33,6 +33,18 @@ export interface Brand {
   name: string
   category: string
   status: MasterDataStatus
+
+  /**
+   * The person a quotation for this brand is addressed to.
+   *
+   * The quotation wizard prefills from here, and the quotation then keeps its own
+   * copy — editing a brand never rewrites a quotation already sent.
+   */
+  attention_to: string
+  job_title: string
+  contact_phone: string
+  contact_email: string
+
   created_at: string
   updated_at: string
 }
@@ -43,6 +55,12 @@ export interface BrandPayload {
   name: string
   category: string
   status: MasterDataStatus
+
+  /** Required: a brand must name the person its quotations are addressed to. */
+  attention_to: string
+  job_title: string
+  contact_phone: string
+  contact_email: string
 }
 
 export interface SalesAssignment {
