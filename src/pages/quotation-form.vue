@@ -3,10 +3,28 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuotationStore } from '@/stores/quotation'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import { getAllBuildingPrices } from '@/http/buildingprice'
-import type { BuildingPrice } from '@/types/buildingprice'
+import {
+  addBuildings,
+  countSelected,
+  filterBuildings,
+  indexPriceableBuildings,
+  removeBuildings,
+  sortedUnique,
+  toggleBuilding as toggleBuildingId,
+} from '@/utils/buildingPicker'
+import type { PriceableBuilding } from '@/utils/buildingPicker'
 import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { formatIdr } from '@/types/quotation'
+import { hasBrandContact, mergeBrandContact } from '@/utils/brandContact'
+import {
+  SPOTS_OPTIONS,
+  TVC_DURATION_OPTIONS,
+  durationLabel,
+  rateMultiplier,
+  spotsLabel,
+  toCampaignNumber,
+} from '@/utils/campaignUnits'
 import type { QuotationPayload, SelectionPayload } from '@/types/quotation'
 
 const route = useRoute()
@@ -47,6 +65,12 @@ const form = ref({
   tax_rate: 0.11,
 })
 
+const durationOptions = TVC_DURATION_OPTIONS.map(value => ({ title: durationLabel(value), value }))
+const spotsOptions = SPOTS_OPTIONS.map(value => ({ title: spotsLabel(value), value }))
+
+const rateMultiplierFor = (selection: SelectionPayload) =>
+  rateMultiplier(selection.tvc_duration_seconds, selection.spots)
+
 const MODE_OPTIONS = [
   { value: 'building' as const, label: 'Individual buildings' },
   { value: 'package' as const, label: 'Sales package' },
@@ -71,8 +95,33 @@ const bonus = ref<SelectionPayload>({
   spots: 180,
 })
 
-const priceableBuildings = ref<BuildingPrice[]>([])
+const priceableBuildings = ref<PriceableBuilding[]>([])
 const buildingSearch = ref('')
+const typeFilter = ref<string[]>([])
+const cityFilter = ref<string[]>([])
+
+// Which side of the quotation the picker is editing. Step 1 is placement, step 2 is
+// bonus; they share one selector.
+const activeSelection = computed(() => (step.value === 1 ? placement.value : bonus.value))
+
+// A Set, because membership is asked once per rendered row. `includes` on the id
+// array made selecting buildings quadratic.
+const activeIds = computed(() => new Set(activeSelection.value.building_ids ?? []))
+
+const typeOptions = computed(() =>
+  sortedUnique(priceableBuildings.value.map(b => b.building_type)))
+
+const cityOptions = computed(() =>
+  sortedUnique(priceableBuildings.value.map(b => b.citytown)))
+
+const hasBuildingFilter = computed(() =>
+  !!buildingSearch.value?.trim() || typeFilter.value.length > 0 || cityFilter.value.length > 0)
+
+const clearBuildingFilters = () => {
+  buildingSearch.value = ''
+  typeFilter.value = []
+  cityFilter.value = []
+}
 
 const customerOptions = computed(() =>
   customerStore.items.map(c => ({ title: `${c.name} (${c.code})`, value: c.id })))
@@ -81,6 +130,52 @@ const brandOptions = computed(() =>
   brandStore.items
     .filter(b => b.customer_id === form.value.customer_id)
     .map(b => ({ title: `${b.name} (${b.code})`, value: b.id })))
+
+const selectedBrand = computed(() =>
+  brandStore.items.find(b => b.id === form.value.brand_id) ?? null)
+
+/**
+ * Prefill the contact from the brand when one is chosen.
+ *
+ * The brand holds the master contact so nobody retypes the same person for every
+ * campaign, but the quotation keeps its own copy — the document prints what was
+ * agreed, not whatever the brand says today.
+ *
+ * Only blank fields are filled. A seller who has already typed a different contact,
+ * or is editing a quotation that was sent to someone else, must not have it
+ * overwritten by switching brand back and forth.
+ */
+const applyBrandContact = (force = false) => {
+  Object.assign(form.value, mergeBrandContact(form.value, selectedBrand.value, force))
+}
+
+const brandContactMissing = computed(() =>
+  !!selectedBrand.value && !hasBrandContact(selectedBrand.value))
+
+watch(() => form.value.brand_id, () => applyBrandContact())
+
+/**
+ * Drop the brand when it does not belong to the newly chosen customer.
+ *
+ * Without this the wizard kept a brand from the previous customer: it vanished from
+ * the dropdown but stayed in the payload, and the contact stayed prefilled from it.
+ * The server refuses the mismatch on save, but only after the seller has filled in
+ * the rest of the quotation.
+ *
+ * Deliberately conditional rather than a blanket reset: loading an existing quotation
+ * sets customer and brand together, and a blanket reset would wipe the brand it just
+ * loaded.
+ */
+watch(() => form.value.customer_id, () => {
+  if (!form.value.brand_id)
+    return
+
+  const stillValid = brandStore.items.some(
+    b => b.id === form.value.brand_id && b.customer_id === form.value.customer_id)
+
+  if (!stillValid)
+    form.value.brand_id = null
+})
 
 // Only a package that carries its own price can be quoted -- the rest would be
 // refused on submit. Inactive packages are not offered either.
@@ -92,15 +187,49 @@ const packageOptions = computed(() =>
       value: p.id,
     })))
 
-const filteredBuildings = computed(() => {
-  const term = buildingSearch.value.trim().toLowerCase()
-  if (!term)
-    return priceableBuildings.value.slice(0, 60)
+/**
+ * Every building matching the current filters — not a truncated page of them.
+ *
+ * The list used to be sliced to 60, which is why "select all" has to be built on
+ * this array rather than on what is rendered: selecting only the visible 60 while
+ * claiming to select the match is the one behaviour worth ruling out. Rendering is
+ * kept cheap by virtual scrolling instead of by truncating.
+ */
+const filteredBuildings = computed(() => filterBuildings(priceableBuildings.value, {
+  term: buildingSearch.value,
+  types: typeFilter.value,
+  cities: cityFilter.value,
+}))
 
-  return priceableBuildings.value
-    .filter(b => b.building_name.toLowerCase().includes(term) || b.citytown.toLowerCase().includes(term))
-    .slice(0, 60)
-})
+const selectedCount = computed(() => activeSelection.value.building_ids?.length ?? 0)
+
+const selectedInFilter = computed(() =>
+  countSelected(filteredBuildings.value, activeIds.value))
+
+const allFilteredSelected = computed(() =>
+  filteredBuildings.value.length > 0 && selectedInFilter.value === filteredBuildings.value.length)
+
+// One array rebuild per action, not one per building. Each of these assigns
+// building_ids exactly once, so the deep watcher fires a single pricing preview
+// however many buildings the seller just took.
+const toggleBuilding = (buildingId: number, on: boolean) => {
+  activeSelection.value.building_ids = toggleBuildingId(
+    activeSelection.value.building_ids ?? [], buildingId, on)
+}
+
+const selectAllFiltered = () => {
+  activeSelection.value.building_ids = addBuildings(
+    activeSelection.value.building_ids ?? [], filteredBuildings.value)
+}
+
+const deselectAllFiltered = () => {
+  activeSelection.value.building_ids = removeBuildings(
+    activeSelection.value.building_ids ?? [], filteredBuildings.value)
+}
+
+const clearSelection = () => {
+  activeSelection.value.building_ids = []
+}
 
 const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarMessage.value = message
@@ -111,11 +240,44 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
 const errorText = (error: any, fallback: string) =>
   error?.details?.data || error?.details?.message || fallback
 
+/**
+ * The selection as the API should receive it.
+ *
+ * Campaign numbers are coerced on the way out: an emptied field holds `''`, which a
+ * Go `int` cannot decode, and that surfaced as a 500 instead of a validation message.
+ * A zero here is refused cleanly by the server's `gt=0` rule, and `stepError` stops
+ * the seller long before that.
+ */
 const selectionPayload = (selection: SelectionPayload): SelectionPayload | null => {
-  if (selection.mode === 'package')
-    return selection.sales_package_id ? { ...selection, building_ids: undefined } : null
+  const campaign = {
+    ...selection,
+    weeks: toCampaignNumber(selection.weeks),
+    tvc_duration_seconds: toCampaignNumber(selection.tvc_duration_seconds),
+    spots: toCampaignNumber(selection.spots),
+  }
 
-  return selection.building_ids?.length ? { ...selection, sales_package_id: undefined } : null
+  if (campaign.mode === 'package')
+    return campaign.sales_package_id ? { ...campaign, building_ids: undefined } : null
+
+  return campaign.building_ids?.length ? { ...campaign, sales_package_id: undefined } : null
+}
+
+/**
+ * What is wrong with one side's campaign, named so the message can say which side.
+ *
+ * Bonus was previously unchecked entirely, so an empty bonus duration only failed at
+ * save — as a 500.
+ */
+const campaignError = (selection: SelectionPayload, label: string): string => {
+  if (toCampaignNumber(selection.weeks) < 1)
+    return `${label}: campaign duration must be at least one week`
+
+  if (rateMultiplier(selection.tvc_duration_seconds, selection.spots) === 0) {
+    return `${label}: choose a TVC duration of ${TVC_DURATION_OPTIONS.join('/')}s `
+      + `and ${SPOTS_OPTIONS.join('/')} spots`
+  }
+
+  return ''
 }
 
 // Ask the server to price. Debounced, because this fires on every keystroke of the
@@ -153,7 +315,7 @@ const loadReferenceData = async () => {
     salesPackageStore.fetchSalesPackages({ take: 1000, skip: 0 }),
   ])
 
-  priceableBuildings.value = buildings.data || []
+  priceableBuildings.value = indexPriceableBuildings(buildings.data || [])
 }
 
 onMounted(async () => {
@@ -225,10 +387,8 @@ const stepError = computed(() => {
 
       return ''
     case 3:
-      if (placement.value.weeks < 1)
-        return 'Campaign duration must be at least one week'
-
-      return ''
+      return campaignError(placement.value, 'Placement')
+        || (wantsBonus.value ? campaignError(bonus.value, 'Bonus') : '')
     default:
       return ''
   }
@@ -360,9 +520,48 @@ const save = async (thenSubmit: boolean) => {
                 class="mb-4"
               />
               <VDivider class="mb-4" />
-              <div class="text-subtitle-2 mb-2">
-                Quotation contact
+              <div class="d-flex align-center flex-wrap gap-2 mb-2">
+                <div class="text-subtitle-2">
+                  Quotation contact
+                </div>
+                <VSpacer />
+                <!--
+                  Prefilled from the brand, and still editable: the quotation keeps
+                  its own copy, so this document prints what was agreed even if the
+                  brand's contact changes later.
+                -->
+                <VBtn
+                  v-if="selectedBrand && !brandContactMissing"
+                  size="small"
+                  variant="text"
+                  @click="applyBrandContact(true)"
+                >
+                  <VIcon
+                    icon="ri-refresh-line"
+                    class="me-1"
+                  />
+                  Reset to brand contact
+                </VBtn>
               </div>
+
+              <VAlert
+                v-if="brandContactMissing"
+                type="warning"
+                variant="tonal"
+                density="compact"
+                class="mb-3"
+              >
+                This brand has no contact saved yet, so nothing was prefilled. Add one
+                under Brands to reuse it on every quotation.
+              </VAlert>
+              <div
+                v-else-if="selectedBrand"
+                class="text-caption text-disabled mb-3"
+              >
+                Prefilled from {{ selectedBrand.name }}. Edit it here to address this
+                one quotation differently — the brand is left unchanged.
+              </div>
+
               <VRow>
                 <VCol
                   cols="12"
@@ -448,48 +647,157 @@ const save = async (thenSubmit: boolean) => {
                 </template>
 
                 <template v-else>
-                  <VTextField
-                    v-model="buildingSearch"
-                    label="Search buildings"
-                    prepend-inner-icon="ri-search-line"
-                    density="compact"
-                    clearable
-                    class="mb-2"
-                  />
-                  <div class="text-caption text-disabled mb-2">
-                    Only buildings with a price can be quoted.
-                    {{ priceableBuildings.length }} available.
-                  </div>
-                  <VList
-                    density="compact"
-                    max-height="340"
-                    class="border rounded"
-                    style="overflow-y: auto"
-                  >
-                    <VListItem
-                      v-for="b in filteredBuildings"
-                      :key="b.building_id"
+                  <VRow dense>
+                    <VCol
+                      cols="12"
+                      md="4"
                     >
-                      <template #prepend>
-                        <VCheckbox
-                          :model-value="(step === 1 ? placement : bonus).building_ids?.includes(b.building_id)"
-                          hide-details
-                          density="compact"
-                          @update:model-value="(on) => {
-                            const target = step === 1 ? placement : bonus
-                            const ids = new Set(target.building_ids ?? [])
-                            on ? ids.add(b.building_id) : ids.delete(b.building_id)
-                            target.building_ids = [...ids]
-                          }"
-                        />
-                      </template>
-                      <VListItemTitle>{{ b.building_name }}</VListItemTitle>
-                      <VListItemSubtitle>
-                        {{ b.citytown || '—' }} · {{ b.building_type || '—' }} ·
-                        {{ formatIdr(b.price_idr_per_week) }}/wk
-                      </VListItemSubtitle>
-                    </VListItem>
-                  </VList>
+                      <VTextField
+                        v-model="buildingSearch"
+                        label="Search name, IRIS code or city"
+                        prepend-inner-icon="ri-search-line"
+                        density="compact"
+                        clearable
+                        hide-details
+                      />
+                    </VCol>
+                    <VCol
+                      cols="12"
+                      sm="6"
+                      md="4"
+                    >
+                      <VSelect
+                        v-model="typeFilter"
+                        :items="typeOptions"
+                        label="Building type"
+                        density="compact"
+                        multiple
+                        chips
+                        closable-chips
+                        clearable
+                        hide-details
+                      />
+                    </VCol>
+                    <VCol
+                      cols="12"
+                      sm="6"
+                      md="4"
+                    >
+                      <VSelect
+                        v-model="cityFilter"
+                        :items="cityOptions"
+                        label="City"
+                        density="compact"
+                        multiple
+                        chips
+                        closable-chips
+                        clearable
+                        hide-details
+                      />
+                    </VCol>
+                  </VRow>
+
+                  <!--
+                    Bulk actions act on every match, not on what happens to be
+                    rendered. "Select all" that quietly meant "select the visible
+                    ones" would be worse than no button at all.
+                  -->
+                  <div class="d-flex align-center flex-wrap gap-2 my-3">
+                    <VBtn
+                      size="small"
+                      variant="tonal"
+                      :disabled="!filteredBuildings.length || allFilteredSelected"
+                      @click="selectAllFiltered"
+                    >
+                      <VIcon
+                        icon="ri-checkbox-multiple-line"
+                        class="me-1"
+                      />
+                      Select all {{ filteredBuildings.length }} shown
+                    </VBtn>
+                    <VBtn
+                      size="small"
+                      variant="text"
+                      :disabled="!selectedInFilter"
+                      @click="deselectAllFiltered"
+                    >
+                      Deselect shown
+                    </VBtn>
+                    <VBtn
+                      v-if="selectedCount > selectedInFilter"
+                      size="small"
+                      variant="text"
+                      color="error"
+                      @click="clearSelection"
+                    >
+                      Clear all {{ selectedCount }}
+                    </VBtn>
+                    <VSpacer />
+                    <VBtn
+                      v-if="hasBuildingFilter"
+                      size="small"
+                      variant="text"
+                      @click="clearBuildingFilters"
+                    >
+                      Reset filters
+                    </VBtn>
+                  </div>
+
+                  <div class="d-flex align-center flex-wrap gap-2 mb-2">
+                    <VChip
+                      size="small"
+                      :color="selectedCount ? 'primary' : undefined"
+                      variant="tonal"
+                    >
+                      {{ selectedCount }} selected
+                    </VChip>
+                    <span class="text-caption text-disabled">
+                      Showing {{ filteredBuildings.length }} of {{ priceableBuildings.length }}.
+                      Only buildings with a price can be quoted.
+                    </span>
+                  </div>
+
+                  <!--
+                    Virtual scroll rather than a 60-row cap: the whole priced list is
+                    already in memory, and rendering only the visible rows keeps a
+                    1,500-building list responsive while still letting the seller
+                    scroll the entire match.
+                  -->
+                  <VVirtualScroll
+                    v-if="filteredBuildings.length"
+                    :items="filteredBuildings"
+                    :item-height="56"
+                    height="340"
+                    class="border rounded"
+                  >
+                    <template #default="{ item: b }">
+                      <VListItem
+                        density="compact"
+                        :title="b.building_name"
+                      >
+                        <template #prepend>
+                          <VCheckbox
+                            :model-value="activeIds.has(b.building_id)"
+                            hide-details
+                            density="compact"
+                            @update:model-value="(on) => toggleBuilding(b.building_id, !!on)"
+                          />
+                        </template>
+                        <VListItemSubtitle>
+                          {{ b.citytown || '—' }} · {{ b.building_type || '—' }} ·
+                          {{ formatIdr(b.price_idr_per_week) }}/wk
+                        </VListItemSubtitle>
+                      </VListItem>
+                    </template>
+                  </VVirtualScroll>
+                  <VAlert
+                    v-else
+                    type="info"
+                    variant="tonal"
+                    density="compact"
+                  >
+                    No priced building matches these filters.
+                  </VAlert>
                 </template>
               </template>
             </div>
@@ -512,11 +820,15 @@ const save = async (thenSubmit: boolean) => {
                     cols="12"
                     md="4"
                   >
-                    <VTextField
+                    <!--
+                      A dropdown, not a number field: the rate card sells 15-second
+                      spots, so 20 seconds has no price and the server refuses it.
+                      Offering only what can be quoted beats explaining a rejection.
+                    -->
+                    <VSelect
                       v-model.number="row.model.tvc_duration_seconds"
-                      label="TVC duration (seconds)"
-                      type="number"
-                      min="1"
+                      :items="durationOptions"
+                      label="TVC duration"
                     />
                   </VCol>
                   <VCol
@@ -536,14 +848,37 @@ const save = async (thenSubmit: boolean) => {
                     cols="12"
                     md="4"
                   >
-                    <VTextField
+                    <VSelect
                       v-model.number="row.model.spots"
+                      :items="spotsOptions"
                       label="Spots / day / screen"
-                      type="number"
-                      min="1"
                     />
                   </VCol>
                 </VRow>
+
+                <!--
+                  The rate a building or package carries buys 15 seconds at 180 spots
+                  for one week. Nothing else on this step says that a longer spot
+                  costs more, so it is said here, with the arithmetic shown.
+                -->
+                <VAlert
+                  :type="rateMultiplierFor(row.model) > 1 ? 'info' : 'success'"
+                  variant="tonal"
+                  density="compact"
+                  class="mt-2"
+                >
+                  <span v-if="rateMultiplierFor(row.model) > 1">
+                    <strong>×{{ rateMultiplierFor(row.model) }} the base rate</strong> —
+                    {{ row.model.tvc_duration_seconds }}s is
+                    ×{{ row.model.tvc_duration_seconds / 15 }} and
+                    {{ row.model.spots }} spots is ×{{ row.model.spots / 180 }},
+                    then ×{{ row.model.weeks }} for the weeks.
+                  </span>
+                  <span v-else>
+                    Base rate — 15s at 180 spots is what a building or package price
+                    buys, then ×{{ row.model.weeks }} for the weeks.
+                  </span>
+                </VAlert>
               </div>
             </div>
 
