@@ -8,6 +8,7 @@ import {
   TERMS_AND_CONDITIONS,
   launchDeadlineNote,
 } from '@/config/quotationDocument'
+import { formatVatPercent } from '@/utils/vat'
 
 const route = useRoute()
 const router = useRouter()
@@ -433,8 +434,12 @@ const print = () => window.print()
                 </td>
               </tr>
               <tr>
+                <!--
+                  The rate stored on this quotation, not today's default: an approved
+                  quotation keeps the rate it was priced at.
+                -->
                 <td class="qd-strong">
-                  VAT
+                  VAT ({{ formatVatPercent(quotation.tax_rate) }}%)
                 </td>
                 <td>IDR</td>
                 <td class="qd-num qd-strong">
