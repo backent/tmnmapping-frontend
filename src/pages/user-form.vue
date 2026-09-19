@@ -2,7 +2,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
-import { ROLES, ROLE_DESCRIPTIONS, ROLE_OPTIONS, SALES_GROUP_OPTIONS } from '@/config/roles'
+import { ROLES, ROLE_DESCRIPTIONS, ROLE_OPTIONS } from '@/config/roles'
 import type { Role, SalesGroup } from '@/config/roles'
 import type { CreateUserRequest } from '@/types/user'
 
@@ -249,20 +249,6 @@ onUnmounted(() => {
                 :hint="roleHint"
                 persistent-hint
                 :disabled="isSaving || isSelf"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <VSelect
-                v-model="form.sales_group"
-                :items="SALES_GROUP_OPTIONS"
-                label="Sales group"
-                hint="Reporting attribute: which sales population this owner belongs to. No rule reads it yet."
-                persistent-hint
-                clearable
-                :disabled="isSaving"
               />
             </VCol>
             <VCol cols="12">
