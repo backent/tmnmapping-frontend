@@ -10,6 +10,8 @@ import {
   upsertBuildingPrice,
 } from '@/http/buildingprice'
 import { getBuildings } from '@/http/building'
+import { isEchoOfSelection, withSelectedOption } from '@/utils/autocompleteOptions'
+import type { AutocompleteOption } from '@/utils/autocompleteOptions'
 import type { BuildingPrice } from '@/types/buildingprice'
 import type { ImportResult } from '@/types/advertiser'
 import { formatIdr } from '@/types/quotation'
@@ -91,9 +93,33 @@ const editingLabel = ref('')
 const editingPrice = ref(0)
 const isSaving = ref(false)
 
-const buildingOptions = ref<{ title: string; value: number }[]>([])
+const buildingOptions = ref<AutocompleteOption[]>([])
 const buildingSearch = ref('')
 const isSearchingBuildings = ref(false)
+
+/**
+ * The option the user picked, held separately from the search results.
+ *
+ * The results are replaced by every query, and an autocomplete whose items no longer
+ * contain its value renders that value raw — which is how selecting a building and
+ * clicking away used to leave its id on screen instead of its name.
+ */
+const selectedBuildingOption = ref<AutocompleteOption | null>(null)
+
+const buildingItems = computed(() =>
+  withSelectedOption(buildingOptions.value, selectedBuildingOption.value))
+
+watch(editingBuildingId, id => {
+  if (id === null) {
+    selectedBuildingOption.value = null
+
+    return
+  }
+
+  const match = buildingOptions.value.find(option => option.value === id)
+  if (match)
+    selectedBuildingOption.value = match
+})
 
 const openEdit = (price: BuildingPrice) => {
   isAdding.value = false
@@ -109,6 +135,7 @@ const openAdd = () => {
   editingLabel.value = 'Add a price'
   editingPrice.value = 0
   buildingOptions.value = []
+  selectedBuildingOption.value = null
   buildingSearch.value = ''
   editDialog.value = true
 }
@@ -117,6 +144,13 @@ let buildingDebounce: ReturnType<typeof setTimeout> | null = null
 watch(buildingSearch, term => {
   if (!isAdding.value)
     return
+
+  // On blur Vuetify writes the selected item's title back into the search field.
+  // Querying for that formatted label matches nothing, and the empty result is what
+  // used to strip the selection of its name.
+  if (isEchoOfSelection(term, selectedBuildingOption.value))
+    return
+
   if (buildingDebounce)
     clearTimeout(buildingDebounce)
   buildingDebounce = setTimeout(async () => {
@@ -443,7 +477,7 @@ const handleExport = async () => {
             v-if="isAdding"
             v-model="editingBuildingId"
             v-model:search="buildingSearch"
-            :items="buildingOptions"
+            :items="buildingItems"
             :loading="isSearchingBuildings"
             label="Building"
             placeholder="Type at least 2 characters"
