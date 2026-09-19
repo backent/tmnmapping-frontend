@@ -563,7 +563,20 @@ const print = () => window.print()
 .qd-sign__line { border-block-end: 1px solid #000; margin-block-start: 12mm; margin-inline: 8mm; }
 
 @media print {
-  .qd { inline-size: auto; padding: 0; }
+  /*
+   * Keep the outermost borders 1mm inside the printable area. With every box flush
+   * against the edge, Safari's print rounding dropped the last pixel column, so the
+   * right border of the party box, both line tables and the totals vanished. Chrome
+   * happened to keep it; this does not rely on either.
+   */
+  .qd { inline-size: auto; padding-block: 0; padding-inline: 1mm; }
+
+  /*
+   * Vuetify's app shell is at least 100dvh tall. Chrome resolves that against the
+   * paper when printing; Safari resolves it against the browser window, so any
+   * window taller than one printed page pushed the shell onto a blank second page.
+   */
+  :global(.v-application__wrap) { min-height: 0 !important; }
 
   .qd,
   .qd * {
