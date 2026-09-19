@@ -76,8 +76,6 @@ const typeLine = (kind: 'placement' | 'bonus') => {
   return types.length > 2 ? `${types.slice(0, 2).join(', ')} +${types.length - 2}` : types.join(', ')
 }
 
-const needsApproval = computed(() => (quotation.value?.discount ?? 0) > 0)
-
 // Pricing is computed on submit, not on save, so a draft's figures are all zero.
 // Say so loudly rather than let a zero-value quotation look finished.
 const isUnpriced = computed(() => quotation.value?.status === 'draft')
@@ -153,34 +151,6 @@ const print = () => window.print()
         <div class="qd-head__partners">
           <span class="qd-muted">Member company of:</span>
           <span class="qd-partner-slot" />
-        </div>
-
-        <!-- CHECKER panel, its own bordered box on the template -->
-        <div class="qd-checker">
-          <div class="qd-checker__bar">
-            CHECKER
-          </div>
-          <div class="qd-checker__body">
-            <div class="qd-strong">
-              Saving Value
-            </div>
-            <div class="qd-checker__row">
-              <span>IDR</span>
-              <span>{{ amount(quotation.pricing.effective_discount_amount) }}</span>
-            </div>
-            <div class="qd-strong mt-1">
-              Total Discount
-            </div>
-            <div class="qd-checker__pct">
-              {{ quotation.pricing.effective_discount_rate.toFixed(2) }}%
-            </div>
-          </div>
-          <div
-            v-if="needsApproval"
-            class="qd-checker__flag"
-          >
-            NEED APPROVAL!
-          </div>
         </div>
       </header>
 
@@ -525,9 +495,10 @@ const print = () => window.print()
 .qd-num { text-align: end; }
 
 /* Letterhead */
+/* Two columns since the CHECKER panel was removed: letterhead, then partner marks. */
 .qd-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   gap: 6mm;
   align-items: start;
   margin-block-end: 2mm;
@@ -538,21 +509,6 @@ const print = () => window.print()
 .qd-company { font-weight: 700; }
 .qd-head__partners { display: flex; gap: 2mm; justify-content: flex-end; align-items: center; }
 .qd-partner-slot { inline-size: 45mm; block-size: 8mm; }
-
-/* CHECKER */
-.qd-checker { inline-size: 52mm; border: 1px solid #000; }
-.qd-checker__bar { background: #000; color: #f00; font-weight: 700; text-align: center; font-size: 8px; }
-.qd-checker__body { padding: 1mm 1.5mm; }
-.qd-checker__row { display: flex; justify-content: space-between; }
-.qd-checker__pct { background: #ff0; text-align: center; font-weight: 700; }
-.qd-checker__flag {
-  background: #f00;
-  color: #000;
-  font-style: italic;
-  font-weight: 700;
-  text-align: center;
-  padding-block: 0.5mm;
-}
 
 /* Party box */
 .qd-box { border: 1px solid #000; padding: 2mm; }
