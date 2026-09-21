@@ -128,6 +128,16 @@ export const apiConfig = {
     sales_assignments_export: '/sales-assignments-export',
     sales_assignments_template: '/sales-assignments-template',
 
+    building_projects: '/building-projects',
+    building_project_get: '/building-projects/:id',
+    building_project_update: '/building-projects/:id',
+    building_project_delete: '/building-projects/:id',
+    building_project_changes: '/building-projects/:id/changes',
+    building_projects_import: '/building-projects-import',
+    building_projects_export: '/building-projects-export',
+    building_projects_template: '/building-projects-template',
+    building_projects_vocabulary: '/building-projects-vocabulary',
+
     building_prices: '/building-prices',
     building_price_delete: '/building-prices/:buildingId',
     building_prices_import: '/building-prices-import',

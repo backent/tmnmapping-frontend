@@ -236,6 +236,20 @@ export const routes = [
         meta: { permission: 'building-prices.view' },
       },
       {
+        path: 'building-projects',
+        name: 'building-projects',
+        component: () => import('@/pages/building-projects.vue'),
+        meta: { permission: 'building-projects.view' },
+      },
+      {
+        // 'new' and an id share one component: the form replaces the record either
+        // way, so the only difference is whether it starts blank.
+        path: 'building-projects/:id',
+        name: 'building-project-form',
+        component: () => import('@/pages/building-project-form.vue'),
+        meta: { permission: 'building-projects.view' },
+      },
+      {
         // The Rate Cards screens were replaced by Prices on 2026-09-10. Old links
         // and bookmarks land somewhere useful instead of the not-found page.
         path: 'rate-cards',

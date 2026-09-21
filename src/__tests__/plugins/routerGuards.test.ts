@@ -33,6 +33,11 @@ const ADMIN_PERMISSIONS = [
   'sales-assignments.manage',
   'building-prices.view',
   'building-prices.manage',
+  'building-projects.view',
+  'building-projects.manage',
+  // Landlord cost. Admin, head_of_business_control and ceo hold it; sales does not,
+  // which is why it is absent from SALES_PERMISSIONS below.
+  'building-projects.finance',
   'quotations.view',
   'quotations.manage',
 ]
@@ -49,6 +54,7 @@ const SALES_PERMISSIONS = [
   'brands.view',
   'sales-assignments.view',
   'building-prices.view',
+  'building-projects.view',
   'quotations.view',
   'quotations.manage',
 ]

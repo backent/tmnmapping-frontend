@@ -120,6 +120,19 @@ export interface ImportResult {
 
   /** A preview: every row was checked and counted, nothing written. */
   dry_run?: boolean
+
+  /**
+   * FIELDS, not rows, an upload will blank. Only imports where a blank cell CLEARS
+   * report this -- building projects do; prices and brands leave blanks alone.
+   * Clearing is the destructive half of such an upload, so a preview must show it.
+   */
+  cleared?: number
+
+  /**
+   * Per-row facts that do not reject the row -- above all, what is about to be
+   *  cleared and what it holds today.
+   */
+  notices?: ImportError[]
 }
 
 export const STATUS_OPTIONS: { title: string; value: MasterDataStatus }[] = [
