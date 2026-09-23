@@ -19,15 +19,6 @@ const authStore = useAuthStore()
 
 const canManage = computed(() => authStore.can('building-projects.manage'))
 
-// Creating a project from the UI is hidden for now, at the business's request.
-// Nothing else changed: the POST endpoint is untouched, /building-projects/new still
-// renders if opened directly, an existing project is still editable, and the
-// spreadsheet import still creates projects -- including the stub it raises when a
-// building names a project code that does not exist yet.
-//
-// Flip this to true to bring the button back.
-const canCreateFromUI = false
-
 // Whether the landlord money is visible at all. The server decides: those fields
 // simply are not in the response without the permission, so this only controls
 // whether columns are rendered for them.
@@ -294,7 +285,7 @@ const statusColour = (status: string) => STATUS_COLOURS[status] || 'secondary'
               @clear-result="lastImport = null"
             />
             <VBtn
-              v-if="canManage && canCreateFromUI"
+              v-if="canManage"
               color="primary"
               prepend-icon="ri-add-line"
               @click="router.push('/building-projects/new')"

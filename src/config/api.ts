@@ -128,6 +128,8 @@ export const apiConfig = {
     sales_assignments_export: '/sales-assignments-export',
     sales_assignments_template: '/sales-assignments-template',
 
+    buildings_create: '/buildings',
+    buildings_save: '/buildings/:id/save',
     buildings_import: '/buildings-import',
     buildings_export: '/buildings-export',
     buildings_template: '/buildings-template',

@@ -1,7 +1,7 @@
 import { getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
+import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams, SaveBuildingRequest } from '@/types/building'
 import type { ImportResult } from '@/types/advertiser'
 
 // GET /buildings - List all buildings with optional pagination
@@ -31,6 +31,23 @@ export function putBuilding(id: number, data: BuildingUpdateData): Promise<ApiRe
 }
 
 // POST /buildings/sync - Trigger manual sync
+/** Raise a building from the form. */
+export function createBuilding(payload: SaveBuildingRequest): Promise<ApiResponse<Building>> {
+  return postApi<ApiResponse<Building>>(apiConfig.endpoints.buildings_create, payload)
+}
+
+/**
+ * Replace a building from the form.
+ *
+ * Distinct from putBuilding, which writes only sellable, connectivity and
+ * resource_type -- right for the mapping screen's inline edit, wrong for a form that
+ * shows every column.
+ */
+export function saveBuilding(id: number, payload: SaveBuildingRequest): Promise<ApiResponse<Building>> {
+  return putApi<ApiResponse<Building>>(
+    apiConfig.endpoints.buildings_save.replace(':id', String(id)), payload)
+}
+
 export function syncBuildings(): Promise<ApiResponse<string>> {
   return postApi<ApiResponse<string>>(
     apiConfig.endpoints.buildings_sync,

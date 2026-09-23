@@ -14,6 +14,14 @@ export const routes = [
         component: () => import('@/pages/buildings.vue'),
       },
       {
+        // 'new' and an id share one component: the form replaces the record either
+        // way, so the only difference is whether it starts blank.
+        path: 'buildings/new',
+        name: 'building-new',
+        component: () => import('@/pages/building-form.vue'),
+        meta: { permission: 'buildings.manage' },
+      },
+      {
         path: 'buildings/:id/edit',
         name: 'building-edit',
         component: () => import('@/pages/building-form.vue'),

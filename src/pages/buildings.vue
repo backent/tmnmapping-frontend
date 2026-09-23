@@ -457,6 +457,14 @@ onMounted(async () => {
               @clear-result="lastImport = null"
             />
             <VBtn
+              v-if="canManageBuildings"
+              color="primary"
+              prepend-icon="ri-add-line"
+              @click="router.push('/buildings/new')"
+            >
+              New Building
+            </VBtn>
+            <VBtn
               color="secondary"
               :loading="isSyncing"
               :disabled="isSyncing"
