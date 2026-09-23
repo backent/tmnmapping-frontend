@@ -12,12 +12,15 @@ const canManageRestrictions = computed(() => authStore.can('building-restriction
 const canManageMasterData = computed(() => authStore.can('master-data.screen'))
 const canManageUsers = computed(() => authStore.can('users.view'))
 
+// A project is the site a building belongs to, so it sits under Buildings rather
+// than Sales -- it is not something a quotation is raised against.
+const canViewProjects = computed(() => authStore.can('building-projects.view'))
+
 // Advertiser master data sits under Sales: it is what a quotation is raised for.
 const canViewCustomers = computed(() => authStore.can('customers.view'))
 const canViewBrands = computed(() => authStore.can('brands.view'))
 const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
 const canViewPrices = computed(() => authStore.can('building-prices.view'))
-const canViewProjects = computed(() => authStore.can('building-projects.view'))
 const canViewQuotations = computed(() => authStore.can('quotations.view'))
 </script>
 
@@ -42,6 +45,14 @@ const canViewQuotations = computed(() => authStore.can('quotations.view'))
       title: 'Buildings List',
       icon: 'ri-building-line',
       to: '/buildings',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewProjects"
+    :item="{
+      title: 'Projects',
+      icon: 'ri-building-4-line',
+      to: '/building-projects',
     }"
   />
   <VerticalNavLink
@@ -117,14 +128,6 @@ const canViewQuotations = computed(() => authStore.can('quotations.view'))
       title: 'Prices',
       icon: 'ri-money-dollar-circle-line',
       to: '/building-prices',
-    }"
-  />
-  <VerticalNavLink
-    v-if="canViewProjects"
-    :item="{
-      title: 'Projects',
-      icon: 'ri-building-4-line',
-      to: '/building-projects',
     }"
   />
 

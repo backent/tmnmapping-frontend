@@ -167,8 +167,6 @@ export const apiConfig = {
     users_delete: '/users/:id',
 
     // Dashboard report endpoints
-    dashboard_acquisition: '/dashboard/acquisition',
-    dashboard_building_proposal: '/dashboard/building-proposal',
     dashboard_loi: '/dashboard/loi',
     dashboard_building_lcd_presence: '/dashboard/building-lcd-presence',
   },
