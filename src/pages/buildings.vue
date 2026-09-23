@@ -754,12 +754,29 @@ onMounted(async () => {
                   <td>
                     <span class="font-weight-medium">{{ building.name }}</span>
                   </td>
+                  <!--
+                    OUR project -- the building_projects row this building is
+                    linked to -- not buildings.project_name, which is ERP's own
+                    text. Both used to be called "Project" and the column showed
+                    the ERP one, so a building with no project link still appeared
+                    to have a project.
+
+                    project_name is still stored and still needed: /dashboard/loi
+                    joins ERP letters to buildings on that text, and 1,730 of them
+                    resolve their building type through it. It is just not this
+                    column's business.
+                  -->
                   <td>
-                    <span v-if="building.project_name">{{ building.project_name }}</span>
+                    <template v-if="building.project_display_name">
+                      <span>{{ building.project_display_name }}</span>
+                      <div class="text-caption text-disabled">
+                        {{ building.project_id_iris }}
+                      </div>
+                    </template>
                     <span
                       v-else
                       class="text-disabled"
-                    >-</span>
+                    >Not linked</span>
                   </td>
                   <td>{{ building.audience || 0 }}</td>
                   <td>{{ building.impression || 0 }}</td>
