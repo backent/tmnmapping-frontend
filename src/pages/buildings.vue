@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useBuildingStore } from '@/stores/building'
+import { useAuthStore } from '@/stores/auth'
+import ImportExportToolbar from '@/components/advertiser/ImportExportToolbar.vue'
+import {
+  downloadBuildingTemplate,
+  exportBuildings,
+  importBuildings,
+} from '@/http/building'
+import type { ImportResult } from '@/types/advertiser'
 import { BUILDING_TYPE_CODES } from '@/config/buildingType'
 import type { Building } from '@/types/building'
 
@@ -11,6 +19,7 @@ const buildingStore = useBuildingStore()
 const snackbar = ref(false)
 const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
+const authStore = useAuthStore()
 
 // Helper function to parse query parameter
 const parseQueryParam = (value: any, defaultValue: any, parser?: (val: string) => any): any => {
@@ -76,6 +85,7 @@ const filterBuildingType = ref<string[]>(parseQueryParamArray(route.query.buildi
 const buildings = computed(() => buildingStore.buildings)
 const isLoading = computed(() => buildingStore.isLoading)
 const isSyncing = computed(() => buildingStore.isSyncing)
+
 const totalRecords = computed(() => buildingStore.pagination.total)
 const filterOptions = computed(() => buildingStore.filterOptions)
 
@@ -219,6 +229,131 @@ const fetchBuildings = async () => {
   }
 }
 
+// --- spreadsheet maintenance ------------------------------------------------
+//
+// A blank cell CLEARS on this import, unlike the price import where a blank leaves
+// the value alone. That makes a partial upload destructive, so the preview leads
+// with what it will empty and every change is recorded in the building's history.
+
+const canManageBuildings = computed(() => authStore.can('buildings.manage'))
+
+const isFileBusy = ref(false)
+const lastImport = ref<ImportResult | null>(null)
+const preview = ref<ImportResult | null>(null)
+const pendingFile = ref<File | null>(null)
+const previewDialog = ref(false)
+
+const clearedCount = computed(() => preview.value?.cleared ?? 0)
+
+const rejectedImport = (error: any): ImportResult | null => {
+  const data = error?.details?.data
+
+  return data && Array.isArray(data.errors) ? data as ImportResult : null
+}
+
+const notify = (message: string, isError = false) => {
+  snackbarMessage.value = message
+  snackbarColor.value = isError ? 'error' : 'success'
+  snackbar.value = true
+}
+
+const importErrorText = (error: any, fallback: string) =>
+  error?.details?.data || error?.details?.message || fallback
+
+const handleImport = async (file: File) => {
+  isFileBusy.value = true
+  lastImport.value = null
+  try {
+    const response = await importBuildings(file, true)
+
+    preview.value = response.data || null
+    pendingFile.value = file
+    previewDialog.value = true
+  }
+  catch (error: any) {
+    const result = rejectedImport(error)
+    if (result)
+      lastImport.value = result
+    else
+      notify(importErrorText(error, 'Failed to read the file'), true)
+  }
+  finally {
+    isFileBusy.value = false
+  }
+}
+
+const cancelImport = () => {
+  previewDialog.value = false
+  pendingFile.value = null
+  preview.value = null
+}
+
+const applyImport = async () => {
+  if (!pendingFile.value)
+    return
+
+  isFileBusy.value = true
+  try {
+    const response = await importBuildings(pendingFile.value, false)
+    const result = response.data
+    const cleared = result?.cleared ?? 0
+
+    cancelImport()
+    await fetchBuildings()
+
+    notify(`Buildings applied: ${result?.created ?? 0} new, ${result?.updated ?? 0} changed${
+      cleared ? `, ${cleared} field${cleared === 1 ? '' : 's'} cleared.` : '.'}`)
+  }
+  catch (error: any) {
+    const result = rejectedImport(error)
+
+    cancelImport()
+    if (result)
+      lastImport.value = result
+    else
+      notify(importErrorText(error, 'Failed to apply the file'), true)
+  }
+  finally {
+    isFileBusy.value = false
+  }
+}
+
+const saveBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const handleExport = async () => {
+  isFileBusy.value = true
+  try {
+    saveBlob(await exportBuildings(), `TMN_Buildings_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
+  catch (error: any) {
+    notify(importErrorText(error, 'Failed to export'), true)
+  }
+  finally {
+    isFileBusy.value = false
+  }
+}
+
+const handleTemplate = async () => {
+  isFileBusy.value = true
+  try {
+    saveBlob(await downloadBuildingTemplate(), 'TMN_Buildings_Template.xlsx')
+  }
+  catch (error: any) {
+    notify(importErrorText(error, 'Failed to download the template'), true)
+  }
+  finally {
+    isFileBusy.value = false
+  }
+}
+
 // Watch for pagination/sort changes
 watch([currentPage, itemsPerPage, sortBy], () => {
   updateURL()
@@ -308,20 +443,32 @@ onMounted(async () => {
   <VRow>
     <VCol cols="12">
       <VCard>
-        <VCardTitle class="d-flex align-center justify-space-between">
+        <VCardTitle class="d-flex align-center justify-space-between flex-wrap gap-2">
           <span>Buildings</span>
-          <VBtn
-            color="secondary"
-            :loading="isSyncing"
-            :disabled="isSyncing"
-            @click="triggerSync"
-          >
-            <VIcon
-              icon="ri-refresh-line"
-              class="me-1"
+          <div class="d-flex align-center gap-2 flex-wrap">
+            <ImportExportToolbar
+              entity-label="Buildings"
+              :busy="isFileBusy"
+              :result="lastImport"
+              :can-manage="canManageBuildings"
+              @template="handleTemplate"
+              @export="handleExport"
+              @import="handleImport"
+              @clear-result="lastImport = null"
             />
-            Sync from ERP
-          </VBtn>
+            <VBtn
+              color="secondary"
+              :loading="isSyncing"
+              :disabled="isSyncing"
+              @click="triggerSync"
+            >
+              <VIcon
+                icon="ri-refresh-line"
+                class="me-1"
+              />
+              Sync from ERP
+            </VBtn>
+          </div>
         </VCardTitle>
 
         <VCardText>
@@ -716,6 +863,142 @@ onMounted(async () => {
     </VCol>
 
     <!-- Snackbar for feedback -->
+    <!--
+      Import preview. A blank cell empties a value on this import, so clearing is
+      called out above the counts rather than left for the operator to notice.
+    -->
+    <VDialog
+      v-model="previewDialog"
+      max-width="760"
+    >
+      <VCard>
+        <VCardItem>
+          <VCardTitle>Check before applying</VCardTitle>
+        </VCardItem>
+        <VCardText>
+          <VAlert
+            v-if="clearedCount"
+            type="warning"
+            variant="tonal"
+            class="mb-4"
+          >
+            <div class="font-weight-medium mb-1">
+              This upload will clear {{ clearedCount }} field{{ clearedCount === 1 ? '' : 's' }}.
+            </div>
+            <div class="text-body-2">
+              A blank cell empties the value. Every change is recorded against the
+              building and can be read back from its history.
+            </div>
+          </VAlert>
+
+          <div class="d-flex gap-6 flex-wrap mb-4">
+            <div>
+              <div class="text-caption text-disabled">
+                Rows
+              </div><div class="text-h6">
+                {{ preview?.rows ?? 0 }}
+              </div>
+            </div>
+            <div>
+              <div class="text-caption text-disabled">
+                New
+              </div><div class="text-h6">
+                {{ preview?.created ?? 0 }}
+              </div>
+            </div>
+            <div>
+              <div class="text-caption text-disabled">
+                Changed
+              </div><div class="text-h6">
+                {{ preview?.updated ?? 0 }}
+              </div>
+            </div>
+            <div>
+              <div class="text-caption text-disabled">
+                Unchanged
+              </div><div class="text-h6">
+                {{ preview?.unchanged ?? 0 }}
+              </div>
+            </div>
+            <div v-if="clearedCount">
+              <div class="text-caption text-disabled">
+                Cleared
+              </div><div class="text-h6 text-warning">
+                {{ clearedCount }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="preview?.notices?.length"
+            class="mb-4"
+          >
+            <div class="text-subtitle-2 mb-2">
+              What will be cleared
+            </div>
+            <VTable density="compact">
+              <thead>
+                <tr>
+                  <th>Row</th><th>Column</th><th>Currently</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(notice, i) in preview.notices"
+                  :key="i"
+                >
+                  <td>{{ notice.row }}</td>
+                  <td>{{ notice.column }}</td>
+                  <td class="text-disabled">
+                    {{ notice.value }}
+                  </td>
+                </tr>
+              </tbody>
+            </VTable>
+          </div>
+
+          <div v-if="preview?.errors?.length">
+            <div class="text-subtitle-2 mb-2 text-error">
+              {{ preview.errors.length }} row{{ preview.errors.length === 1 ? '' : 's' }} will be left out
+            </div>
+            <VTable density="compact">
+              <thead>
+                <tr>
+                  <th>Row</th><th>Column</th><th>Problem</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(error, i) in preview.errors"
+                  :key="i"
+                >
+                  <td>{{ error.row }}</td>
+                  <td>{{ error.column }}</td>
+                  <td>{{ error.message }}</td>
+                </tr>
+              </tbody>
+            </VTable>
+          </div>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            variant="text"
+            @click="cancelImport"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            color="primary"
+            :loading="isFileBusy"
+            @click="applyImport"
+          >
+            Apply
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
     <VSnackbar
       v-model="snackbar"
       :color="snackbarColor"

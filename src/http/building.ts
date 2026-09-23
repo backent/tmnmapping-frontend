@@ -1,7 +1,8 @@
-import { getApi, postApi, putApi } from '@/utils/http'
+import { getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
+import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
+import type { ImportResult } from '@/types/advertiser'
 
 // GET /buildings - List all buildings with optional pagination
 export function getBuildings(params?: PaginationParams): Promise<ApiResponse<Building[]>> {
@@ -38,6 +39,51 @@ export function syncBuildings(): Promise<ApiResponse<string>> {
 }
 
 // GET /buildings/filter-options - Get filter options for dropdowns
+/**
+ * With dryRun the file is checked and counted but nothing is written.
+ *
+ * A blank cell CLEARS on this import, unlike the price and brand imports where a
+ * blank leaves the value alone. `cleared` counts the fields an upload will empty and
+ * `notices` names each one, so the preview must be read before applying.
+ */
+export function importBuildings(file: File, dryRun: boolean): Promise<ApiResponse<ImportResult>> {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  return postFormApi<ApiResponse<ImportResult>>(
+    `${apiConfig.endpoints.buildings_import}?dry_run=${dryRun}`, formData)
+}
+
+export function exportBuildings(): Promise<Blob> {
+  return downloadBuildingFile(apiConfig.endpoints.buildings_export)
+}
+
+export function downloadBuildingTemplate(): Promise<Blob> {
+  return downloadBuildingFile(apiConfig.endpoints.buildings_template)
+}
+
+/** Who changed what on one building, and when. The recovery path after a bad upload. */
+export function getBuildingChanges(
+  id: number,
+  params: Record<string, string | number> = {},
+): Promise<ApiResponse<BuildingChange[]>> {
+  return getApi<ApiResponse<BuildingChange[]>>(
+    apiConfig.endpoints.building_changes.replace(':id', String(id)), params)
+}
+
+async function downloadBuildingFile(endpoint: string): Promise<Blob> {
+  const response = await fetch(`${apiConfig.baseUrl}${endpoint}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok)
+    throw new Error(`HTTP error! Status: ${response.status}`)
+
+  return response.blob()
+}
+
 export function getFilterOptions(): Promise<ApiResponse<FilterOptions>> {
   return getApi<ApiResponse<FilterOptions>>(
     apiConfig.endpoints.buildings_filter_options,

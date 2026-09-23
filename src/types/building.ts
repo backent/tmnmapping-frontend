@@ -79,3 +79,29 @@ export interface FilterOptions {
   grade_resource: string[]
   building_type: string[]
 }
+
+/**
+ * One field of one building changing, attributed and timestamped.
+ *
+ * This is the undo trail for the spreadsheet import, where a blank cell CLEARS a
+ * value. `source` distinguishes a person from the ERP photo sync, which keeps
+ * writing after the cutover -- a change nobody made by hand should say so.
+ */
+export interface BuildingChange {
+  id: number
+  building_id: number
+  external_building_id: string
+  building_name: string
+  actor_user_id: number
+  actor_name: string
+  actor_role: string
+  action: 'created' | 'updated' | 'deleted'
+  source: 'form' | 'import' | 'sync'
+
+  /** Groups one upload. Empty for a form edit or a sync. */
+  batch_id: string
+  field: string
+  old_value: string
+  new_value: string
+  created_at: string
+}
