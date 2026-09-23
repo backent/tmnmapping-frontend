@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useBuildingStore } from '@/stores/building'
+import BuildingChangeHistory from '@/components/building/BuildingChangeHistory.vue'
 import type { BuildingUpdateData } from '@/types/building'
 import { getImageProxyPath } from '@/utils/images'
 
@@ -455,5 +456,15 @@ onUnmounted(() => {
         </VForm>
       </VCardText>
     </VCard>
+
+    <!--
+      Every edit here, and every spreadsheet upload, is recorded. On an import a
+      blank cell CLEARS a value, so this is where the previous value can be read
+      back -- the undo trail that makes that rule safe to live with.
+    -->
+    <BuildingChangeHistory
+      v-if="buildingId"
+      :building-id="buildingId"
+    />
   </div>
 </template>

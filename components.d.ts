@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BuildingChangeHistory: typeof import('./src/components/building/BuildingChangeHistory.vue')['default']
     BuildingDetail: typeof import('./src/components/mapping/BuildingDetail.vue')['default']
     BuildingGradeFilter: typeof import('./src/components/mapping/BuildingGradeFilter.vue')['default']
     BuildingRestrictionFilter: typeof import('./src/components/mapping/BuildingRestrictionFilter.vue')['default']
