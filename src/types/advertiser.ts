@@ -129,8 +129,18 @@ export interface ImportResult {
   cleared?: number
 
   /**
-   * Per-row facts that do not reject the row -- above all, what is about to be
-   *  cleared and what it holds today.
+   * Fields this upload will EMPTY, one per field, with what each holds today.
+   *
+   * Separate from `notices` because they answer different questions: everything
+   * here is about to be destroyed, while a notice is merely worth reading. They
+   * shared one list until 2026-09-23, and the preview showed nine accepted-status
+   * warnings under "What will be cleared" while the cleared count read zero.
+   */
+  clears?: ImportError[]
+
+  /**
+   * Per-row facts worth seeing that destroy nothing: a status this application does
+   * not know but still stores, or a project code that will raise an empty project.
    */
   notices?: ImportError[]
 }

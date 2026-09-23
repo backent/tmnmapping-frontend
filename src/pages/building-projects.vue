@@ -544,15 +544,43 @@ const statusColour = (status: string) => STATUS_COLOURS[status] || 'secondary'
             </div>
           </div>
 
+          <!--
+            A clear destroys a value; a notice only wants reading. Kept apart so a
+            preview cannot present one as the other.
+          -->
+          <div
+            v-if="preview?.clears?.length"
+            class="mb-4"
+          >
+            <div class="text-subtitle-2 mb-2 text-warning">
+              What will be cleared
+            </div>
+            <VTable density="compact">
+              <thead><tr><th>Row</th><th>Column</th><th>Currently</th></tr></thead>
+              <tbody>
+                <tr
+                  v-for="(clear, i) in preview.clears"
+                  :key="i"
+                >
+                  <td>{{ clear.row }}</td>
+                  <td>{{ clear.column }}</td>
+                  <td class="text-disabled">
+                    {{ clear.value || '(hidden)' }}
+                  </td>
+                </tr>
+              </tbody>
+            </VTable>
+          </div>
+
           <div
             v-if="preview?.notices?.length"
             class="mb-4"
           >
             <div class="text-subtitle-2 mb-2">
-              What will be cleared
+              Accepted, worth a look
             </div>
             <VTable density="compact">
-              <thead><tr><th>Row</th><th>Column</th><th>Currently</th></tr></thead>
+              <thead><tr><th>Row</th><th>Column</th><th>Value</th><th>Note</th></tr></thead>
               <tbody>
                 <tr
                   v-for="(notice, i) in preview.notices"
@@ -560,8 +588,9 @@ const statusColour = (status: string) => STATUS_COLOURS[status] || 'secondary'
                 >
                   <td>{{ notice.row }}</td>
                   <td>{{ notice.column }}</td>
+                  <td>{{ notice.value }}</td>
                   <td class="text-disabled">
-                    {{ notice.value || '(hidden)' }}
+                    {{ notice.message }}
                   </td>
                 </tr>
               </tbody>
