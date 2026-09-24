@@ -129,6 +129,8 @@ export const apiConfig = {
     sales_assignments_template: '/sales-assignments-template',
 
     buildings_create: '/buildings',
+    building_images: '/buildings/:id/images',
+    building_image_slot: '/building-images/:id/:slot',
     buildings_save: '/buildings/:id/save',
     buildings_import: '/buildings-import',
     buildings_export: '/buildings-export',

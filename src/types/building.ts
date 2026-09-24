@@ -164,3 +164,23 @@ export interface SaveBuildingRequest {
   connectivity: string
   resource_type: string
 }
+
+/**
+ * A photo this application hosts, as opposed to one ERP serves.
+ *
+ * Absence does not mean the building has no photo for that slot -- it means we are
+ * not overriding ERP's. Removing one of these is "stop overriding", not "delete the
+ * picture".
+ */
+export interface HostedBuildingImage {
+  id: number
+  building_id: number
+  slot: string
+  path: string
+  content_type: string
+  size_bytes: number
+  uploaded_by_user_id: number
+  uploaded_by_name: string
+  created_at: string
+  updated_at: string
+}

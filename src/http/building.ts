@@ -1,7 +1,7 @@
-import { getApi, postApi, postFormApi, putApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams, SaveBuildingRequest } from '@/types/building'
+import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams, HostedBuildingImage, SaveBuildingRequest } from '@/types/building'
 import type { ImportResult } from '@/types/advertiser'
 
 // GET /buildings - List all buildings with optional pagination
@@ -46,6 +46,28 @@ export function createBuilding(payload: SaveBuildingRequest): Promise<ApiRespons
 export function saveBuilding(id: number, payload: SaveBuildingRequest): Promise<ApiResponse<Building>> {
   return putApi<ApiResponse<Building>>(
     apiConfig.endpoints.buildings_save.replace(':id', String(id)), payload)
+}
+
+/** The photos this application hosts for one building. ERP's are not listed here. */
+export function getHostedBuildingImages(id: number): Promise<ApiResponse<HostedBuildingImage[]>> {
+  return getApi<ApiResponse<HostedBuildingImage[]>>(
+    apiConfig.endpoints.building_images.replace(':id', String(id)))
+}
+
+/** Upload or replace the photo in one slot. */
+export function uploadBuildingImage(id: number, slot: string, file: File): Promise<ApiResponse<HostedBuildingImage>> {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  return postFormApi<ApiResponse<HostedBuildingImage>>(
+    apiConfig.endpoints.building_image_slot.replace(':id', String(id)).replace(':slot', slot), formData)
+}
+
+/** Stop overriding ERP's photo for one slot. ERP's becomes visible again. */
+export function deleteBuildingImage(id: number, slot: string): Promise<ApiResponse<string>> {
+  return deleteApi<ApiResponse<string>>(
+    apiConfig.endpoints.building_image_slot.replace(':id', String(id)).replace(':slot', slot))
 }
 
 export function syncBuildings(): Promise<ApiResponse<string>> {

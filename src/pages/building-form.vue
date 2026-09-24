@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import BuildingChangeHistory from '@/components/building/BuildingChangeHistory.vue'
+import BuildingPhotos from '@/components/building/BuildingPhotos.vue'
 import { createBuilding, getBuildingById, saveBuilding } from '@/http/building'
-import type { Building, SaveBuildingRequest } from '@/types/building'
-import { getImageProxyPath } from '@/utils/images'
+import type { SaveBuildingRequest } from '@/types/building'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+
+// The route already requires buildings.manage, so this is belt and braces -- but the
+// component is reusable, and a read-only caller should not be offered Upload.
+const canManage = computed(() => authStore.can('buildings.manage'))
 
 // Keyed on the route NAME, not a param: /buildings/new carries no :id, so
 // route.params.id is undefined there rather than 'new'.
 const isNew = computed(() => route.name === 'building-new')
 const buildingId = computed(() => (isNew.value ? 0 : Number(route.params.id)))
 
-const building = ref<Building | null>(null)
 const isLoading = ref(false)
 const isSaving = ref(false)
 
@@ -133,7 +138,6 @@ const load = async () => {
     if (!loaded)
       return
 
-    building.value = loaded
     form.value = {
       external_building_id: loaded.external_building_id || '',
       name: loaded.name || '',
@@ -488,42 +492,15 @@ onMounted(load)
         </VRow>
 
         <!--
-          Photos come from ERP and are still synced from there, so they are shown
-          but not editable. Moving them in-house is separate work.
+          One URL per slot serves both sources: ours when we host a photo, ERP's
+          when we do not. Uploading overrides, removing stops overriding.
         -->
         <template v-if="!isNew">
           <VDivider class="my-6" />
-          <div class="text-subtitle-1 mb-1">
-            Photos
-          </div>
-          <div class="text-caption text-disabled mb-3">
-            Synced from ERP and not editable here.
-          </div>
-          <VRow v-if="building?.images?.length">
-            <VCol
-              v-for="(image, index) in building.images"
-              :key="index"
-              cols="6"
-              md="3"
-            >
-              <VCard>
-                <VImg
-                  :src="getImageProxyPath(image.path)"
-                  height="140"
-                  cover
-                />
-                <VCardText class="py-2 text-caption text-capitalize">
-                  {{ image.name.replace('_', ' ') }}
-                </VCardText>
-              </VCard>
-            </VCol>
-          </VRow>
-          <div
-            v-else
-            class="text-disabled"
-          >
-            No photos for this building.
-          </div>
+          <BuildingPhotos
+            :building-id="buildingId"
+            :can-manage="canManage"
+          />
         </template>
       </VCardText>
 
