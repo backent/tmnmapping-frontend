@@ -96,6 +96,24 @@ const missingContact = (): string => {
   return ''
 }
 
+/**
+ * Deliberately loose: something before the @, then dot-separated labels. The API
+ * applies the real rule, so this only has to catch the typo that would otherwise
+ * cost a round trip -- not adjudicate RFC 5322.
+ *
+ * The domain labels exclude dots rather than using `[^\s@]+\.[^\s@]+`, which is
+ * ambiguous about where the dot falls and backtracks super-linearly on a long
+ * input.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/
+
+const malformedContact = (): string => {
+  if (!EMAIL_PATTERN.test(form.value.contact_email.trim()))
+    return 'Contact Email must be a valid email address'
+
+  return ''
+}
+
 const submit = async () => {
   errorMessage.value = ''
   if (!form.value.code.trim()) {
@@ -120,6 +138,13 @@ const submit = async () => {
   const contactError = missingContact()
   if (contactError) {
     errorMessage.value = contactError
+
+    return
+  }
+
+  const formatError = malformedContact()
+  if (formatError) {
+    errorMessage.value = formatError
 
     return
   }
