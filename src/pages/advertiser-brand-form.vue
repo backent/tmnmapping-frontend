@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import { STATUS_OPTIONS } from '@/types/advertiser'
 import type { BrandPayload } from '@/types/advertiser'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,7 +67,7 @@ const fetchItem = async () => {
     }
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || 'Failed to load brand'
+    errorMessage.value = extractApiError(error, 'Failed to load brand')
   }
   finally {
     isLoading.value = false
@@ -135,7 +136,7 @@ const submit = async () => {
     router.push({ name: 'advertiser-brands' })
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || error?.details?.message || 'Failed to save brand'
+    errorMessage.value = extractApiError(error, 'Failed to save brand')
   }
   finally {
     isSaving.value = false

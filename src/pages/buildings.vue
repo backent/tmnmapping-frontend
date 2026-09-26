@@ -11,6 +11,7 @@ import {
 import type { ImportResult } from '@/types/advertiser'
 import { BUILDING_TYPE_CODES } from '@/config/buildingType'
 import type { Building } from '@/types/building'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const route = useRoute()
@@ -257,9 +258,6 @@ const notify = (message: string, isError = false) => {
   snackbar.value = true
 }
 
-const importErrorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const handleImport = async (file: File) => {
   isFileBusy.value = true
   lastImport.value = null
@@ -275,7 +273,7 @@ const handleImport = async (file: File) => {
     if (result)
       lastImport.value = result
     else
-      notify(importErrorText(error, 'Failed to read the file'), true)
+      notify(extractApiError(error, 'Failed to read the file'), true)
   }
   finally {
     isFileBusy.value = false
@@ -311,7 +309,7 @@ const applyImport = async () => {
     if (result)
       lastImport.value = result
     else
-      notify(importErrorText(error, 'Failed to apply the file'), true)
+      notify(extractApiError(error, 'Failed to apply the file'), true)
   }
   finally {
     isFileBusy.value = false
@@ -334,7 +332,7 @@ const handleExport = async () => {
     saveBlob(await exportBuildings(), `TMN_Buildings_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
   catch (error: any) {
-    notify(importErrorText(error, 'Failed to export'), true)
+    notify(extractApiError(error, 'Failed to export'), true)
   }
   finally {
     isFileBusy.value = false
@@ -347,7 +345,7 @@ const handleTemplate = async () => {
     saveBlob(await downloadBuildingTemplate(), 'TMN_Buildings_Template.xlsx')
   }
   catch (error: any) {
-    notify(importErrorText(error, 'Failed to download the template'), true)
+    notify(extractApiError(error, 'Failed to download the template'), true)
   }
   finally {
     isFileBusy.value = false

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import ImportExportToolbar from '@/components/advertiser/ImportExportToolbar.vue'
 import type { Customer } from '@/types/advertiser'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const store = useCustomerStore()
@@ -35,9 +36,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const fetchItems = async () => {
   try {
     const params: PaginationParams & { search?: string } = {
@@ -53,7 +51,7 @@ const fetchItems = async () => {
     await store.fetchList(params)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load customers'), 'error')
+    notify(extractApiError(error, 'Failed to load customers'), 'error')
   }
 }
 
@@ -94,7 +92,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to delete customer'), 'error')
+    notify(extractApiError(error, 'Failed to delete customer'), 'error')
   }
 }
 
@@ -124,7 +122,7 @@ const handleImport = async (file: File) => {
       await fetchItems()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to import customers'), 'error')
+    notify(extractApiError(error, 'Failed to import customers'), 'error')
   }
 }
 </script>

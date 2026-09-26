@@ -27,6 +27,7 @@ import {
   toCampaignNumber,
 } from '@/utils/campaignUnits'
 import type { QuotationPayload, SelectionPayload } from '@/types/quotation'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -284,9 +285,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 /**
  * The selection as the API should receive it.
  *
@@ -346,7 +344,7 @@ const refreshPreview = () => {
       errorMessage.value = ''
     }
     catch (error: any) {
-      errorMessage.value = errorText(error, 'Could not price this selection')
+      errorMessage.value = extractApiError(error, 'Could not price this selection')
     }
   }, 300)
 }
@@ -495,7 +493,7 @@ const save = async (thenSubmit: boolean) => {
     router.push({ name: 'quotation-detail', params: { id: String(id) } })
   }
   catch (error: any) {
-    errorMessage.value = errorText(error, 'Failed to save the quotation')
+    errorMessage.value = extractApiError(error, 'Failed to save the quotation')
     notify(errorMessage.value, 'error')
   }
 }

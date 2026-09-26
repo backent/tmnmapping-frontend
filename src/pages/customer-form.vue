@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/advertiser'
 import { STATUS_OPTIONS } from '@/types/advertiser'
 import type { CustomerPayload } from '@/types/advertiser'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,7 +30,7 @@ const fetchItem = async () => {
       form.value = { code: item.code, name: item.name, industry: item.industry, status: item.status }
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || 'Failed to load customer'
+    errorMessage.value = extractApiError(error, 'Failed to load customer')
   }
   finally {
     isLoading.value = false
@@ -64,7 +65,7 @@ const submit = async () => {
     router.push({ name: 'customers' })
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || error?.details?.message || 'Failed to save customer'
+    errorMessage.value = extractApiError(error, 'Failed to save customer')
   }
   finally {
     isSaving.value = false

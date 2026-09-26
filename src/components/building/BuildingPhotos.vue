@@ -7,6 +7,7 @@ import {
   buildingImageUrl,
 } from '@/utils/images'
 import type { BuildingImageSlot } from '@/utils/images'
+import { extractApiError } from '@/utils/apiError'
 
 /**
  * The four building photos, each either ours or ERP's.
@@ -76,7 +77,7 @@ const upload = async (slot: string, event: Event) => {
     version.value = Date.now()
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || 'Could not upload that image'
+    errorMessage.value = extractApiError(error, 'Could not upload that image')
   }
   finally {
     busySlot.value = null
@@ -92,7 +93,7 @@ const remove = async (slot: string) => {
     version.value = Date.now()
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || 'Could not remove that image'
+    errorMessage.value = extractApiError(error, 'Could not remove that image')
   }
   finally {
     busySlot.value = null

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 
 import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png'
 import authV1MaskLight from '@images/pages/auth-v1-mask-light.png'
+import { extractApiError } from '@/utils/apiError'
 
 const tmnLogo = '/images/defaultimage.jpeg'
 
@@ -57,7 +58,7 @@ const handleLogin = async () => {
   }
   catch (error: any) {
     console.error('Login error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Login failed. Please check your credentials.'
+    errorMessage.value = extractApiError(error, 'Login failed. Please check your credentials.')
   }
   finally {
     isLoading.value = false

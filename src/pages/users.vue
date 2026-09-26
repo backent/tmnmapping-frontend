@@ -6,6 +6,7 @@ import { ROLE_LABELS, SALES_GROUP_LABELS } from '@/config/roles'
 import type { SalesGroup } from '@/config/roles'
 import type { ManagedUser } from '@/types/user'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -57,7 +58,7 @@ const fetchItems = async () => {
     await userStore.fetchList(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load users'
+    snackbarMessage.value = extractApiError(error, 'Failed to load users')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -109,7 +110,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete user'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete user')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

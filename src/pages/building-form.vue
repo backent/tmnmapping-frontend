@@ -5,6 +5,7 @@ import BuildingChangeHistory from '@/components/building/BuildingChangeHistory.v
 import BuildingPhotos from '@/components/building/BuildingPhotos.vue'
 import { createBuilding, getBuildingById, saveBuilding } from '@/http/building'
 import type { SaveBuildingRequest } from '@/types/building'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,9 +32,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarColor.value = color
   snackbar.value = true
 }
-
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
 
 // Blank means null, exactly as a blank cell does on the spreadsheet import. The form
 // REPLACES the record, so the two ways of editing a building agree about what an
@@ -163,7 +161,7 @@ const load = async () => {
     }
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load the building'), 'error')
+    notify(extractApiError(error, 'Failed to load the building'), 'error')
   }
   finally {
     isLoading.value = false
@@ -192,7 +190,7 @@ const save = async () => {
     }
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to save the building'), 'error')
+    notify(extractApiError(error, 'Failed to save the building'), 'error')
   }
   finally {
     isSaving.value = false

@@ -8,6 +8,7 @@ import {
   formatIdr,
 } from '@/types/quotation'
 import type { Quotation } from '@/types/quotation'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const store = useQuotationStore()
@@ -53,9 +54,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const fetchItems = async () => {
   try {
     await store.fetchList({
@@ -70,7 +68,7 @@ const fetchItems = async () => {
     })
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load quotations'), 'error')
+    notify(extractApiError(error, 'Failed to load quotations'), 'error')
   }
 }
 

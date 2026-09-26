@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { ROLES, ROLE_DESCRIPTIONS, ROLE_OPTIONS } from '@/config/roles'
 import type { Role, SalesGroup } from '@/config/roles'
 import type { CreateUserRequest } from '@/types/user'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,7 +62,7 @@ const fetchItem = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load user'
+    errorMessage.value = extractApiError(error, 'Failed to load user')
   }
   finally {
     isLoading.value = false
@@ -119,7 +120,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const msg = error?.details?.message || error?.details || 'Failed to save user'
+    const msg = extractApiError(error, 'Failed to save user')
 
     errorMessage.value = msg
     snackbarMessage.value = msg

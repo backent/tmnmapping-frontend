@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuotationStore } from '@/stores/quotation'
 import { useAuthStore } from '@/stores/auth'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
+import { extractApiError } from '@/utils/apiError'
 import {
   QUOTATION_STATUS_COLORS,
   QUOTATION_STATUS_LABELS,
@@ -46,15 +47,12 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const load = async () => {
   try {
     await store.fetchById(quotationId.value)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load the quotation'), 'error')
+    notify(extractApiError(error, 'Failed to load the quotation'), 'error')
   }
 }
 
@@ -68,7 +66,7 @@ const submit = async () => {
     await load()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to submit'), 'error')
+    notify(extractApiError(error, 'Failed to submit'), 'error')
   }
 }
 
@@ -79,7 +77,7 @@ const approve = async () => {
     await load()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to approve'), 'error')
+    notify(extractApiError(error, 'Failed to approve'), 'error')
   }
 }
 
@@ -97,7 +95,7 @@ const doReturn = async () => {
     await load()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to return'), 'error')
+    notify(extractApiError(error, 'Failed to return'), 'error')
   }
 }
 

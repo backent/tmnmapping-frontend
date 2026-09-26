@@ -8,6 +8,7 @@ import { useMotherBrandStore } from '@/stores/motherbrand'
 import { useBranchStore } from '@/stores/branch'
 import PlaceAutocomplete from '@/components/poi/PlaceAutocomplete.vue'
 import type { CreatePOIRequest, POIPointInput } from '@/types/poi'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,7 +232,7 @@ const fetchPOI = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load POI'
+    errorMessage.value = extractApiError(error, 'Failed to load POI')
   }
   finally {
     isLoading.value = false
@@ -278,7 +279,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const errorMsg = error?.details?.message || error?.details || 'Failed to save POI'
+    const errorMsg = extractApiError(error, 'Failed to save POI')
 
     errorMessage.value = errorMsg
     snackbarMessage.value = errorMsg

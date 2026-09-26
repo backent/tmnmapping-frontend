@@ -6,6 +6,7 @@ import { SALES_PACKAGE_STATUS_OPTIONS } from '@/types/salespackage'
 import { getAllBuildingPrices } from '@/http/buildingprice'
 import { formatIdr } from '@/types/quotation'
 import type { BuildingRef, CreateSalesPackageRequest, SalesPackageStatus } from '@/types/salespackage'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -103,7 +104,7 @@ const fetchPackage = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load sales package'
+    errorMessage.value = extractApiError(error, 'Failed to load sales package')
   }
   finally {
     isLoading.value = false
@@ -165,7 +166,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const msg = error?.details?.message || error?.details || 'Failed to save sales package'
+    const msg = extractApiError(error, 'Failed to save sales package')
 
     errorMessage.value = msg
     snackbarMessage.value = msg

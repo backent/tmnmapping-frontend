@@ -4,6 +4,7 @@ import { useAdvertiserBrandStore, useCustomerStore, useSalesAssignmentStore } fr
 import { useUserStore } from '@/stores/user'
 import { STATUS_OPTIONS } from '@/types/advertiser'
 import type { SalesAssignmentPayload } from '@/types/advertiser'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -77,7 +78,7 @@ const fetchItem = async () => {
     }
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || 'Failed to load assignment'
+    errorMessage.value = extractApiError(error, 'Failed to load assignment')
   }
   finally {
     isLoading.value = false
@@ -131,7 +132,7 @@ const submit = async () => {
     router.push({ name: 'sales-assignments' })
   }
   catch (error: any) {
-    errorMessage.value = error?.details?.data || error?.details?.message || 'Failed to save assignment'
+    errorMessage.value = extractApiError(error, 'Failed to save assignment')
   }
   finally {
     isSaving.value = false

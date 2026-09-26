@@ -6,6 +6,7 @@ import { usePOIStore } from '@/stores/poi'
 import { useSubCategoryStore } from '@/stores/subcategory'
 import type { POI } from '@/types/poi'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const route = useRoute()
@@ -143,7 +144,7 @@ const fetchPOIs = async () => {
     await poiStore.fetchPOIs(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load POIs'
+    snackbarMessage.value = extractApiError(error, 'Failed to load POIs')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -219,7 +220,7 @@ const handleDelete = async (poi: POI) => {
     await fetchPOIs()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete POI'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete POI')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -264,7 +265,7 @@ const handleFileSelected = async (event: Event) => {
       duplicateDialog.value = true
     }
     else {
-      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import POIs'
+      snackbarMessage.value = extractApiError(error, 'Failed to import POIs')
       snackbarColor.value = 'error'
       snackbar.value = true
     }
@@ -292,7 +293,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export POIs'
+    snackbarMessage.value = extractApiError(error, 'Failed to export POIs')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

@@ -10,6 +10,7 @@ import {
 import type { BuildingProjectChange, SaveBuildingProjectRequest } from '@/types/buildingproject'
 import { changeFieldLabel, contractValue, pricePerScreen, projectToForm } from '@/utils/buildingProject'
 import { formatIdr } from '@/types/quotation'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -75,9 +76,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const derivedPricePerScreen = computed(() => pricePerScreen(form.value.annual_rental, form.value.no_of_screen))
 const derivedContractValue = computed(() => contractValue(form.value.annual_rental, form.value.period_month))
 
@@ -98,7 +96,7 @@ const load = async () => {
     form.value = projectToForm(project)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load the project'), 'error')
+    notify(extractApiError(error, 'Failed to load the project'), 'error')
   }
   finally {
     isLoading.value = false
@@ -151,7 +149,7 @@ const save = async () => {
     }
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to save the project'), 'error')
+    notify(extractApiError(error, 'Failed to save the project'), 'error')
   }
   finally {
     isSaving.value = false

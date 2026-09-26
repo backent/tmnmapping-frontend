@@ -13,6 +13,7 @@ import type { BuildingProject } from '@/types/buildingproject'
 import type { ImportResult } from '@/types/advertiser'
 import { importSummary } from '@/utils/buildingProject'
 import { formatIdr } from '@/types/quotation'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -47,9 +48,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const load = async () => {
   isLoading.value = true
   try {
@@ -72,7 +70,7 @@ const load = async () => {
     total.value = response.extras?.total ?? projects.value.length
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load projects'), 'error')
+    notify(extractApiError(error, 'Failed to load projects'), 'error')
   }
   finally {
     isLoading.value = false
@@ -147,7 +145,7 @@ const handleImport = async (file: File) => {
     if (result)
       lastImport.value = result
     else
-      notify(errorText(error, 'Failed to read the file'), 'error')
+      notify(extractApiError(error, 'Failed to read the file'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -181,7 +179,7 @@ const applyImport = async () => {
     if (result)
       lastImport.value = result
     else
-      notify(errorText(error, 'Failed to apply the projects'), 'error')
+      notify(extractApiError(error, 'Failed to apply the projects'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -204,7 +202,7 @@ const handleExport = async () => {
     saveBlob(await exportBuildingProjects(), `TMN_Projects_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to export'), 'error')
+    notify(extractApiError(error, 'Failed to export'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -217,7 +215,7 @@ const handleTemplate = async () => {
     saveBlob(await downloadBuildingProjectTemplate(), 'TMN_Project_Template.xlsx')
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to download the template'), 'error')
+    notify(extractApiError(error, 'Failed to download the template'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -244,7 +242,7 @@ const doDelete = async () => {
     await load()
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to remove the project'), 'error')
+    notify(extractApiError(error, 'Failed to remove the project'), 'error')
   }
   finally {
     deleteDialog.value = false

@@ -15,6 +15,7 @@ import type { AutocompleteOption } from '@/utils/autocompleteOptions'
 import type { BuildingPrice } from '@/types/buildingprice'
 import type { ImportResult } from '@/types/advertiser'
 import { formatIdr } from '@/types/quotation'
+import { extractApiError } from '@/utils/apiError'
 
 const authStore = useAuthStore()
 const canManage = computed(() => authStore.can('building-prices.manage'))
@@ -37,9 +38,6 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
-const errorText = (error: any, fallback: string) =>
-  error?.details?.data || error?.details?.message || fallback
-
 const load = async () => {
   isLoading.value = true
   try {
@@ -58,7 +56,7 @@ const load = async () => {
     total.value = response.extras?.total ?? prices.value.length
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to load prices'), 'error')
+    notify(extractApiError(error, 'Failed to load prices'), 'error')
   }
   finally {
     isLoading.value = false
@@ -191,7 +189,7 @@ const submitEdit = async () => {
     notify(isAdding.value ? 'Price added' : 'Price updated')
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to save the price'), 'error')
+    notify(extractApiError(error, 'Failed to save the price'), 'error')
   }
   finally {
     isSaving.value = false
@@ -205,7 +203,7 @@ const removePrice = async (price: BuildingPrice) => {
     notify(`Removed the price for ${price.building_name}`)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to remove the price'), 'error')
+    notify(extractApiError(error, 'Failed to remove the price'), 'error')
   }
 }
 
@@ -246,7 +244,7 @@ const handleImport = async (file: File) => {
     if (result)
       lastImport.value = result
     else
-      notify(errorText(error, 'Failed to read the file'), 'error')
+      notify(extractApiError(error, 'Failed to read the file'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -283,7 +281,7 @@ const applyImport = async () => {
     if (result)
       lastImport.value = result
     else
-      notify(errorText(error, 'Failed to apply the prices'), 'error')
+      notify(extractApiError(error, 'Failed to apply the prices'), 'error')
   }
   finally {
     isFileBusy.value = false
@@ -305,7 +303,7 @@ const handleTemplate = async () => {
     saveBlob(await downloadBuildingPriceTemplate(), 'Building_Prices_Template.xlsx')
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to download the template'), 'error')
+    notify(extractApiError(error, 'Failed to download the template'), 'error')
   }
 }
 
@@ -314,7 +312,7 @@ const handleExport = async () => {
     saveBlob(await exportBuildingPrices(), `Building_Prices_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
   catch (error: any) {
-    notify(errorText(error, 'Failed to export prices'), 'error')
+    notify(extractApiError(error, 'Failed to export prices'), 'error')
   }
 }
 </script>
