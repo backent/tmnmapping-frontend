@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useBuildingRestrictionStore } from '@/stores/buildingrestriction'
 import BuildingSelectField from '@/components/building/BuildingSelectField.vue'
 import type { BuildingRef, CreateBuildingRestrictionRequest } from '@/types/buildingrestriction'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,7 +47,7 @@ const fetchRestriction = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load building restriction'
+    errorMessage.value = extractApiError(error, 'Failed to load building restriction')
   }
   finally {
     isLoading.value = false
@@ -95,7 +96,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const msg = error?.details?.message || error?.details || 'Failed to save building restriction'
+    const msg = extractApiError(error, 'Failed to save building restriction')
 
     errorMessage.value = msg
     snackbarMessage.value = msg

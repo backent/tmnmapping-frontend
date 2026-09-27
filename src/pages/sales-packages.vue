@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import type { SalesPackage } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
@@ -54,7 +55,7 @@ const fetchPackages = async () => {
     await salesPackageStore.fetchSalesPackages(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to load sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -99,7 +100,7 @@ const handleDelete = async (pkg: SalesPackage) => {
     await fetchPackages()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete sales package'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete sales package')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -138,7 +139,7 @@ const handleFileSelected = async (event: Event) => {
       duplicateDialog.value = true
     }
     else {
-      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import sales packages'
+      snackbarMessage.value = extractApiError(error, 'Failed to import sales packages')
       snackbarColor.value = 'error'
       snackbar.value = true
     }
@@ -159,7 +160,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to export sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

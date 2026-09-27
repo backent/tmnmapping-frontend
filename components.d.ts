@@ -7,8 +7,10 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BuildingChangeHistory: typeof import('./src/components/building/BuildingChangeHistory.vue')['default']
     BuildingDetail: typeof import('./src/components/mapping/BuildingDetail.vue')['default']
     BuildingGradeFilter: typeof import('./src/components/mapping/BuildingGradeFilter.vue')['default']
+    BuildingPhotos: typeof import('./src/components/building/BuildingPhotos.vue')['default']
     BuildingRestrictionFilter: typeof import('./src/components/mapping/BuildingRestrictionFilter.vue')['default']
     BuildingSelectField: typeof import('./src/components/building/BuildingSelectField.vue')['default']
     BuildingTypeFilter: typeof import('./src/components/mapping/BuildingTypeFilter.vue')['default']
@@ -18,6 +20,7 @@ declare module 'vue' {
     ConnectivityFilter: typeof import('./src/components/mapping/ConnectivityFilter.vue')['default']
     FilterGroup: typeof import('./src/components/mapping/FilterGroup.vue')['default']
     FilterSidebar: typeof import('./src/components/mapping/FilterSidebar.vue')['default']
+    ImportExportToolbar: typeof import('./src/components/advertiser/ImportExportToolbar.vue')['default']
     InstallationFilter: typeof import('./src/components/mapping/InstallationFilter.vue')['default']
     LCDPresenceFilter: typeof import('./src/components/mapping/LCDPresenceFilter.vue')['default']
     LocationFilter: typeof import('./src/components/mapping/LocationFilter.vue')['default']
@@ -31,6 +34,7 @@ declare module 'vue' {
     POIFilter: typeof import('./src/components/mapping/POIFilter.vue')['default']
     PointList: typeof import('./src/components/poi/PointList.vue')['default']
     POIPickerDialog: typeof import('./src/components/mapping/POIPickerDialog.vue')['default']
+    PricingSummary: typeof import('./src/components/quotation/PricingSummary.vue')['default']
     ProgressFilter: typeof import('./src/components/mapping/ProgressFilter.vue')['default']
     RadiusFilter: typeof import('./src/components/mapping/RadiusFilter.vue')['default']
     ReportTab: typeof import('./src/components/dashboard/ReportTab.vue')['default']

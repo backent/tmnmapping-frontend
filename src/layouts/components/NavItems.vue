@@ -1,6 +1,27 @@
 <script lang="ts" setup>
 import VerticalNavSectionTitle from '@/@layouts/components/VerticalNavSectionTitle.vue'
 import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+// Sections whose screens exist to administer data rather than to consume it.
+// Hidden from roles that cannot open them; the router guard enforces the same rule
+// for anyone who types the URL directly.
+const canManageRestrictions = computed(() => authStore.can('building-restrictions.screen'))
+const canManageMasterData = computed(() => authStore.can('master-data.screen'))
+const canManageUsers = computed(() => authStore.can('users.view'))
+
+// A project is the site a building belongs to, so it sits under Buildings rather
+// than Sales -- it is not something a quotation is raised against.
+const canViewProjects = computed(() => authStore.can('building-projects.view'))
+
+// Advertiser master data sits under Sales: it is what a quotation is raised for.
+const canViewCustomers = computed(() => authStore.can('customers.view'))
+const canViewBrands = computed(() => authStore.can('brands.view'))
+const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
+const canViewPrices = computed(() => authStore.can('building-prices.view'))
+const canViewQuotations = computed(() => authStore.can('quotations.view'))
 </script>
 
 <template>
@@ -24,6 +45,14 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       title: 'Buildings List',
       icon: 'ri-building-line',
       to: '/buildings',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewProjects"
+    :item="{
+      title: 'Projects',
+      icon: 'ri-building-4-line',
+      to: '/building-projects',
     }"
   />
   <VerticalNavLink
@@ -55,59 +84,119 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     }"
   />
   <VerticalNavLink
+    v-if="canViewQuotations"
+    :item="{
+      title: 'Quotations',
+      icon: 'ri-file-list-3-line',
+      to: '/quotations',
+    }"
+  />
+  <VerticalNavLink
     :item="{
       title: 'Sales Packages',
       icon: 'ri-price-tag-3-line',
       to: '/sales-packages',
     }"
   />
+  <VerticalNavLink
+    v-if="canViewCustomers"
+    :item="{
+      title: 'Customers',
+      icon: 'ri-user-star-line',
+      to: '/customers',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewBrands"
+    :item="{
+      title: 'Brands',
+      icon: 'ri-bookmark-3-line',
+      to: '/advertiser-brands',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewAssignments"
+    :item="{
+      title: 'Sales Assignments',
+      icon: 'ri-user-shared-line',
+      to: '/sales-assignments',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canViewPrices"
+    :item="{
+      title: 'Prices',
+      icon: 'ri-money-dollar-circle-line',
+      to: '/building-prices',
+    }"
+  />
 
   <!-- Restrictions -->
-  <VerticalNavSectionTitle
-    :item="{
-      heading: 'Restrictions',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Building Restrictions',
-      icon: 'ri-shield-line',
-      to: '/building-restrictions',
-    }"
-  />
+  <template v-if="canManageRestrictions">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Restrictions',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Building Restrictions',
+        icon: 'ri-shield-line',
+        to: '/building-restrictions',
+      }"
+    />
+  </template>
 
   <!-- Master Data -->
-  <VerticalNavSectionTitle
-    :item="{
-      heading: 'Master Data',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Categories',
-      icon: 'ri-folder-line',
-      to: '/categories',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Sub Categories',
-      icon: 'ri-folder-2-line',
-      to: '/sub-categories',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Mother Brands',
-      icon: 'ri-briefcase-line',
-      to: '/mother-brands',
-    }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Branches',
-      icon: 'ri-store-line',
-      to: '/branches',
-    }"
-  />
+  <template v-if="canManageMasterData">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Master Data',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Categories',
+        icon: 'ri-folder-line',
+        to: '/categories',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Sub Categories',
+        icon: 'ri-folder-2-line',
+        to: '/sub-categories',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Mother Brands',
+        icon: 'ri-briefcase-line',
+        to: '/mother-brands',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Branches',
+        icon: 'ri-store-line',
+        to: '/branches',
+      }"
+    />
+  </template>
+
+  <!-- Administration -->
+  <template v-if="canManageUsers">
+    <VerticalNavSectionTitle
+      :item="{
+        heading: 'Administration',
+      }"
+    />
+    <VerticalNavLink
+      :item="{
+        title: 'Users',
+        icon: 'ri-user-settings-line',
+        to: '/users',
+      }"
+    />
+  </template>
 </template>

@@ -1,7 +1,8 @@
-import { getApi, postApi, putApi } from '@/utils/http'
+import { deleteApi, getApi, postApi, postFormApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, QueryParams } from '@/types/api'
-import type { Building, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams } from '@/types/building'
+import type { Building, BuildingChange, BuildingDropdownOption, BuildingUpdateData, FilterOptions, PaginationParams, HostedBuildingImage, SaveBuildingRequest } from '@/types/building'
+import type { ImportResult } from '@/types/advertiser'
 
 // GET /buildings - List all buildings with optional pagination
 export function getBuildings(params?: PaginationParams): Promise<ApiResponse<Building[]>> {
@@ -30,6 +31,45 @@ export function putBuilding(id: number, data: BuildingUpdateData): Promise<ApiRe
 }
 
 // POST /buildings/sync - Trigger manual sync
+/** Raise a building from the form. */
+export function createBuilding(payload: SaveBuildingRequest): Promise<ApiResponse<Building>> {
+  return postApi<ApiResponse<Building>>(apiConfig.endpoints.buildings_create, payload)
+}
+
+/**
+ * Replace a building from the form.
+ *
+ * Distinct from putBuilding, which writes only sellable, connectivity and
+ * resource_type -- right for the mapping screen's inline edit, wrong for a form that
+ * shows every column.
+ */
+export function saveBuilding(id: number, payload: SaveBuildingRequest): Promise<ApiResponse<Building>> {
+  return putApi<ApiResponse<Building>>(
+    apiConfig.endpoints.buildings_save.replace(':id', String(id)), payload)
+}
+
+/** The photos this application hosts for one building. ERP's are not listed here. */
+export function getHostedBuildingImages(id: number): Promise<ApiResponse<HostedBuildingImage[]>> {
+  return getApi<ApiResponse<HostedBuildingImage[]>>(
+    apiConfig.endpoints.building_images.replace(':id', String(id)))
+}
+
+/** Upload or replace the photo in one slot. */
+export function uploadBuildingImage(id: number, slot: string, file: File): Promise<ApiResponse<HostedBuildingImage>> {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  return postFormApi<ApiResponse<HostedBuildingImage>>(
+    apiConfig.endpoints.building_image_slot.replace(':id', String(id)).replace(':slot', slot), formData)
+}
+
+/** Stop overriding ERP's photo for one slot. ERP's becomes visible again. */
+export function deleteBuildingImage(id: number, slot: string): Promise<ApiResponse<string>> {
+  return deleteApi<ApiResponse<string>>(
+    apiConfig.endpoints.building_image_slot.replace(':id', String(id)).replace(':slot', slot))
+}
+
 export function syncBuildings(): Promise<ApiResponse<string>> {
   return postApi<ApiResponse<string>>(
     apiConfig.endpoints.buildings_sync,
@@ -38,6 +78,51 @@ export function syncBuildings(): Promise<ApiResponse<string>> {
 }
 
 // GET /buildings/filter-options - Get filter options for dropdowns
+/**
+ * With dryRun the file is checked and counted but nothing is written.
+ *
+ * A blank cell CLEARS on this import, unlike the price and brand imports where a
+ * blank leaves the value alone. `cleared` counts the fields an upload will empty and
+ * `notices` names each one, so the preview must be read before applying.
+ */
+export function importBuildings(file: File, dryRun: boolean): Promise<ApiResponse<ImportResult>> {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  return postFormApi<ApiResponse<ImportResult>>(
+    `${apiConfig.endpoints.buildings_import}?dry_run=${dryRun}`, formData)
+}
+
+export function exportBuildings(): Promise<Blob> {
+  return downloadBuildingFile(apiConfig.endpoints.buildings_export)
+}
+
+export function downloadBuildingTemplate(): Promise<Blob> {
+  return downloadBuildingFile(apiConfig.endpoints.buildings_template)
+}
+
+/** Who changed what on one building, and when. The recovery path after a bad upload. */
+export function getBuildingChanges(
+  id: number,
+  params: Record<string, string | number> = {},
+): Promise<ApiResponse<BuildingChange[]>> {
+  return getApi<ApiResponse<BuildingChange[]>>(
+    apiConfig.endpoints.building_changes.replace(':id', String(id)), params)
+}
+
+async function downloadBuildingFile(endpoint: string): Promise<Blob> {
+  const response = await fetch(`${apiConfig.baseUrl}${endpoint}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok)
+    throw new Error(`HTTP error! Status: ${response.status}`)
+
+  return response.blob()
+}
+
 export function getFilterOptions(): Promise<ApiResponse<FilterOptions>> {
   return getApi<ApiResponse<FilterOptions>>(
     apiConfig.endpoints.buildings_filter_options,

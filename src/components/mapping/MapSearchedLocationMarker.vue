@@ -97,6 +97,7 @@ watchEffect(() => {
       if (!markerInstance)
         return
       const scale = computeMarkerScale(map.getZoom() ?? BASE_MARKER_ZOOM)
+
       markerInstance.setIcon(buildIcon(scale))
     })
   })
