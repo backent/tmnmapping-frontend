@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import type { SalesPackage } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
@@ -7,6 +8,12 @@ import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
+const authStore = useAuthStore()
+
+// Both buttons, not just Import: unlike the other master-data screens, the API
+// requires sales-packages.manage for the EXPORT route too, so showing Export to a
+// view-only user would only ever produce a 403.
+const canManage = computed(() => authStore.can('sales-packages.manage'))
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
@@ -178,6 +185,7 @@ const handleExport = async () => {
           <span>Sales Packages</span>
           <div class="d-flex gap-2">
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isExporting"
@@ -190,6 +198,7 @@ const handleExport = async () => {
               Export
             </VBtn>
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isImporting"
