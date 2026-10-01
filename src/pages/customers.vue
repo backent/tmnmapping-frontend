@@ -6,6 +6,8 @@ import ImportExportToolbar from '@/components/advertiser/ImportExportToolbar.vue
 import type { Customer } from '@/types/advertiser'
 import type { PaginationParams } from '@/types/api'
 import { extractApiError } from '@/utils/apiError'
+import { useTableSort } from '@/composables/useTableSort'
+import SortableTh from '@/components/common/SortableTh.vue'
 
 const router = useRouter()
 const store = useCustomerStore()
@@ -36,13 +38,15 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
+const { orderBy, orderDirection, toggle } = useTableSort('created_at', 'DESC')
+
 const fetchItems = async () => {
   try {
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip: (currentPage.value - 1) * itemsPerPage.value,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      orderBy: orderBy.value,
+      orderDirection: orderDirection.value,
     }
 
     if (searchQuery.value.trim())
@@ -53,6 +57,12 @@ const fetchItems = async () => {
   catch (error: any) {
     notify(extractApiError(error, 'Failed to load customers'), 'error')
   }
+}
+
+const handleSort = (column: string) => {
+  toggle(column)
+  currentPage.value = 1
+  fetchItems()
 }
 
 const handleSearch = () => {
@@ -187,18 +197,38 @@ const handleImport = async (file: File) => {
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="code"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Code
-                  </th>
-                  <th class="text-uppercase">
+                  </SortableTh>
+                  <SortableTh
+                    column="name"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Name
-                  </th>
-                  <th class="text-uppercase">
+                  </SortableTh>
+                  <SortableTh
+                    column="industry"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Industry
-                  </th>
-                  <th class="text-uppercase">
+                  </SortableTh>
+                  <SortableTh
+                    column="status"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Status
-                  </th>
+                  </SortableTh>
                   <th
                     v-if="canManage"
                     class="text-uppercase text-center"

@@ -5,6 +5,8 @@ import { useSalesPackageStore } from '@/stores/salespackage'
 import type { SalesPackage } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
 import { extractApiError } from '@/utils/apiError'
+import { useTableSort } from '@/composables/useTableSort'
+import SortableTh from '@/components/common/SortableTh.vue'
 
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
@@ -45,6 +47,8 @@ const isLoading = computed(() => salesPackageStore.isLoading)
 const totalRecords = computed(() => salesPackageStore.pagination.total)
 const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.value) || 1)
 
+const { orderBy, orderDirection, toggle } = useTableSort('created_at', 'DESC')
+
 const fetchPackages = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
@@ -52,8 +56,8 @@ const fetchPackages = async () => {
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      orderBy: orderBy.value,
+      orderDirection: orderDirection.value,
     }
 
     if (searchQuery.value.trim())
@@ -76,6 +80,12 @@ const handleSearch = () => {
     currentPage.value = 1
     fetchPackages()
   }, 300)
+}
+
+const handleSort = (column: string) => {
+  toggle(column)
+  currentPage.value = 1
+  fetchPackages()
 }
 
 onMounted(async () => {
@@ -262,15 +272,25 @@ const handleExport = async () => {
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="name"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Name
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase">
                     Buildings
                   </th>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="created_at"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Created At
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase text-center">
                     Actions
                   </th>

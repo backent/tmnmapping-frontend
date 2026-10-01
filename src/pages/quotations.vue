@@ -9,6 +9,8 @@ import {
 } from '@/types/quotation'
 import type { Quotation } from '@/types/quotation'
 import { extractApiError } from '@/utils/apiError'
+import { useTableSort } from '@/composables/useTableSort'
+import SortableTh from '@/components/common/SortableTh.vue'
 
 const router = useRouter()
 const store = useQuotationStore()
@@ -54,13 +56,15 @@ const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.value = true
 }
 
+const { orderBy, orderDirection, toggle } = useTableSort('created_at', 'DESC')
+
 const fetchItems = async () => {
   try {
     await store.fetchList({
       take: itemsPerPage.value,
       skip: (currentPage.value - 1) * itemsPerPage.value,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      orderBy: orderBy.value,
+      orderDirection: orderDirection.value,
       status: statusFilter.value || undefined,
       mine: tab.value === 'mine' || undefined,
       awaiting_me: tab.value === 'queue' || undefined,
@@ -70,6 +74,12 @@ const fetchItems = async () => {
   catch (error: any) {
     notify(extractApiError(error, 'Failed to load quotations'), 'error')
   }
+}
+
+const handleSort = (column: string) => {
+  toggle(column)
+  currentPage.value = 1
+  fetchItems()
 }
 
 onMounted(async () => {
@@ -202,21 +212,42 @@ const open = (item: Quotation) =>
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="quote_number"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Quotation
-                  </th>
-                  <th class="text-uppercase">
+                  </SortableTh>
+                  <SortableTh
+                    column="customer_name"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Customer / Brand
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase">
                     Discount
                   </th>
-                  <th class="text-uppercase text-end">
+                  <SortableTh
+                    column="total_net"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    align="end"
+                    @sort="handleSort"
+                  >
                     Nett
-                  </th>
-                  <th class="text-uppercase">
+                  </SortableTh>
+                  <SortableTh
+                    column="status"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Status
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase">
                     Waiting on
                   </th>
