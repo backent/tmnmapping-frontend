@@ -317,7 +317,14 @@ const handleImport = async (file: File) => {
                     :colspan="canManage ? 6 : 5"
                     class="text-center text-disabled py-8"
                   >
-                    No assignments yet. Upload customers and brands first, then import assignments.
+                    <!-- Create and Import are admin-only, so only admins are pointed at them. -->
+                    <template v-if="canManage">
+                      No assignments yet. Click "Create Assignment" to add one, or import a
+                      spreadsheet. The customer and brand must exist first.
+                    </template>
+                    <template v-else>
+                      No assignments yet. An admin assigns a sales PIC to each brand.
+                    </template>
                   </td>
                 </tr>
               </tbody>
