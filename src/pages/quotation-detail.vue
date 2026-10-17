@@ -4,11 +4,15 @@ import { useQuotationStore } from '@/stores/quotation'
 import { useAuthStore } from '@/stores/auth'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { extractApiError } from '@/utils/apiError'
+import { formatCalendarDate } from '@/utils/date'
 import {
   QUOTATION_STATUS_COLORS,
   QUOTATION_STATUS_LABELS,
+  approvalHintFor,
   formatIdr,
   isPending,
+  isUnpriced,
+  selectionPayloadFrom,
 } from '@/types/quotation'
 
 const route = useRoute()
@@ -41,6 +45,36 @@ const canEdit = computed(() =>
 const placement = computed(() => quotation.value?.selections.find(s => s.kind === 'placement'))
 const bonus = computed(() => quotation.value?.selections.find(s => s.kind === 'bonus'))
 
+// A draft's stored totals are zero until it is submitted, so it is shown a preview
+// priced at today's rates instead, labelled as an estimate.
+const isDraft = computed(() => !!quotation.value && isUnpriced(quotation.value.status))
+
+const pricing = computed(() => (isDraft.value
+  ? store.preview?.pricing ?? null
+  : quotation.value?.pricing ?? null))
+
+// For a draft the preview names who would approve at this discount; once submitted,
+// the status names who it is actually waiting on.
+const approval = computed(() => {
+  if (!quotation.value)
+    return null
+
+  return isDraft.value ? store.preview?.approval ?? null : approvalHintFor(quotation.value)
+})
+
+const previewDraft = async () => {
+  const q = quotation.value
+  if (!q || !isUnpriced(q.status))
+    return
+
+  await store.refreshPreview({
+    discount: q.discount,
+    tax_rate: q.tax_rate,
+    placement: placement.value ? selectionPayloadFrom(placement.value) : null,
+    bonus: bonus.value ? selectionPayloadFrom(bonus.value) : null,
+  }).catch(() => null)
+}
+
 const notify = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarMessage.value = message
   snackbarColor.value = color
@@ -53,7 +87,10 @@ const load = async () => {
   }
   catch (error: any) {
     notify(extractApiError(error, 'Failed to load the quotation'), 'error')
+
+    return
   }
+  await previewDraft()
 }
 
 onMounted(load)
@@ -265,7 +302,7 @@ const actionColor = (action: string) => ({
                     <td class="text-body-2">
                       Valid until
                     </td>
-                    <td>{{ quotation.valid_until || '—' }}</td>
+                    <td>{{ formatCalendarDate(quotation.valid_until) }}</td>
                   </tr>
                 </tbody>
               </VTable>
@@ -362,10 +399,23 @@ const actionColor = (action: string) => ({
                   </tr>
                 </thead>
                 <tbody>
+                  <!-- Grouped by line: placement and bonus can hold different buildings. -->
                   <template
                     v-for="section in quotation.selections"
                     :key="section.kind"
                   >
+                    <tr
+                      v-if="section.items.length"
+                      class="bg-var-theme-background"
+                    >
+                      <td
+                        colspan="3"
+                        class="text-caption text-uppercase font-weight-medium"
+                      >
+                        {{ section.kind }} · {{ section.items.length }}
+                        {{ section.items.length === 1 ? 'building' : 'buildings' }}
+                      </td>
+                    </tr>
                     <tr
                       v-for="item in section.items"
                       :key="`${section.kind}-${item.building_id}`"
@@ -437,13 +487,13 @@ const actionColor = (action: string) => ({
           md="4"
         >
           <PricingSummary
-            :pricing="quotation.pricing"
+            :pricing="pricing"
             :discount="quotation.discount"
             :tax-rate="quotation.tax_rate"
-            :approval="quotation.required_approver_name
-              ? { band: '', approver_role: '', approver_name: quotation.required_approver_name, resolvable: true, reason: '' }
-              : null"
+            :approval="approval"
             :sections="quotation.selections"
+            :loading="isDraft && store.isPreviewing"
+            :estimate="isDraft"
           />
         </VCol>
       </VRow>

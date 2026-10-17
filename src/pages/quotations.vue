@@ -3,9 +3,11 @@ import { useRouter } from 'vue-router'
 import { useQuotationStore } from '@/stores/quotation'
 import { useAuthStore } from '@/stores/auth'
 import {
+  PENDING_STATUS_FILTER,
   QUOTATION_STATUS_COLORS,
   QUOTATION_STATUS_LABELS,
   formatIdr,
+  isUnpriced,
 } from '@/types/quotation'
 import type { Quotation } from '@/types/quotation'
 import { extractApiError } from '@/utils/apiError'
@@ -40,13 +42,14 @@ const totalPages = computed(() => Math.ceil(store.pagination.total / itemsPerPag
 const metrics = computed(() => [
   { label: 'Draft', value: counts.value.draft, color: 'secondary', status: 'draft', note: 'Not submitted yet' },
   { label: 'Returned', value: counts.value.returned, color: 'error', status: 'returned', note: 'Sent back for changes' },
-  { label: 'Pending', value: counts.value.pending, color: 'warning', status: '', note: 'Waiting on an approver' },
+  { label: 'Pending', value: counts.value.pending, color: 'warning', status: PENDING_STATUS_FILTER, note: 'Waiting on an approver' },
   { label: 'Approved', value: counts.value.approved, color: 'success', status: 'approved', note: 'Signed off' },
   { label: 'All', value: counts.value.all, color: 'info', status: '', note: 'Everything you own' },
 ])
 
 const statusOptions = [
   { title: 'All statuses', value: '' },
+  { title: 'Pending (any approver)', value: PENDING_STATUS_FILTER },
   ...Object.entries(QUOTATION_STATUS_LABELS).map(([value, title]) => ({ title, value })),
 ]
 
@@ -279,7 +282,17 @@ const open = (item: Quotation) =>
                     </div>
                   </td>
                   <td>{{ item.discount }}%</td>
-                  <td class="text-end font-weight-medium">
+                  <!-- A draft is priced on submit, so its zero is not a price. -->
+                  <td
+                    v-if="isUnpriced(item.status)"
+                    class="text-end text-caption text-disabled font-italic"
+                  >
+                    Not priced yet
+                  </td>
+                  <td
+                    v-else
+                    class="text-end font-weight-medium"
+                  >
                     {{ formatIdr(item.pricing.total_net) }}
                   </td>
                   <td>

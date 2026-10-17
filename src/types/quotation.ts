@@ -177,6 +177,62 @@ export function isPending(status: QuotationStatus): boolean {
 }
 
 /**
+ * The list filter for "with an approver", whichever one. The server expands it to all
+ * three pending statuses; no quotation has this as its status.
+ */
+export const PENDING_STATUS_FILTER = 'pending'
+
+/**
+ * Who a pending quotation is waiting on, for the pricing card's approval strip.
+ *
+ * The status already records which band routing chose, so the band is read from it
+ * rather than guessed from the discount: the thresholds are configurable on the
+ * server, and an approved or returned quotation has no current approver at all, so
+ * those get no strip.
+ */
+export function approvalHintFor(
+  quotation: Pick<Quotation, 'status' | 'required_approver_name'>,
+): ApprovalHint | null {
+  const route = ({
+    pending_manager: { band: 'standard', approver_role: 'head_of_sales' },
+    pending_business_control: { band: 'elevated', approver_role: 'head_of_business_control' },
+    pending_ceo: { band: 'executive', approver_role: 'ceo' },
+  } as Partial<Record<QuotationStatus, { band: string; approver_role: string }>>)[quotation.status]
+
+  if (!route)
+    return null
+
+  return {
+    ...route,
+    approver_name: quotation.required_approver_name,
+    resolvable: true,
+    reason: '',
+  }
+}
+
+/** A stored selection as the API takes it back, for editing or for a preview. */
+export function selectionPayloadFrom(selection: Selection): SelectionPayload {
+  return {
+    mode: selection.mode,
+    building_ids: selection.items.map(i => i.building_id),
+    sales_package_id: selection.sales_package_id,
+    tvc_duration_seconds: selection.tvc_duration_seconds,
+    weeks: selection.weeks,
+    spots: selection.spots,
+  }
+}
+
+/**
+ * Whether the stored figures are real yet.
+ *
+ * Pricing is written on submit, not on save, so a draft's totals are all zero. A
+ * returned quotation keeps the figures it was submitted with.
+ */
+export function isUnpriced(status: QuotationStatus): boolean {
+  return status === 'draft'
+}
+
+/**
  * Discount band, mirroring the backend's thresholds for display only. The server
  * decides the real routing; this just colours the hint while the seller types.
  */

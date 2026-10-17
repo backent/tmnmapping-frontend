@@ -18,6 +18,9 @@ const props = defineProps<{
   approval: ApprovalHint | null
   sections: Selection[]
   loading?: boolean
+
+  /** The figures come from a preview, not from a submit, so they may still change. */
+  estimate?: boolean
 }>()
 
 const bandTone = computed(() => {
@@ -41,9 +44,6 @@ const roleLabel = (role: string) => ({
   head_of_business_control: 'Head of Business Control',
   ceo: 'CEO',
 }[role] ?? role)
-
-const placement = computed(() => props.sections.find(s => s.kind === 'placement'))
-const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
 </script>
 
 <template>
@@ -51,8 +51,18 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
     class="position-sticky"
     style="top: 88px"
   >
-    <VCardTitle class="d-flex align-center justify-space-between">
+    <VCardTitle class="d-flex align-center">
       <span class="text-subtitle-1">Live pricing</span>
+      <VChip
+        v-if="estimate && pricing"
+        size="small"
+        variant="tonal"
+        color="secondary"
+        class="ms-2"
+      >
+        Estimate
+      </VChip>
+      <VSpacer />
       <VProgressCircular
         v-if="loading"
         indeterminate
@@ -68,6 +78,12 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
     </VCardText>
 
     <template v-else>
+      <VCardText
+        v-if="estimate"
+        class="pt-0 pb-1 text-caption text-disabled"
+      >
+        Priced at today's rates. The final figures are set when it is submitted.
+      </VCardText>
       <VCardText class="py-2">
         <VTable density="compact">
           <tbody>
@@ -104,8 +120,10 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
               </td>
             </tr>
             <tr>
-              <!-- Bonus is always free. It still counts toward gross, which is what
-                   pushes the effective rate above the customer discount. -->
+              <!--
+                Bonus is always free. It still counts toward gross, which is what
+                pushes the effective rate above the customer discount.
+              -->
               <td class="text-body-2">
                 Bonus nett
               </td>
@@ -163,14 +181,6 @@ const bonus = computed(() => props.sections.find(s => s.kind === 'bonus'))
             </tr>
           </tbody>
         </VTable>
-      </VCardText>
-
-      <VDivider />
-
-      <VCardText
-        v-if="placement || bonus"
-        class="py-3"
-      >
       </VCardText>
 
       <VDivider />

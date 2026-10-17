@@ -15,7 +15,7 @@ import {
 import type { PriceableBuilding } from '@/utils/buildingPicker'
 import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
-import { formatIdr } from '@/types/quotation'
+import { formatIdr, selectionPayloadFrom } from '@/types/quotation'
 import { hasBrandContact, mergeBrandContact } from '@/utils/brandContact'
 import { DEFAULT_VAT_PERCENT, vatPercentToRate, vatRateToPercent } from '@/utils/vat'
 import {
@@ -383,28 +383,13 @@ onMounted(async () => {
       }
 
       const p = q.selections.find(s => s.kind === 'placement')
-      if (p) {
-        placement.value = {
-          mode: p.mode,
-          building_ids: p.items.map(i => i.building_id),
-          sales_package_id: p.sales_package_id,
-          tvc_duration_seconds: p.tvc_duration_seconds,
-          weeks: p.weeks,
-          spots: p.spots,
-        }
-      }
+      if (p)
+        placement.value = selectionPayloadFrom(p)
 
       const b = q.selections.find(s => s.kind === 'bonus')
       if (b) {
         wantsBonus.value = true
-        bonus.value = {
-          mode: b.mode,
-          building_ids: b.items.map(i => i.building_id),
-          sales_package_id: b.sales_package_id,
-          tvc_duration_seconds: b.tvc_duration_seconds,
-          weeks: b.weeks,
-          spots: b.spots,
-        }
+        bonus.value = selectionPayloadFrom(b)
       }
 
       refreshPreview()
