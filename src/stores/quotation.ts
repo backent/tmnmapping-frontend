@@ -35,7 +35,7 @@ export const useQuotationStore = defineStore('quotation', {
   state: (): QuotationState => ({
     items: [],
     currentItem: null,
-    counts: { draft: 0, pending: 0, returned: 0, approved: 0, all: 0 },
+    counts: { draft: 0, pending: 0, returned: 0, approved: 0, all: 0, awaiting_me: 0 },
     preview: null,
     isLoading: false,
     isPreviewing: false,

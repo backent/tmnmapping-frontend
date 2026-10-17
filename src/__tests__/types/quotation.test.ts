@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPROVAL_BANDS,
+  DISCOUNT_THRESHOLDS,
   PENDING_STATUS_FILTER,
   QUOTATION_STATUS_LABELS,
   approvalHintFor,
+  campaignSummary,
+  discountBandColor,
+  formatIdrCompact,
   isUnpriced,
   selectionPayloadFrom,
 } from '@/types/quotation'
-import type { QuotationStatus, Selection } from '@/types/quotation'
+import type { CampaignLine, QuotationStatus, Selection } from '@/types/quotation'
 
 describe('approvalHintFor', () => {
   // The detail page used to pass an empty band, which the pricing card reads as
@@ -71,5 +76,51 @@ describe('selectionPayloadFrom', () => {
       weeks: 4,
       spots: 360,
     })
+  })
+})
+
+describe('campaignSummary', () => {
+  const placement: CampaignLine = { kind: 'placement', mode: 'building', package_name: '', building_count: 42, weeks: 4 }
+
+  it('names the placement and its weeks, and says when there is no bonus', () => {
+    expect(campaignSummary([placement])).toEqual({ main: '42 buildings · 4 wk', sub: 'No bonus' })
+  })
+
+  it('names a package placement and a building bonus', () => {
+    expect(campaignSummary([
+      { kind: 'placement', mode: 'package', package_name: 'Jakarta CBD', building_count: 0, weeks: 8 },
+      { kind: 'bonus', mode: 'building', package_name: '', building_count: 1, weeks: 2 },
+    ])).toEqual({ main: 'Package: Jakarta CBD · 8 wk', sub: '+ bonus 1 building' })
+  })
+
+  it('says when nothing is selected', () => {
+    expect(campaignSummary([])).toEqual({ main: 'Nothing selected yet', sub: '' })
+    expect(campaignSummary(undefined)).toEqual({ main: 'Nothing selected yet', sub: '' })
+  })
+})
+
+describe('approval bands', () => {
+  // The dot in the list, the meter in the wizard and the label on the pricing card
+  // all read the same thresholds, so they cannot disagree about a boundary.
+  it('colours a discount by the same thresholds the band labels name', () => {
+    expect(discountBandColor(DISCOUNT_THRESHOLDS.standard)).toBe(APPROVAL_BANDS.standard.color)
+    expect(discountBandColor(DISCOUNT_THRESHOLDS.elevated)).toBe(APPROVAL_BANDS.elevated.color)
+    expect(discountBandColor(DISCOUNT_THRESHOLDS.elevated + 1)).toBe(APPROVAL_BANDS.executive.color)
+  })
+
+  it('names each band with its range in words', () => {
+    expect(APPROVAL_BANDS.standard.range).toBe('up to 65%')
+    expect(APPROVAL_BANDS.elevated.range).toBe('65 to 75%')
+    expect(APPROVAL_BANDS.executive.range).toBe('above 75%')
+  })
+})
+
+describe('formatIdrCompact', () => {
+  // Intl separates the currency with a no-break space; compare on plain spaces.
+  const plain = (value: number) => formatIdrCompact(value).replace(/\s/g, ' ')
+
+  it('shortens millions and billions the Indonesian way', () => {
+    expect(plain(420_201_600)).toBe('Rp 420,2 jt')
+    expect(plain(1_154_400_000)).toBe('Rp 1,2 M')
   })
 })

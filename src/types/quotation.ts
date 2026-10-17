@@ -112,6 +112,15 @@ export interface ApprovalEvent {
   created_at: string
 }
 
+/** One selection, summarised for a list row, which does not load the selections. */
+export interface CampaignLine {
+  kind: SelectionKind
+  mode: SelectionMode
+  package_name: string
+  building_count: number
+  weeks: number
+}
+
 export interface Quotation {
   id: number
   quote_number: string
@@ -139,6 +148,9 @@ export interface Quotation {
   pricing: Pricing
   selections: Selection[]
   approvals: ApprovalEvent[]
+
+  /** Set on list rows, in place of the selections they do not load. */
+  campaign?: CampaignLine[]
   created_at: string
   updated_at: string
   approved_at: string
@@ -150,6 +162,9 @@ export interface DashboardCounts {
   returned: number
   approved: number
   all: number
+
+  /** Waiting on this user's approval, whoever owns them. Absent from older backends. */
+  awaiting_me?: number
 }
 
 export const QUOTATION_STATUS_LABELS: Record<QuotationStatus, string> = {
@@ -222,6 +237,32 @@ export function selectionPayloadFrom(selection: Selection): SelectionPayload {
   }
 }
 
+function describeLine(line: CampaignLine): string {
+  if (line.mode === 'package')
+    return line.package_name ? `Package: ${line.package_name}` : 'Package'
+
+  return `${line.building_count} building${line.building_count === 1 ? '' : 's'}`
+}
+
+/**
+ * The Campaign cell of a list row: the placement and its weeks, then the bonus.
+ *
+ * Only the placement's weeks are shown on the first line. Bonus weeks run alongside
+ * it, and adding them up would read as a longer campaign than was sold.
+ */
+export function campaignSummary(lines: CampaignLine[] | undefined): { main: string; sub: string } {
+  const placement = lines?.find(l => l.kind === 'placement')
+  const bonus = lines?.find(l => l.kind === 'bonus')
+
+  if (!placement)
+    return { main: 'Nothing selected yet', sub: bonus ? `+ bonus ${describeLine(bonus)}` : '' }
+
+  return {
+    main: `${describeLine(placement)} · ${placement.weeks} wk`,
+    sub: bonus ? `+ bonus ${describeLine(bonus)}` : 'No bonus',
+  }
+}
+
 /**
  * Whether the stored figures are real yet.
  *
@@ -233,16 +274,47 @@ export function isUnpriced(status: QuotationStatus): boolean {
 }
 
 /**
- * Discount band, mirroring the backend's thresholds for display only. The server
- * decides the real routing; this just colours the hint while the seller types.
+ * The backend's default discount thresholds (QUOTATION_DISCOUNT_THRESHOLD_*), for
+ * display only: they colour and label hints while the seller types. The server
+ * decides the real routing and can be configured differently, which is why the
+ * approver itself is always taken from the server's preview, never from these.
  */
+export const DISCOUNT_THRESHOLDS = { standard: 65, elevated: 75 } as const
+
 export function discountBandColor(discount: number): string {
-  if (discount <= 65)
+  if (discount <= DISCOUNT_THRESHOLDS.standard)
     return 'success'
-  if (discount <= 75)
+  if (discount <= DISCOUNT_THRESHOLDS.elevated)
     return 'warning'
 
   return 'error'
+}
+
+/** How each approval band reads, with its range in words so colour is never the only signal. */
+export const APPROVAL_BANDS: Record<string, { label: string; range: string; color: string }> = {
+  standard: { label: 'Standard approval', range: `up to ${DISCOUNT_THRESHOLDS.standard}%`, color: 'success' },
+  elevated: {
+    label: 'Elevated approval',
+    range: `${DISCOUNT_THRESHOLDS.standard} to ${DISCOUNT_THRESHOLDS.elevated}%`,
+    color: 'warning',
+  },
+  executive: { label: 'Executive approval', range: `above ${DISCOUNT_THRESHOLDS.elevated}%`, color: 'error' },
+}
+
+export const APPROVER_ROLE_LABELS: Record<string, string> = {
+  head_of_sales: 'Head of Sales',
+  head_of_business_control: 'Head of Business Control',
+  ceo: 'CEO',
+}
+
+/** "Rp 420,2 jt": short enough for a phone's pricing bar. The full figure is a tap away. */
+export function formatIdrCompact(value: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value || 0)
 }
 
 /** Whole rupiah. The backend rejects fractions, so none are rendered. */
