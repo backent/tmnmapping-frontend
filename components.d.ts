@@ -34,6 +34,7 @@ declare module 'vue' {
     POIFilter: typeof import('./src/components/mapping/POIFilter.vue')['default']
     PointList: typeof import('./src/components/poi/PointList.vue')['default']
     POIPickerDialog: typeof import('./src/components/mapping/POIPickerDialog.vue')['default']
+    PricingBar: typeof import('./src/components/quotation/PricingBar.vue')['default']
     PricingSummary: typeof import('./src/components/quotation/PricingSummary.vue')['default']
     ProgressFilter: typeof import('./src/components/mapping/ProgressFilter.vue')['default']
     RadiusFilter: typeof import('./src/components/mapping/RadiusFilter.vue')['default']
