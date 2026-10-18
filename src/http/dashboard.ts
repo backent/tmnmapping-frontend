@@ -11,20 +11,6 @@ function toQueryParams(filters: Partial<DashboardFilters>): QueryParams {
   }
 }
 
-export function getAcquisitionReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
-  return getApi<ApiResponse<DashboardReport>>(
-    apiConfig.endpoints.dashboard_acquisition,
-    toQueryParams(filters || {}),
-  )
-}
-
-export function getBuildingProposalReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
-  return getApi<ApiResponse<DashboardReport>>(
-    apiConfig.endpoints.dashboard_building_proposal,
-    toQueryParams(filters || {}),
-  )
-}
-
 export function getLOIReport(filters?: Partial<DashboardFilters>): Promise<ApiResponse<DashboardReport>> {
   return getApi<ApiResponse<DashboardReport>>(
     apiConfig.endpoints.dashboard_loi,

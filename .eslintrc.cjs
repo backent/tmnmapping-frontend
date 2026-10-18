@@ -48,7 +48,9 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
 
     // indentation (Already present in TypeScript)
-    'indent': ['error', 2],
+    // SwitchCase matches @stylistic/ts/indent, which indents `case` one level. Without
+    // it the two rules disagree, every switch fails one of them, and --fix cannot settle it.
+    'indent': ['error', 2, { SwitchCase: 1 }],
 
     // Enforce trailing comma (Already present in TypeScript)
     'comma-dangle': ['error', 'always-multiline'],

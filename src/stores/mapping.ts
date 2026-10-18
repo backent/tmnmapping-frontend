@@ -60,6 +60,7 @@ function markLoadingEnd(store: LoadingTarget) {
   if (loadingShowTimer) {
     clearTimeout(loadingShowTimer)
     loadingShowTimer = null
+
     return
   }
   if (store.isLoadingVisible) {
@@ -98,6 +99,7 @@ interface MappingState {
   filterOptions: MappingFilterOptions | null
   filters: MappingFilters
   isLoading: boolean
+
   /** Smoothed loading signal for UI — delay-then-show + minimum-visible. Use this for spinners. */
   isLoadingVisible: boolean
   isSearching: boolean

@@ -89,6 +89,7 @@ onMounted(async () => {
   try {
     const loader = new Loader({
       apiKey,
+
       // Pinned to 3.64: DrawingManager was removed in 3.65. Temporary — see stash@{0}
       // "manual polygon draw" for the version-independent fix that replaces DrawingManager.
       version: '3.64',
@@ -278,6 +279,7 @@ const LCD_PRESENCE_PRIORITY: Record<string, number> = {
   Competitor: 3,
   Opportunity: 4,
 }
+
 const LCD_PRESENCE_COLORS: Record<string, string> = {
   TMN: '#0b97f3',
   Competitor: '#913c92',

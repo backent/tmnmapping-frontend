@@ -33,6 +33,7 @@ describe('getMappingBuildings', () => {
     await getMappingBuildings({ lcd_presence: ['TMN'] }, { lat: -6.2, lng: 106.8 })
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
+
     const [url, init] = mockFetch.mock.calls[0]
 
     expect(url).toContain(apiConfig.endpoints.mapping_buildings)
@@ -46,6 +47,7 @@ describe('getMappingBuildings', () => {
     const [url, init] = mockFetch.mock.calls[0]
 
     expect(url).not.toContain('polygon')
+
     const body = JSON.parse(init.body as string)
 
     expect(body.filters.polygon).toEqual(BIG_POLYGON)

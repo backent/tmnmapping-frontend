@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { saveAs } from 'file-saver'
 import dayjs from 'dayjs'
 import { useDashboardStore } from '@/stores/dashboard'
@@ -7,7 +7,6 @@ import ReportTab from '@/components/dashboard/ReportTab.vue'
 import type { DashboardFilters } from '@/types/dashboard'
 
 const dashboardStore = useDashboardStore()
-const activeTab = ref('acquisition')
 
 // Fixed LCD status order for consistent column display
 const LCD_STATUSES = ['TMN', 'Competitor', 'CoExist', 'Opportunity']
@@ -22,16 +21,6 @@ onMounted(() => {
 onUnmounted(() => {
   dashboardStore.$reset()
 })
-
-function onAcquisitionFilterChange(filters: DashboardFilters) {
-  dashboardStore.acquisition.filters = filters
-  dashboardStore.fetchAcquisitionReport()
-}
-
-function onBuildingProposalFilterChange(filters: DashboardFilters) {
-  dashboardStore.buildingProposal.filters = filters
-  dashboardStore.fetchBuildingProposalReport()
-}
 
 function onLOIFilterChange(filters: DashboardFilters) {
   dashboardStore.loi.filters = filters
@@ -156,50 +145,19 @@ async function downloadLCDPresenceExcel() {
         </VCardTitle>
 
         <VCardText>
-          <VTabs
-            v-model="activeTab"
-            color="primary"
-            class="mb-4"
-          >
-            <VTab value="acquisition">
-              Acquisition
-            </VTab>
-            <VTab value="building-proposal">
-              Building Proposal
-            </VTab>
-            <VTab value="loi">
-              LOI
-            </VTab>
-          </VTabs>
-
-          <VTabsWindow v-model="activeTab">
-            <VTabsWindowItem value="acquisition">
-              <ReportTab
-                :report="dashboardStore.acquisition.report"
-                :is-loading="dashboardStore.acquisition.isLoading"
-                :filters="dashboardStore.acquisition.filters"
-                @filter-change="onAcquisitionFilterChange"
-              />
-            </VTabsWindowItem>
-
-            <VTabsWindowItem value="building-proposal">
-              <ReportTab
-                :report="dashboardStore.buildingProposal.report"
-                :is-loading="dashboardStore.buildingProposal.isLoading"
-                :filters="dashboardStore.buildingProposal.filters"
-                @filter-change="onBuildingProposalFilterChange"
-              />
-            </VTabsWindowItem>
-
-            <VTabsWindowItem value="loi">
-              <ReportTab
-                :report="dashboardStore.loi.report"
-                :is-loading="dashboardStore.loi.isLoading"
-                :filters="dashboardStore.loi.filters"
-                @filter-change="onLOIFilterChange"
-              />
-            </VTabsWindowItem>
-          </VTabsWindow>
+          <!--
+            Acquisition and Building Proposal were removed on 2026-09-23 with
+            their ERP feeds: buildings are maintained by spreadsheet now, so those
+            tables stopped being written and the tabs would have shown a frozen
+            snapshot that still looked live. LOI keeps syncing, so it stays -- and
+            with one report left there is nothing to tab between.
+          -->
+          <ReportTab
+            :report="dashboardStore.loi.report"
+            :is-loading="dashboardStore.loi.isLoading"
+            :filters="dashboardStore.loi.filters"
+            @filter-change="onLOIFilterChange"
+          />
         </VCardText>
       </VCard>
     </VCol>

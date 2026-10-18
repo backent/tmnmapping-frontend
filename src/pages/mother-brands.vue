@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useMotherBrandStore } from '@/stores/motherbrand'
 import type { MotherBrand } from '@/types/motherbrand'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const motherBrandStore = useMotherBrandStore()
@@ -49,7 +50,7 @@ const fetchItems = async () => {
     await motherBrandStore.fetchList(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load mother brands'
+    snackbarMessage.value = extractApiError(error, 'Failed to load mother brands')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -101,7 +102,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete mother brand'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete mother brand')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -134,7 +135,7 @@ const handleFileSelected = async (event: Event) => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import mother brands'
+    snackbarMessage.value = extractApiError(error, 'Failed to import mother brands')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -154,7 +155,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export mother brands'
+    snackbarMessage.value = extractApiError(error, 'Failed to export mother brands')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

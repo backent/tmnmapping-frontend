@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import type { SalesPackage } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
+import { useTableSort } from '@/composables/useTableSort'
+import SortableTh from '@/components/common/SortableTh.vue'
 
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
+const authStore = useAuthStore()
+
+// Both buttons, not just Import: unlike the other master-data screens, the API
+// requires sales-packages.manage for the EXPORT route too, so showing Export to a
+// view-only user would only ever produce a 403.
+const canManage = computed(() => authStore.can('sales-packages.manage'))
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
@@ -37,6 +47,8 @@ const isLoading = computed(() => salesPackageStore.isLoading)
 const totalRecords = computed(() => salesPackageStore.pagination.total)
 const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.value) || 1)
 
+const { orderBy, orderDirection, toggle } = useTableSort('created_at', 'DESC')
+
 const fetchPackages = async () => {
   try {
     const skip = (currentPage.value - 1) * itemsPerPage.value
@@ -44,8 +56,8 @@ const fetchPackages = async () => {
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      orderBy: orderBy.value,
+      orderDirection: orderDirection.value,
     }
 
     if (searchQuery.value.trim())
@@ -54,7 +66,7 @@ const fetchPackages = async () => {
     await salesPackageStore.fetchSalesPackages(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to load sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -68,6 +80,12 @@ const handleSearch = () => {
     currentPage.value = 1
     fetchPackages()
   }, 300)
+}
+
+const handleSort = (column: string) => {
+  toggle(column)
+  currentPage.value = 1
+  fetchPackages()
 }
 
 onMounted(async () => {
@@ -99,7 +117,7 @@ const handleDelete = async (pkg: SalesPackage) => {
     await fetchPackages()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete sales package'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete sales package')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -138,7 +156,7 @@ const handleFileSelected = async (event: Event) => {
       duplicateDialog.value = true
     }
     else {
-      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import sales packages'
+      snackbarMessage.value = extractApiError(error, 'Failed to import sales packages')
       snackbarColor.value = 'error'
       snackbar.value = true
     }
@@ -159,7 +177,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to export sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -177,6 +195,7 @@ const handleExport = async () => {
           <span>Sales Packages</span>
           <div class="d-flex gap-2">
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isExporting"
@@ -189,6 +208,7 @@ const handleExport = async () => {
               Export
             </VBtn>
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isImporting"
@@ -252,15 +272,25 @@ const handleExport = async () => {
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="name"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Name
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase">
                     Buildings
                   </th>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="created_at"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Created At
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase text-center">
                     Actions
                   </th>

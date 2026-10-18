@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useSubCategoryStore } from '@/stores/subcategory'
 import type { CreateSubCategoryRequest } from '@/types/subcategory'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,7 +39,7 @@ const fetchItem = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load sub-category'
+    errorMessage.value = extractApiError(error, 'Failed to load sub-category')
   }
   finally {
     isLoading.value = false
@@ -77,7 +78,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const msg = error?.details?.message || error?.details || 'Failed to save sub-category'
+    const msg = extractApiError(error, 'Failed to save sub-category')
 
     errorMessage.value = msg
     snackbarMessage.value = msg

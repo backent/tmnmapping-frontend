@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getAcquisitionReport, getBuildingLCDPresenceSummary, getBuildingProposalReport, getLOIReport } from '@/http/dashboard'
+import { getBuildingLCDPresenceSummary, getLOIReport } from '@/http/dashboard'
 import type { DashboardFilters, DashboardReport, LCDPresenceSummaryResponse } from '@/types/dashboard'
 
 interface ResourceState {
@@ -26,8 +26,6 @@ function defaultResourceState(): ResourceState {
 }
 
 interface DashboardState {
-  acquisition: ResourceState
-  buildingProposal: ResourceState
   loi: ResourceState
   buildingLCDPresence: {
     data: LCDPresenceSummaryResponse | null
@@ -37,8 +35,6 @@ interface DashboardState {
 
 export const useDashboardStore = defineStore('dashboard', {
   state: (): DashboardState => ({
-    acquisition: defaultResourceState(),
-    buildingProposal: defaultResourceState(),
     loi: defaultResourceState(),
     buildingLCDPresence: {
       data: null,
@@ -47,37 +43,6 @@ export const useDashboardStore = defineStore('dashboard', {
   }),
 
   actions: {
-    async fetchAcquisitionReport() {
-      this.acquisition.isLoading = true
-      try {
-        const response = await getAcquisitionReport(this.acquisition.filters)
-
-        this.acquisition.report = response.data || null
-      }
-      catch (error) {
-        console.error('Error fetching acquisition report:', error)
-        throw error
-      }
-      finally {
-        this.acquisition.isLoading = false
-      }
-    },
-
-    async fetchBuildingProposalReport() {
-      this.buildingProposal.isLoading = true
-      try {
-        const response = await getBuildingProposalReport(this.buildingProposal.filters)
-
-        this.buildingProposal.report = response.data || null
-      }
-      catch (error) {
-        console.error('Error fetching building proposal report:', error)
-        throw error
-      }
-      finally {
-        this.buildingProposal.isLoading = false
-      }
-    },
 
     async fetchLOIReport() {
       this.loi.isLoading = true
@@ -113,8 +78,6 @@ export const useDashboardStore = defineStore('dashboard', {
 
     async fetchAllReports() {
       await Promise.all([
-        this.fetchAcquisitionReport(),
-        this.fetchBuildingProposalReport(),
         this.fetchLOIReport(),
         this.fetchBuildingLCDPresenceSummary(),
       ])

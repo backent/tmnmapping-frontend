@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useBranchStore } from '@/stores/branch'
 import type { CreateBranchRequest } from '@/types/branch'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,7 +39,7 @@ const fetchItem = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load branch'
+    errorMessage.value = extractApiError(error, 'Failed to load branch')
   }
   finally {
     isLoading.value = false
@@ -77,7 +78,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const msg = error?.details?.message || error?.details || 'Failed to save branch'
+    const msg = extractApiError(error, 'Failed to save branch')
 
     errorMessage.value = msg
     snackbarMessage.value = msg

@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useBuildingRestrictionStore } from '@/stores/buildingrestriction'
 import type { BuildingRestriction } from '@/types/buildingrestriction'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const buildingRestrictionStore = useBuildingRestrictionStore()
@@ -54,7 +55,7 @@ const fetchRestrictions = async () => {
     await buildingRestrictionStore.fetchBuildingRestrictions(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load building restrictions'
+    snackbarMessage.value = extractApiError(error, 'Failed to load building restrictions')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -99,7 +100,7 @@ const handleDelete = async (restriction: BuildingRestriction) => {
     await fetchRestrictions()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete building restriction'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete building restriction')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -138,7 +139,7 @@ const handleFileSelected = async (event: Event) => {
       duplicateDialog.value = true
     }
     else {
-      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import building restrictions'
+      snackbarMessage.value = extractApiError(error, 'Failed to import building restrictions')
       snackbarColor.value = 'error'
       snackbar.value = true
     }
@@ -159,7 +160,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export building restrictions'
+    snackbarMessage.value = extractApiError(error, 'Failed to export building restrictions')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
