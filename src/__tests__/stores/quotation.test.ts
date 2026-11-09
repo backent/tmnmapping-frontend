@@ -43,7 +43,7 @@ const realPricing: Pricing = {
 }
 
 const draft = {
-  id: 1, quote_number: 'Q-2026-0001', status: 'draft', is_editable: true, version: 1,
+  id: 1, quote_number: '001/XI/2026/QT', status: 'draft', is_editable: true, version: 1,
   pricing: realPricing, selections: [], approvals: [],
 } as unknown as Quotation
 
