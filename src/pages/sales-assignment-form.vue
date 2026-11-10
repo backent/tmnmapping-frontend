@@ -3,8 +3,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAdvertiserBrandStore, useCustomerStore, useSalesAssignmentStore } from '@/stores/advertiser'
 import { useUserStore } from '@/stores/user'
 import { STATUS_OPTIONS } from '@/types/advertiser'
-import type { SalesAssignmentPayload } from '@/types/advertiser'
+import type { MasterDataStatus, SalesAssignment, SalesAssignmentPayload, SalesAssignmentStatus } from '@/types/advertiser'
 import { extractApiError } from '@/utils/apiError'
+import { ASSIGNMENT_TERM_MONTHS, assignmentStatusChip, isAssignmentExpired, termExpiry, todayWIB } from '@/utils/salesAssignmentTerm'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,7 +19,10 @@ const itemId = computed(() => (isEdit.value ? Number(route.params.id) : null))
 
 // The payload requires the three ids; the form has to represent "not chosen yet",
 // and 0 is not that -- no option carries it, so VSelect renders a literal "0".
-type AssignmentDraft = Omit<SalesAssignmentPayload, 'customer_id' | 'brand_id' | 'sales_user_id'> & {
+type AssignmentDraft = Omit<SalesAssignmentPayload, 'customer_id' | 'brand_id' | 'sales_user_id' | 'status'> & {
+
+  // An expired assignment is shown as it is; only active and inactive are ever sent.
+  status: SalesAssignmentStatus
   customer_id: number | null
   brand_id: number | null
   sales_user_id: number | null
@@ -29,8 +33,34 @@ const form = ref<AssignmentDraft>({
   brand_id: null,
   sales_user_id: null,
   status: 'active',
-  registration_date: '',
-  expiry_date: '',
+})
+
+/** The assignment as loaded, for edit: what the term rules compare against. */
+const original = ref<SalesAssignment | null>(null)
+
+/** Expired assignments are history: shown read-only, never saved. */
+const isExpired = computed(() => !!original.value && isAssignmentExpired(original.value))
+
+/** Expired is offered only to display an expired row; nobody can choose it. */
+const statusOptions = computed(() =>
+  isExpired.value ? [...STATUS_OPTIONS, { title: 'Expired', value: 'expired' as const }] : STATUS_OPTIONS)
+
+/** What the backend will store as the expiry when this form is saved. */
+/**
+ * Both dates belong to the system: a new assignment is registered today and runs
+ * 3 months, and an existing one keeps its dates whatever is edited. Only an approved
+ * quotation moves the expiry.
+ */
+const registrationShown = computed(() => original.value?.registration_date || todayWIB())
+const expiryShown = computed(() => original.value?.expiry_date || termExpiry(todayWIB()))
+
+const expiryHint = computed(() => {
+  if (isExpired.value)
+    return 'This term has ended.'
+  if (!original.value)
+    return `Set automatically: ${ASSIGNMENT_TERM_MONTHS} months from today.`
+
+  return `Set automatically. Each approved quotation for this brand renews it for ${ASSIGNMENT_TERM_MONTHS} months; a new PIC takes over the remaining term.`
 })
 
 const isLoading = ref(false)
@@ -67,13 +97,13 @@ const fetchItem = async () => {
 
     const item = store.currentItem
     if (item) {
+      original.value = { ...item }
       form.value = {
         customer_id: item.customer_id,
         brand_id: item.brand_id,
         sales_user_id: item.sales_user_id,
-        status: item.status,
-        registration_date: item.registration_date,
-        expiry_date: item.expiry_date,
+
+        status: isAssignmentExpired(item) ? 'expired' : item.status,
       }
     }
   }
@@ -85,17 +115,56 @@ const fetchItem = async () => {
   }
 }
 
+/**
+ * Fills the form for the current route. It runs on mount and again on every route
+ * change: Edit and New share this component, so going from an expired assignment to
+ * "New assignment for this brand" reuses the instance and never mounts it again.
+ */
+const initForm = async () => {
+  errorMessage.value = ''
+  original.value = null
+  form.value = { customer_id: null, brand_id: null, sales_user_id: null, status: 'active' }
+
+  if (isEdit.value) {
+    await fetchItem()
+
+    return
+  }
+
+  // "New assignment for this brand", from an expired one, arrives with the pair.
+  const customerId = Number(route.query.customer_id)
+  const brandId = Number(route.query.brand_id)
+  if (customerId > 0) {
+    form.value.customer_id = customerId
+    await nextTick()
+    if (brandId > 0)
+      form.value.brand_id = brandId
+  }
+}
+
 onMounted(async () => {
   isLoading.value = true
   await loadReferenceData()
   isLoading.value = false
-  if (isEdit.value)
-    await fetchItem()
+  await initForm()
 })
 
-// Changing customer invalidates the brand choice.
-watch(() => form.value.customer_id, (next, previous) => {
-  if (previous !== undefined && next !== previous)
+watch(() => route.fullPath, initForm)
+
+const startNewForThisBrand = () => {
+  if (!original.value)
+    return
+  router.push({
+    name: 'sales-assignment-new',
+    query: { customer_id: String(original.value.customer_id), brand_id: String(original.value.brand_id) },
+  })
+}
+
+// Changing customer invalidates a brand of another customer. Only such a brand is
+// cleared: loading an assignment sets customer and brand together, and a blanket
+// reset wiped the brand it had just loaded, so Edit always opened with Brand empty.
+watch(() => form.value.customer_id, () => {
+  if (form.value.brand_id && !brandOptions.value.some(b => b.value === form.value.brand_id))
     form.value.brand_id = null
 })
 
@@ -106,12 +175,8 @@ const submit = async () => {
 
     return
   }
-  if (form.value.registration_date && form.value.expiry_date
-    && form.value.expiry_date < form.value.registration_date) {
-    errorMessage.value = 'Expiry Date cannot be earlier than Registration Date'
-
+  if (isExpired.value)
     return
-  }
 
   // The guard above proves these three, but the state models "not chosen yet"
   // as null, so narrow them into the payload explicitly.
@@ -120,6 +185,9 @@ const submit = async () => {
     customer_id: form.value.customer_id,
     brand_id: form.value.brand_id,
     sales_user_id: form.value.sales_user_id,
+
+    // Expired never reaches here: submit returns early for an expired assignment.
+    status: form.value.status as MasterDataStatus,
   }
 
   isSaving.value = true
@@ -155,7 +223,16 @@ onUnmounted(() => store.clearCurrentItem())
         >
           <VIcon icon="ri-arrow-left-s-line" />
         </VBtn>
-        <span class="text-h4 ms-4">{{ isEdit ? 'Edit' : 'Create' }} Sales Assignment</span>
+        <span class="text-h4 ms-4">{{ isExpired ? 'Expired' : isEdit ? 'Edit' : 'Create' }} Sales Assignment</span>
+        <VChip
+          v-if="original"
+          size="small"
+          variant="tonal"
+          class="ms-3"
+          :color="assignmentStatusChip(original).color"
+        >
+          {{ assignmentStatusChip(original).label }}
+        </VChip>
       </VCol>
     </VRow>
 
@@ -175,12 +252,35 @@ onUnmounted(() => store.clearCurrentItem())
         </VAlert>
 
         <VAlert
+          v-if="isExpired"
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+        >
+          <div>
+            This assignment expired on <strong>{{ original?.expiry_date }}</strong> because no
+            quotation for this brand was approved within {{ ASSIGNMENT_TERM_MONTHS }} months. It is
+            kept as history and cannot be changed or deleted.
+          </div>
+          <VBtn
+            class="mt-3"
+            color="primary"
+            size="small"
+            @click="startNewForThisBrand"
+          >
+            New assignment for this brand
+          </VBtn>
+        </VAlert>
+        <VAlert
+          v-else
           type="info"
           variant="tonal"
           class="mb-4"
         >
-          A brand has exactly one sales PIC. Assigning a brand that already has one
-          replaces the existing assignment.
+          A brand has one current sales PIC. The PIC holds it for {{ ASSIGNMENT_TERM_MONTHS }}
+          months from the registration date, and every approved quotation for the brand renews
+          that for another {{ ASSIGNMENT_TERM_MONTHS }} months. When the term runs out the
+          assignment expires and the brand needs a new one.
         </VAlert>
 
         <VForm @submit.prevent="submit">
@@ -193,7 +293,7 @@ onUnmounted(() => store.clearCurrentItem())
                 v-model="form.customer_id"
                 :items="customerOptions"
                 label="Customer"
-                :disabled="isSaving"
+                :disabled="isSaving || isExpired"
               />
             </VCol>
             <VCol
@@ -206,7 +306,7 @@ onUnmounted(() => store.clearCurrentItem())
                 label="Brand"
                 :hint="form.customer_id ? '' : 'Choose a customer first'"
                 persistent-hint
-                :disabled="isSaving || !form.customer_id"
+                :disabled="isSaving || isExpired || !form.customer_id"
               />
             </VCol>
             <VCol
@@ -217,7 +317,7 @@ onUnmounted(() => store.clearCurrentItem())
                 v-model="form.sales_user_id"
                 :items="userOptions"
                 label="Sales PIC"
-                :disabled="isSaving"
+                :disabled="isSaving || isExpired"
               />
             </VCol>
             <VCol
@@ -226,9 +326,9 @@ onUnmounted(() => store.clearCurrentItem())
             >
               <VSelect
                 v-model="form.status"
-                :items="STATUS_OPTIONS"
+                :items="statusOptions"
                 label="Status"
-                :disabled="isSaving"
+                :disabled="isSaving || isExpired"
               />
             </VCol>
             <VCol
@@ -236,10 +336,13 @@ onUnmounted(() => store.clearCurrentItem())
               md="6"
             >
               <VTextField
-                v-model="form.registration_date"
+                :model-value="registrationShown"
                 label="Registration Date"
                 type="date"
-                :disabled="isSaving"
+                readonly
+                disabled
+                :hint="original ? 'The day this assignment was created.' : 'Set automatically: today.'"
+                persistent-hint
               />
             </VCol>
             <VCol
@@ -247,10 +350,13 @@ onUnmounted(() => store.clearCurrentItem())
               md="6"
             >
               <VTextField
-                v-model="form.expiry_date"
+                :model-value="expiryShown"
                 label="Expiry Date"
                 type="date"
-                :disabled="isSaving"
+                readonly
+                disabled
+                :hint="expiryHint"
+                persistent-hint
               />
             </VCol>
             <VCol
@@ -258,6 +364,7 @@ onUnmounted(() => store.clearCurrentItem())
               class="d-flex gap-2"
             >
               <VBtn
+                v-if="!isExpired"
                 type="submit"
                 color="primary"
                 :loading="isSaving"
@@ -269,7 +376,7 @@ onUnmounted(() => store.clearCurrentItem())
                 :disabled="isSaving"
                 @click="cancel"
               >
-                Cancel
+                {{ isExpired ? 'Back' : 'Cancel' }}
               </VBtn>
             </VCol>
           </VRow>

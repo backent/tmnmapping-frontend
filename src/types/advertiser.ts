@@ -74,20 +74,28 @@ export interface SalesAssignment {
   sales_user_id: number
   sales_username: string
   sales_name: string
-  status: MasterDataStatus
+  status: SalesAssignmentStatus
   registration_date: string
+
+  /** Set by the system: 3 months from registration, renewed by each approval. */
   expiry_date: string
+
+  /** True once the term has ended, even before the daily job marks it expired. */
+  is_expired: boolean
+  expired_at: string
   created_at: string
   updated_at: string
 }
 
+/** `expired` is set only by the system; an admin chooses active or inactive. */
+export type SalesAssignmentStatus = MasterDataStatus | 'expired'
+
+/** No dates are sent: the backend registers an assignment today and owns its expiry. */
 export interface SalesAssignmentPayload {
   customer_id: number
   brand_id: number
   sales_user_id: number
   status: MasterDataStatus
-  registration_date: string
-  expiry_date: string
 }
 
 /** One rejected spreadsheet row. `row` is the number shown in Excel. */

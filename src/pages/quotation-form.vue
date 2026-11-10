@@ -16,7 +16,11 @@ import {
   toggleBuilding as toggleBuildingId,
 } from '@/utils/buildingPicker'
 import type { PriceableBuilding } from '@/utils/buildingPicker'
-import { useAdvertiserBrandStore, useCustomerStore } from '@/stores/advertiser'
+import { useAdvertiserBrandStore } from '@/stores/advertiser'
+import { getSalesAssignments } from '@/http/advertiser'
+import type { SalesAssignment } from '@/types/advertiser'
+import { brandOptionsFrom, customerOptionsFrom } from '@/utils/assignmentOptions'
+import type { CurrentPair } from '@/utils/assignmentOptions'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import PricingBar from '@/components/quotation/PricingBar.vue'
 import {
@@ -55,7 +59,6 @@ const { mdAndUp } = useDisplay()
 const store = useQuotationStore()
 const authStore = useAuthStore()
 const userStore = useUserStore()
-const customerStore = useCustomerStore()
 const brandStore = useAdvertiserBrandStore()
 const salesPackageStore = useSalesPackageStore()
 
@@ -254,13 +257,79 @@ const clearBuildingFilters = () => {
   cityFilter.value = []
 }
 
-const customerOptions = computed(() =>
-  customerStore.items.map(c => ({ title: `${c.name} (${c.code})`, value: c.id })))
+/**
+ * The seller's usable assignments: brands they are the current PIC of, active and not
+ * expired. Customer and brand are chosen only from these -- the server refuses any
+ * other pair on create. Loaded for the quotation's owner: the chosen sales owner when
+ * an admin enters on someone's behalf, otherwise the signed-in user, and on edit the
+ * quotation's own owner.
+ */
+const assignments = ref<SalesAssignment[]>([])
+const assignmentsLoading = ref(false)
 
-const brandOptions = computed(() =>
-  brandStore.items
-    .filter(b => b.customer_id === form.value.customer_id)
-    .map(b => ({ title: `${b.name} (${b.code})`, value: b.id })))
+// Until the first load answers, an empty list means "not known yet", not "none".
+const assignmentsLoaded = ref(false)
+
+const assignmentOwnerId = computed<number | null>(() => {
+  if (isEdit.value)
+    return store.currentItem?.sales_user_id ?? null
+
+  return salesOwnerId.value ?? authStore.currentUser?.id ?? null
+})
+
+/** On edit, the pair the draft already has stays selectable even if it has expired. */
+const currentPair = computed<CurrentPair | null>(() => {
+  const q = isEdit.value ? store.currentItem : null
+
+  return q ? { customer_id: q.customer_id, customer_name: q.customer_name, brand_id: q.brand_id, brand_name: q.brand_name } : null
+})
+
+const loadAssignments = async () => {
+  const ownerId = assignmentOwnerId.value
+  if (!ownerId) {
+    assignments.value = []
+
+    return
+  }
+  assignmentsLoading.value = true
+  try {
+    const response = await getSalesAssignments({
+      take: 1000, skip: 0, orderBy: 'customer_name', orderDirection: 'ASC', sales_user_id: ownerId, usable: true,
+    })
+
+    assignments.value = response.data || []
+  }
+  catch {
+    assignments.value = []
+  }
+  finally {
+    assignmentsLoading.value = false
+    assignmentsLoaded.value = true
+  }
+}
+
+const customerOptions = computed(() => customerOptionsFrom(assignments.value, currentPair.value))
+
+const brandOptions = computed(() => brandOptionsFrom(assignments.value, form.value.customer_id, currentPair.value))
+
+const noAssignmentsHint = computed(() => {
+  if (!assignmentsLoaded.value || assignmentsLoading.value || customerOptions.value.length > 0)
+    return ''
+
+  return salesOwnerId.value
+    ? 'This sales owner holds no active brand. Ask an admin to assign one.'
+    : 'You hold no active brand. Ask an admin to assign one.'
+})
+
+// An admin switching the sales owner gets that owner's brands; a pair the new owner
+// does not hold is cleared rather than left to fail on save.
+watch(salesOwnerId, async () => {
+  await loadAssignments()
+  if (form.value.customer_id && !customerOptions.value.some(c => c.value === form.value.customer_id))
+    form.value.customer_id = null
+  if (form.value.brand_id && !brandOptions.value.some(b => b.value === form.value.brand_id))
+    form.value.brand_id = null
+})
 
 const selectedBrand = computed(() =>
   brandStore.items.find(b => b.id === form.value.brand_id) ?? null)
@@ -301,8 +370,7 @@ watch(() => form.value.customer_id, () => {
   if (!form.value.brand_id)
     return
 
-  const stillValid = brandStore.items.some(
-    b => b.id === form.value.brand_id && b.customer_id === form.value.customer_id)
+  const stillValid = brandOptions.value.some(b => b.value === form.value.brand_id)
 
   if (!stillValid)
     form.value.brand_id = null
@@ -458,8 +526,9 @@ watch([placement, bonus, wantsBonus, () => form.value.discount, () => form.value
   refreshPreview, { deep: true })
 
 const loadReferenceData = async () => {
-  const [, , buildings] = await Promise.all([
-    customerStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
+  // Customers come from the seller's assignments; brands are still loaded for the
+  // contact they carry.
+  const [, buildings] = await Promise.all([
     brandStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
     getAllBuildingPrices(),
     salesPackageStore.fetchSalesPackages({ take: 1000, skip: 0 }),
@@ -472,10 +541,14 @@ const loadReferenceData = async () => {
 }
 
 onMounted(async () => {
-  await loadReferenceData()
+  // The seller's brands do not wait on the building prices, the slowest load here.
+  await Promise.all([loadReferenceData(), isEdit.value ? null : loadAssignments()])
 
   if (isEdit.value && quotationId.value) {
     await store.fetchById(quotationId.value)
+
+    // The owner is known only now; the draft's own pair is kept by currentPair.
+    await loadAssignments()
 
     const q = store.currentItem
     if (q) {
@@ -751,7 +824,10 @@ const campaignLine = (selection: SelectionPayload) =>
                 v-model="form.customer_id"
                 :items="customerOptions"
                 label="Customer"
+                :loading="assignmentsLoading"
                 :error-messages="showErrors && !form.customer_id ? 'Choose a customer' : ''"
+                :hint="noAssignmentsHint || 'Brands the sales owner is the active PIC of'"
+                persistent-hint
                 class="mb-4"
                 @update:model-value="form.brand_id = null"
               />

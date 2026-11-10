@@ -8,6 +8,27 @@ import type { PaginationParams } from '@/types/api'
 import { extractApiError } from '@/utils/apiError'
 import { useTableSort } from '@/composables/useTableSort'
 import SortableTh from '@/components/common/SortableTh.vue'
+import { assignmentStatusChip, daysLeft, isAssignmentExpired } from '@/utils/salesAssignmentTerm'
+
+/** Terms ending within this many days are flagged, so a PIC can be chased in time. */
+const EXPIRING_SOON_DAYS = 14
+
+const STATUS_FILTERS = [
+  { title: 'All statuses', value: '' },
+  { title: 'Active', value: 'active' },
+  { title: 'Inactive', value: 'inactive' },
+  { title: 'Expired (history)', value: 'expired' },
+]
+
+const statusFilter = ref('')
+
+const expiringIn = (item: SalesAssignment): number | null => {
+  if (isAssignmentExpired(item))
+    return null
+  const left = daysLeft(item.expiry_date)
+
+  return left !== null && left <= EXPIRING_SOON_DAYS ? left : null
+}
 
 const router = useRouter()
 const store = useSalesAssignmentStore()
@@ -51,6 +72,8 @@ const fetchItems = async () => {
 
     if (searchQuery.value.trim())
       params.search = searchQuery.value.trim()
+    if (statusFilter.value)
+      params.status = statusFilter.value
 
     await store.fetchList(params)
   }
@@ -169,19 +192,31 @@ const handleImport = async (file: File) => {
         </VCardTitle>
 
         <VCardText>
-          <VTextField
-            v-model="searchQuery"
-            label="Search by customer, brand or sales PIC"
-            placeholder="Type to search..."
-            prepend-inner-icon="ri-search-line"
-            variant="outlined"
-            density="compact"
-            clearable
-            class="mb-4"
-            style="max-width: 400px"
-            @input="handleSearch"
-            @click:clear="searchQuery = ''; handleSearch()"
-          />
+          <div class="d-flex flex-wrap gap-4 mb-4">
+            <VTextField
+              v-model="searchQuery"
+              label="Search by customer, brand or sales PIC"
+              placeholder="Type to search..."
+              prepend-inner-icon="ri-search-line"
+              variant="outlined"
+              density="compact"
+              clearable
+              hide-details
+              style="max-width: 400px; min-width: 240px"
+              @input="handleSearch"
+              @click:clear="searchQuery = ''; handleSearch()"
+            />
+            <VSelect
+              v-model="statusFilter"
+              :items="STATUS_FILTERS"
+              label="Status"
+              variant="outlined"
+              density="compact"
+              hide-details
+              style="max-width: 220px; min-width: 180px"
+              @update:model-value="currentPage = 1; fetchItems()"
+            />
+          </div>
 
           <div
             v-if="isLoading"
@@ -278,34 +313,44 @@ const handleImport = async (file: File) => {
                     <span class="text-body-2">
                       {{ item.registration_date || '—' }} to {{ item.expiry_date || '—' }}
                     </span>
+                    <div
+                      v-if="expiringIn(item) !== null"
+                      class="text-caption text-warning"
+                    >
+                      {{ expiringIn(item) === 0 ? 'Last day today' : `Expires in ${expiringIn(item)} day${expiringIn(item) === 1 ? '' : 's'}` }}
+                    </div>
                   </td>
                   <td>
                     <VChip
                       size="small"
-                      :color="item.status === 'active' ? 'success' : 'secondary'"
+                      :color="assignmentStatusChip(item).color"
                       variant="tonal"
                     >
-                      {{ item.status === 'active' ? 'Active' : 'Inactive' }}
+                      {{ assignmentStatusChip(item).label }}
                     </VChip>
                   </td>
                   <td
                     v-if="canManage"
                     class="text-center"
                   >
+                    <!-- Expired rows are history: viewable, never edited or deleted. -->
                     <VBtn
                       icon
                       size="small"
                       color="primary"
                       variant="text"
+                      :aria-label="isAssignmentExpired(item) ? 'View expired assignment' : 'Edit assignment'"
                       @click="router.push({ name: 'sales-assignment-edit', params: { id: item.id.toString() } })"
                     >
-                      <VIcon icon="ri-edit-line" />
+                      <VIcon :icon="isAssignmentExpired(item) ? 'ri-eye-line' : 'ri-edit-line'" />
                     </VBtn>
                     <VBtn
+                      v-if="!isAssignmentExpired(item)"
                       icon
                       size="small"
                       color="error"
                       variant="text"
+                      aria-label="Delete assignment"
                       @click="confirmDelete(item)"
                     >
                       <VIcon icon="ri-delete-bin-line" />
@@ -370,7 +415,8 @@ const handleImport = async (file: File) => {
         <VCardTitle>Confirm Delete</VCardTitle>
         <VCardText>
           Remove the assignment for "<strong>{{ itemToDelete?.brand_name }}</strong>"?
-          That brand will have no sales PIC until one is assigned again.
+          That brand will have no sales PIC until one is assigned again. Delete only a
+          mistaken entry: an assignment that ends on its own expires and stays as history.
         </VCardText>
         <VCardActions class="justify-end">
           <VBtn
