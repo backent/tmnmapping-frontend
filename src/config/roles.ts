@@ -106,8 +106,8 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [ROLES.SALES]: 'Creates and edits their own quotations.',
   [ROLES.SALES_ADMIN]: 'Runs the quotation side: customers, brands, sales assignments, prices, packages and the rate card; sees every quotation and can enter one for any seller. Can be a PIC. Does not approve.',
   [ROLES.HEAD_OF_SALES]: 'Approves discounts up to 65%, and may also own quotations.',
-  [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Approves discounts above 65% and up to 75%.',
-  [ROLES.CEO]: 'Approves discounts above 75%.',
+  [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Approves discounts above 65% and below 70%.',
+  [ROLES.CEO]: 'Approves discounts of 70% and above.',
 }
 
 export const ROLE_OPTIONS = ALL_ROLES.map(role => ({

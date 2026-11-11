@@ -104,14 +104,14 @@ describe('approval bands', () => {
   // all read the same thresholds, so they cannot disagree about a boundary.
   it('colours a discount by the same thresholds the band labels name', () => {
     expect(discountBandColor(DISCOUNT_THRESHOLDS.standard)).toBe(APPROVAL_BANDS.standard.color)
-    expect(discountBandColor(DISCOUNT_THRESHOLDS.elevated)).toBe(APPROVAL_BANDS.elevated.color)
-    expect(discountBandColor(DISCOUNT_THRESHOLDS.elevated + 1)).toBe(APPROVAL_BANDS.executive.color)
+    expect(discountBandColor(DISCOUNT_THRESHOLDS.executive - 0.01)).toBe(APPROVAL_BANDS.elevated.color)
+    expect(discountBandColor(DISCOUNT_THRESHOLDS.executive)).toBe(APPROVAL_BANDS.executive.color)
   })
 
   it('names each band with its range in words', () => {
     expect(APPROVAL_BANDS.standard.range).toBe('up to 65%')
-    expect(APPROVAL_BANDS.elevated.range).toBe('65 to 75%')
-    expect(APPROVAL_BANDS.executive.range).toBe('above 75%')
+    expect(APPROVAL_BANDS.elevated.range).toBe('above 65% and below 70%')
+    expect(APPROVAL_BANDS.executive.range).toBe('70% and above')
   })
 })
 

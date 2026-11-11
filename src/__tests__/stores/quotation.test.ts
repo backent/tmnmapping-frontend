@@ -43,8 +43,14 @@ const realPricing: Pricing = {
 }
 
 const draft = {
-  id: 1, quote_number: '001/XI/2026/QT', status: 'draft', is_editable: true, version: 1,
-  pricing: realPricing, selections: [], approvals: [],
+  id: 1,
+  quote_number: '001/XI/2026/QT',
+  status: 'draft',
+  is_editable: true,
+  version: 1,
+  pricing: realPricing,
+  selections: [],
+  approvals: [],
 } as unknown as Quotation
 
 describe('useQuotationStore', () => {
@@ -195,12 +201,14 @@ describe('quotation helpers', () => {
     expect(isPending('returned')).toBe(false)
   })
 
-  // Mirrors the backend bands: <=65 standard, <=75 elevated, above that executive.
+  // Mirrors the backend bands: <=65 standard, below 70 elevated, 70 and above
+  // executive (the CEO from 70% since 2026-11-11).
   it('colours the discount band at the same boundaries as the server', () => {
     expect(discountBandColor(65)).toBe('success')
     expect(discountBandColor(65.01)).toBe('warning')
-    expect(discountBandColor(75)).toBe('warning')
-    expect(discountBandColor(75.01)).toBe('error')
+    expect(discountBandColor(69.99)).toBe('warning')
+    expect(discountBandColor(70)).toBe('error')
+    expect(discountBandColor(75)).toBe('error')
   })
 
   it('renders whole rupiah', () => {

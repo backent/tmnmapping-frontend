@@ -1345,11 +1345,11 @@ const campaignLine = (selection: SelectionPayload) =>
                   />
                   <span
                     class="bg-warning"
-                    :style="{ flex: DISCOUNT_THRESHOLDS.elevated - DISCOUNT_THRESHOLDS.standard }"
+                    :style="{ flex: DISCOUNT_THRESHOLDS.executive - DISCOUNT_THRESHOLDS.standard }"
                   />
                   <span
                     class="bg-error"
-                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.elevated }"
+                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.executive }"
                   />
                 </div>
                 <span
@@ -1358,11 +1358,11 @@ const campaignLine = (selection: SelectionPayload) =>
                 />
                 <div class="discount-meter__labels text-caption text-disabled">
                   <span :style="{ flex: DISCOUNT_THRESHOLDS.standard }">Head of Sales · ≤{{ DISCOUNT_THRESHOLDS.standard }}%</span>
-                  <span :style="{ flex: DISCOUNT_THRESHOLDS.elevated - DISCOUNT_THRESHOLDS.standard }">BC</span>
+                  <span :style="{ flex: DISCOUNT_THRESHOLDS.executive - DISCOUNT_THRESHOLDS.standard }">BC</span>
                   <span
                     class="text-end"
-                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.elevated }"
-                  >CEO · &gt;{{ DISCOUNT_THRESHOLDS.elevated }}%</span>
+                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.executive }"
+                  >CEO · ≥{{ DISCOUNT_THRESHOLDS.executive }}%</span>
                 </div>
               </div>
 

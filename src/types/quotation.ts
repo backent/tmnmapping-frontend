@@ -284,13 +284,17 @@ export function isUnpriced(status: QuotationStatus): boolean {
  * display only: they colour and label hints while the seller types. The server
  * decides the real routing and can be configured differently, which is why the
  * approver itself is always taken from the server's preview, never from these.
+ *
+ * `standard` is the inclusive upper bound for Head of Sales; `executive` is where
+ * the CEO starts, inclusive. Since 2026-11-11 the CEO approves from 70% (it was
+ * above 75%), so Business Control covers above 65% and below 70%.
  */
-export const DISCOUNT_THRESHOLDS = { standard: 65, elevated: 75 } as const
+export const DISCOUNT_THRESHOLDS = { standard: 65, executive: 70 } as const
 
 export function discountBandColor(discount: number): string {
   if (discount <= DISCOUNT_THRESHOLDS.standard)
     return 'success'
-  if (discount <= DISCOUNT_THRESHOLDS.elevated)
+  if (discount < DISCOUNT_THRESHOLDS.executive)
     return 'warning'
 
   return 'error'
@@ -301,10 +305,10 @@ export const APPROVAL_BANDS: Record<string, { label: string; range: string; colo
   standard: { label: 'Standard approval', range: `up to ${DISCOUNT_THRESHOLDS.standard}%`, color: 'success' },
   elevated: {
     label: 'Elevated approval',
-    range: `${DISCOUNT_THRESHOLDS.standard} to ${DISCOUNT_THRESHOLDS.elevated}%`,
+    range: `above ${DISCOUNT_THRESHOLDS.standard}% and below ${DISCOUNT_THRESHOLDS.executive}%`,
     color: 'warning',
   },
-  executive: { label: 'Executive approval', range: `above ${DISCOUNT_THRESHOLDS.elevated}%`, color: 'error' },
+  executive: { label: 'Executive approval', range: `${DISCOUNT_THRESHOLDS.executive}% and above`, color: 'error' },
 }
 
 export const APPROVER_ROLE_LABELS: Record<string, string> = {
