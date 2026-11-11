@@ -34,6 +34,14 @@ import {
 import { hasBrandContact, mergeBrandContact } from '@/utils/brandContact'
 import { DEFAULT_VAT_PERCENT, vatPercentToRate, vatRateToPercent } from '@/utils/vat'
 import {
+  DEFAULT_PAYMENT_TERMS,
+  PAYMENT_TERMS_MAX_LENGTH,
+  isCustomPaymentTerms,
+  normalizePaymentTerms,
+  paymentTermLines,
+} from '@/utils/paymentTerms'
+import { launchDeadlineNote } from '@/config/quotationDocument'
+import {
   SPOTS_OPTIONS,
   TVC_DURATION_OPTIONS,
   durationLabel,
@@ -116,7 +124,23 @@ const form = ref({
   tax_rate: DEFAULT_VAT_PERCENT / 100,
   valid_until: defaultValidUntil(),
   campaign_year: new Date().getFullYear(),
+  payment_terms: DEFAULT_PAYMENT_TERMS,
 })
+
+const paymentTermsCustom = computed(() => isCustomPaymentTerms(form.value.payment_terms))
+
+const paymentTermsError = computed(() => {
+  if (!normalizePaymentTerms(form.value.payment_terms))
+    return 'Enter at least one payment term, or reset to the default'
+  if (form.value.payment_terms.length > PAYMENT_TERMS_MAX_LENGTH)
+    return `Keep the payment terms under ${PAYMENT_TERMS_MAX_LENGTH} characters`
+
+  return ''
+})
+
+const resetPaymentTerms = () => {
+  form.value.payment_terms = DEFAULT_PAYMENT_TERMS
+}
 
 /**
  * Proxy entry: an admin raising a quotation on a seller's behalf. Only admins get
@@ -568,6 +592,7 @@ onMounted(async () => {
         // Older backends sent a timestamp; the date is the first ten characters.
         valid_until: (q.valid_until || '').slice(0, 10) || defaultValidUntil(),
         campaign_year: q.campaign_year || new Date().getFullYear(),
+        payment_terms: q.payment_terms || DEFAULT_PAYMENT_TERMS,
       }
 
       const p = q.selections.find(s => s.kind === 'placement')
@@ -608,7 +633,7 @@ const errorForStep = (index: number): string => {
       return campaignError(placement.value, 'Placement')
         || (wantsBonus.value ? campaignError(bonus.value, 'Bonus') : '')
     case STEP.terms:
-      return discountError.value || vatError.value || validUntilError.value
+      return discountError.value || vatError.value || validUntilError.value || paymentTermsError.value
     default:
       return ''
   }
@@ -667,6 +692,7 @@ const save = async (thenSubmit: boolean) => {
     const payload: QuotationPayload = {
       ...form.value,
       valid_until: form.value.valid_until || undefined,
+      payment_terms: normalizePaymentTerms(form.value.payment_terms),
       discount: discountNumber(),
       customer_id: customerId,
       brand_id: brandId,
@@ -1410,6 +1436,43 @@ const campaignLine = (selection: SelectionPayload) =>
                     persistent-hint
                   />
                 </VCol>
+                <VCol cols="12">
+                  <VTextarea
+                    v-model="form.payment_terms"
+                    label="Terms of payment"
+                    rows="2"
+                    auto-grow
+                    :counter="PAYMENT_TERMS_MAX_LENGTH"
+                    :error-messages="paymentTermsError"
+                    hint="One term per line, printed on the document. Change the down payment when this customer's differs."
+                    persistent-hint
+                  >
+                    <template #append-inner>
+                      <VChip
+                        v-if="paymentTermsCustom"
+                        size="x-small"
+                        color="warning"
+                        variant="tonal"
+                      >
+                        Custom
+                      </VChip>
+                    </template>
+                  </VTextarea>
+                  <div class="d-flex flex-wrap align-center justify-space-between gap-2 mt-1">
+                    <span class="text-caption text-disabled">
+                      Also printed, from the campaign year: “{{ launchDeadlineNote(form.campaign_year) }}”
+                    </span>
+                    <VBtn
+                      v-if="paymentTermsCustom"
+                      size="small"
+                      variant="text"
+                      prepend-icon="ri-arrow-go-back-line"
+                      @click="resetPaymentTerms"
+                    >
+                      Reset to default
+                    </VBtn>
+                  </div>
+                </VCol>
               </VRow>
             </div>
 
@@ -1523,6 +1586,24 @@ const campaignLine = (selection: SelectionPayload) =>
                   </div>
                   <div class="text-caption text-disabled">
                     Valid until {{ formatCalendarDate(form.valid_until) }} · Campaign {{ form.campaign_year }}
+                  </div>
+                  <div class="text-caption mt-2">
+                    <span class="font-weight-medium">Payment</span>
+                    <VChip
+                      v-if="paymentTermsCustom"
+                      size="x-small"
+                      color="warning"
+                      variant="tonal"
+                      class="ms-1"
+                    >
+                      Custom
+                    </VChip>
+                    <div
+                      v-for="(line, index) in paymentTermLines(form.payment_terms)"
+                      :key="index"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </div>
               </div>

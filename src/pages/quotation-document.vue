@@ -4,11 +4,11 @@ import { useQuotationStore } from '@/stores/quotation'
 import {
   COMPANY,
   INVOICING_DOCUMENTS,
-  PAYMENT_TERMS,
   TERMS_AND_CONDITIONS,
   launchDeadlineNote,
 } from '@/config/quotationDocument'
 import { formatVatPercent } from '@/utils/vat'
+import { paymentTermLines } from '@/utils/paymentTerms'
 
 const route = useRoute()
 const router = useRouter()
@@ -388,8 +388,9 @@ const print = () => window.print()
               <div class="qd-strong">
                 Terms Of Payment :
               </div>
+              <!-- The terms stored on this quotation; older ones print the template's. -->
               <div
-                v-for="(term, index) in PAYMENT_TERMS"
+                v-for="(term, index) in paymentTermLines(quotation.payment_terms)"
                 :key="index"
               >
                 {{ term }}

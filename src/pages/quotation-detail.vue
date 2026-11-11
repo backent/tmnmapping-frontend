@@ -6,6 +6,7 @@ import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import { extractApiError } from '@/utils/apiError'
 import { formatCalendarDate, isPastCalendarDate } from '@/utils/date'
 import { approvalTrack, latestEvent } from '@/utils/quotationDetail'
+import { isCustomPaymentTerms, paymentTermLines } from '@/utils/paymentTerms'
 import type { TrackState } from '@/utils/quotationDetail'
 import {
   APPROVAL_BANDS,
@@ -514,6 +515,24 @@ const trackColor: Record<TrackState, string | undefined> = {
                     <dd>{{ quotation.contact_phone || '—' }}</dd>
                     <dt>Campaign year</dt>
                     <dd>{{ quotation.campaign_year || '—' }}</dd>
+                    <dt>Terms of payment</dt>
+                    <dd>
+                      <VChip
+                        v-if="isCustomPaymentTerms(quotation.payment_terms)"
+                        size="x-small"
+                        color="warning"
+                        variant="tonal"
+                        class="mb-1"
+                      >
+                        Custom payment terms
+                      </VChip>
+                      <div
+                        v-for="(line, index) in paymentTermLines(quotation.payment_terms)"
+                        :key="index"
+                      >
+                        {{ line }}
+                      </div>
+                    </dd>
                   </dl>
 
                   <!-- Resources: one row per selection, as on the real quotation document -->

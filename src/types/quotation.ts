@@ -38,6 +38,9 @@ export interface QuotationPayload {
   valid_until?: string
   discount: number
   tax_rate?: number
+
+  /** Terms Of Payment, one per line. Empty: the template wording, or unchanged. */
+  payment_terms?: string
   placement?: SelectionPayload | null
   bonus?: SelectionPayload | null
 }
@@ -141,6 +144,9 @@ export interface Quotation {
   valid_until: string
   discount: number
   tax_rate: number
+
+  /** Terms Of Payment printed on the document, one term per line. */
+  payment_terms: string
   status: QuotationStatus
   is_editable: boolean
   required_approver_name: string
