@@ -9,6 +9,7 @@
 export const ROLES = {
   ADMIN: 'admin',
   SALES: 'sales',
+  SALES_ADMIN: 'sales_admin',
   HEAD_OF_SALES: 'head_of_sales',
   HEAD_OF_BUSINESS_CONTROL: 'head_of_business_control',
   CEO: 'ceo',
@@ -19,6 +20,7 @@ export type Role = typeof ROLES[keyof typeof ROLES]
 /** Every recognised role, ascending by authority. */
 export const ALL_ROLES: Role[] = [
   ROLES.SALES,
+  ROLES.SALES_ADMIN,
   ROLES.HEAD_OF_SALES,
   ROLES.HEAD_OF_BUSINESS_CONTROL,
   ROLES.CEO,
@@ -92,6 +94,7 @@ export function roleHasAny(role: Role | null, allowed: readonly Role[]): boolean
 export const ROLE_LABELS: Record<Role, string> = {
   [ROLES.ADMIN]: 'Admin',
   [ROLES.SALES]: 'Sales',
+  [ROLES.SALES_ADMIN]: 'Sales Admin',
   [ROLES.HEAD_OF_SALES]: 'Head of Sales',
   [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Head of Business Control',
   [ROLES.CEO]: 'CEO',
@@ -101,6 +104,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [ROLES.ADMIN]: 'Manages master data, the rate card and user accounts. Does not approve quotations.',
   [ROLES.SALES]: 'Creates and edits their own quotations.',
+  [ROLES.SALES_ADMIN]: 'Runs the quotation side: customers, brands, sales assignments, prices, packages and the rate card; sees every quotation and can enter one for any seller. Can be a PIC. Does not approve.',
   [ROLES.HEAD_OF_SALES]: 'Approves discounts up to 65%, and may also own quotations.',
   [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Approves discounts above 65% and up to 75%.',
   [ROLES.CEO]: 'Approves discounts above 75%.',

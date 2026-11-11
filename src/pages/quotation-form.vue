@@ -4,7 +4,8 @@ import { useDisplay } from 'vuetify'
 import { useQuotationStore } from '@/stores/quotation'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import { useAuthStore } from '@/stores/auth'
-import { useUserStore } from '@/stores/user'
+import { getQuotationOwners } from '@/http/user'
+import type { QuotationOwner } from '@/types/user'
 import { getAllBuildingPrices } from '@/http/buildingprice'
 import {
   addBuildings,
@@ -58,7 +59,6 @@ const router = useRouter()
 const { mdAndUp } = useDisplay()
 const store = useQuotationStore()
 const authStore = useAuthStore()
-const userStore = useUserStore()
 const brandStore = useAdvertiserBrandStore()
 const salesPackageStore = useSalesPackageStore()
 
@@ -126,12 +126,15 @@ const form = ref({
  * offered on a new quotation.
  */
 const salesOwnerId = ref<number | null>(null)
-const canChooseOwner = computed(() => authStore.isAdmin && !isEdit.value)
+const canChooseOwner = computed(() => authStore.isQuotationAdmin && !isEdit.value)
+
+/** Who may own a quotation, from `GET /quotation-owners`: names only. */
+const owners = ref<QuotationOwner[]>([])
 
 const ownerOptions = computed(() => [
   { title: `Me (${authStore.currentUser?.name ?? 'you'})`, value: null as number | null },
-  ...userStore.items
-    .filter(u => u.can_create_quotations && u.id !== authStore.currentUser?.id)
+  ...owners.value
+    .filter(u => u.id !== authStore.currentUser?.id)
     .map(u => ({ title: `${u.name} (${u.username})`, value: u.id as number | null })),
 ])
 
@@ -533,7 +536,7 @@ const loadReferenceData = async () => {
     getAllBuildingPrices(),
     salesPackageStore.fetchSalesPackages({ take: 1000, skip: 0 }),
     canChooseOwner.value
-      ? userStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }).catch(() => null)
+      ? getQuotationOwners().then(r => { owners.value = r.data || [] }).catch(() => null)
       : null,
   ])
 

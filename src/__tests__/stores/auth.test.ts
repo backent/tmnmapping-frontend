@@ -162,6 +162,24 @@ describe('useAuthStore', () => {
       })
     })
 
+    // Read from the permission the backend sends, so the policy is not copied here.
+    describe('isQuotationAdmin', () => {
+      it('is true for admin and sales admin, who hold quotations.admin', () => {
+        const store = useAuthStore()
+
+        store.currentUser = { id: 7, username: 'sa', name: 'Sales Admin', role: 'sales_admin', permissions: ['quotations.admin'] }
+        expect(store.isQuotationAdmin).toBe(true)
+        expect(store.isAdmin).toBe(false)
+      })
+
+      it('is false without the permission, whatever the role', () => {
+        const store = useAuthStore()
+
+        store.currentUser = { ...salesUser, permissions: ['quotations.view', 'quotations.manage'] }
+        expect(store.isQuotationAdmin).toBe(false)
+      })
+    })
+
     describe('isSales', () => {
       it('returns true when role is "sales"', () => {
         const store = useAuthStore()

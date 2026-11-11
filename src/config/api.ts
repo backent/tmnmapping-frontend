@@ -169,6 +169,7 @@ export const apiConfig = {
     users_create: '/users',
     users_update: '/users/:id',
     users_delete: '/users/:id',
+    quotation_owners: '/quotation-owners',
 
     // Dashboard report endpoints
     dashboard_loi: '/dashboard/loi',

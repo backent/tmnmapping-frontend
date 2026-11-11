@@ -40,6 +40,15 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
+     * Admin or sales admin: administers quotations as a whole (every quotation, any
+     * sales owner, any brand). Read from the permission, so the policy stays in the
+     * backend. Never implies approval.
+     */
+    isQuotationAdmin(): boolean {
+      return this.can('quotations.admin')
+    },
+
+    /**
      * Check if user owns quotations
      */
     isSales(): boolean {

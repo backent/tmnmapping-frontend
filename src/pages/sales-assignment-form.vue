@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useAdvertiserBrandStore, useCustomerStore, useSalesAssignmentStore } from '@/stores/advertiser'
-import { useUserStore } from '@/stores/user'
+import { getQuotationOwners } from '@/http/user'
+import type { QuotationOwner } from '@/types/user'
 import { STATUS_OPTIONS } from '@/types/advertiser'
 import type { MasterDataStatus, SalesAssignment, SalesAssignmentPayload, SalesAssignmentStatus } from '@/types/advertiser'
 import { extractApiError } from '@/utils/apiError'
@@ -12,7 +13,9 @@ const router = useRouter()
 const store = useSalesAssignmentStore()
 const customerStore = useCustomerStore()
 const brandStore = useAdvertiserBrandStore()
-const userStore = useUserStore()
+
+// Who may hold a brand: names only, readable by sales admin as well as admin.
+const owners = ref<QuotationOwner[]>([])
 
 const isEdit = computed(() => !!route.params.id)
 const itemId = computed(() => (isEdit.value ? Number(route.params.id) : null))
@@ -78,13 +81,13 @@ const brandOptions = computed(() =>
     .map(b => ({ title: `${b.name} (${b.code})`, value: b.id })))
 
 const userOptions = computed(() =>
-  userStore.items.map(u => ({ title: `${u.name} (${u.username})`, value: u.id })))
+  owners.value.map(u => ({ title: `${u.name} (${u.username})`, value: u.id })))
 
 const loadReferenceData = async () => {
   await Promise.all([
     customerStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
     brandStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
-    userStore.fetchList({ take: 1000, skip: 0, orderBy: 'name', orderDirection: 'ASC' }),
+    getQuotationOwners().then(r => { owners.value = r.data || [] }),
   ])
 }
 

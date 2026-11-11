@@ -32,3 +32,11 @@ export interface UpdateUserRequest {
   can_create_quotations: boolean
   sales_group: SalesGroup | ''
 }
+
+/** A possible quotation owner or sales PIC, as `GET /quotation-owners` lists it. */
+export interface QuotationOwner {
+  id: number
+  username: string
+  name: string
+  role: string
+}

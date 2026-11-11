@@ -1,7 +1,7 @@
 import { deleteApi, getApi, postApi, putApi } from '@/utils/http'
 import { apiConfig } from '@/config/api'
 import type { ApiResponse, PaginationParams } from '@/types/api'
-import type { CreateUserRequest, ManagedUser, UpdateUserRequest } from '@/types/user'
+import type { CreateUserRequest, ManagedUser, QuotationOwner, UpdateUserRequest } from '@/types/user'
 
 export function getUsers(params?: PaginationParams): Promise<ApiResponse<ManagedUser[]>> {
   return getApi<ApiResponse<ManagedUser[]>>(
@@ -39,4 +39,13 @@ export function deleteUser(id: number): Promise<ApiResponse<string>> {
     {},
     { id },
   )
+}
+
+/**
+ * Who may own a quotation or hold a brand as PIC: names only. Open to admin and sales
+ * admin (`quotations.admin`), so sales admin can fill the pickers without reading
+ * user accounts.
+ */
+export function getQuotationOwners(): Promise<ApiResponse<QuotationOwner[]>> {
+  return getApi<ApiResponse<QuotationOwner[]>>(apiConfig.endpoints.quotation_owners)
 }
