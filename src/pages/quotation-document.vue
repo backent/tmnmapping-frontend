@@ -9,6 +9,8 @@ import {
 } from '@/config/quotationDocument'
 import { formatVatPercent } from '@/utils/vat'
 import { paymentTermLines } from '@/utils/paymentTerms'
+import tmnLetterheadLogo from '@images/quotation/tmn-letterhead-logo.webp'
+import memberCompanyOf from '@images/quotation/member-company-of.webp'
 
 const route = useRoute()
 const router = useRouter()
@@ -128,13 +130,17 @@ const print = () => window.print()
       </div>
 
       <!--
-        Letterhead. The template carries the TMN mark and the Focus Media Group
-        and Sinarmas partner marks; none of those asset files exist in this
-        project, so the slot is left for them rather than faked.
+        Letterhead, as in the 2026 template (2026-11-12): the TMN mark before the
+        address, and the "Member company of: Focus Media Group, Sinarmas" mark on
+        the right. That one image carries its own "Member company of" wording.
       -->
       <header class="qd-head">
         <div class="qd-head__brand">
-          <div class="qd-logo-slot" />
+          <img
+            class="qd-logo"
+            :src="tmnLetterheadLogo"
+            alt="tmn"
+          >
           <div>
             <div class="qd-company">
               {{ COMPANY.name }}
@@ -150,8 +156,11 @@ const print = () => window.print()
         </div>
 
         <div class="qd-head__partners">
-          <span class="qd-muted">Member company of:</span>
-          <span class="qd-partner-slot" />
+          <img
+            class="qd-partners"
+            :src="memberCompanyOf"
+            alt="Member company of: Focus Media Group, Sinarmas"
+          >
         </div>
       </header>
 
@@ -510,11 +519,12 @@ const print = () => window.print()
   margin-block-end: 2mm;
 }
 
-.qd-head__brand { display: flex; gap: 3mm; align-items: flex-start; }
-.qd-logo-slot { inline-size: 22mm; block-size: 10mm; }
+/* Mark sizes measured off the 2026 template; the image files are trimmed to the mark. */
+.qd-head__brand { display: flex; gap: 6mm; align-items: center; }
+.qd-logo { display: block; inline-size: 36mm; block-size: auto; }
 .qd-company { font-weight: 700; }
-.qd-head__partners { display: flex; gap: 2mm; justify-content: flex-end; align-items: center; }
-.qd-partner-slot { inline-size: 45mm; block-size: 8mm; }
+.qd-head__partners { display: flex; justify-content: flex-end; align-items: center; align-self: center; }
+.qd-partners { display: block; inline-size: 54mm; block-size: auto; }
 
 /* Party box */
 .qd-box { border: 1px solid #000; padding: 2mm; }
