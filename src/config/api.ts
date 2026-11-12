@@ -161,6 +161,7 @@ export const apiConfig = {
     quotations_submit: '/quotations/:id/submit',
     quotations_approve: '/quotations/:id/approve',
     quotations_return: '/quotations/:id/return',
+    quotation_approval_signature: '/quotations/:id/approval-signature',
     quotations_pricing_preview: '/quotations-pricing-preview',
     quotations_dashboard: '/quotations-dashboard',
 
@@ -169,6 +170,10 @@ export const apiConfig = {
     users_create: '/users',
     users_update: '/users/:id',
     users_delete: '/users/:id',
+
+    // Approval signatures (2026-11-12): an approver's own, and any user's for admin.
+    my_signature: '/me/signature',
+    user_signature: '/users/:id/signature',
     quotation_owners: '/quotation-owners',
 
     // Dashboard report endpoints

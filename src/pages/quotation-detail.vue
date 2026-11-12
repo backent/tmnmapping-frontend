@@ -49,6 +49,10 @@ const isMyQueue = computed(() =>
   && quotation.value.required_approver_name === authStore.userName
   && authStore.can('quotations.approve'))
 
+// The approved document prints the approver's signature, so the server refuses an
+// approval without one (2026-11-12). Say so here instead of offering a doomed button.
+const needsSignature = computed(() => isMyQueue.value && !authStore.currentUser?.has_signature)
+
 const isOwner = computed(() =>
   !!quotation.value && quotation.value.sales_user_id === authStore.currentUser?.id)
 
@@ -305,6 +309,7 @@ const trackColor: Record<TrackState, string | undefined> = {
                 <VBtn
                   color="success"
                   :loading="store.isSubmitting"
+                  :disabled="needsSignature"
                   @click="approveDialog = true"
                 >
                   Approve
@@ -361,6 +366,22 @@ const trackColor: Record<TrackState, string | undefined> = {
               {{ isExpired ? 'Expired' : 'Valid until' }} {{ formatCalendarDate(quotation.valid_until) }}
             </span>
           </div>
+
+          <VAlert
+            v-if="needsSignature"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            class="mt-4"
+          >
+            Upload your signature before approving: the approved quotation prints it.
+            <RouterLink
+              :to="{ name: 'my-signature' }"
+              class="font-weight-medium"
+            >
+              Go to My Signature
+            </RouterLink>
+          </VAlert>
         </VCardText>
 
         <VDivider />

@@ -46,6 +46,7 @@ declare module 'vue' {
     SavePolygonDialog: typeof import('./src/components/mapping/SavePolygonDialog.vue')['default']
     ScreenTypeFilter: typeof import('./src/components/mapping/ScreenTypeFilter.vue')['default']
     SellableFilter: typeof import('./src/components/mapping/SellableFilter.vue')['default']
+    SignatureUploader: typeof import('./src/components/signature/SignatureUploader.vue')['default']
     SortableTh: typeof import('./src/components/common/SortableTh.vue')['default']
     ThemeSwitcher: typeof import('./src/@core/components/ThemeSwitcher.vue')['default']
     UpgradeToPro: typeof import('./src/components/UpgradeToPro.vue')['default']

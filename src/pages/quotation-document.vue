@@ -9,6 +9,8 @@ import {
 } from '@/config/quotationDocument'
 import { formatVatPercent } from '@/utils/vat'
 import { paymentTermLines } from '@/utils/paymentTerms'
+import { approvalSignatureUrl } from '@/http/signature'
+import { signerTitle } from '@/utils/approvalSignature'
 import tmnLetterheadLogo from '@images/quotation/tmn-letterhead-logo.webp'
 import memberCompanyOf from '@images/quotation/member-company-of.webp'
 
@@ -17,6 +19,10 @@ const router = useRouter()
 const store = useQuotationStore()
 
 const quotation = computed(() => store.currentItem)
+
+// Printed under "Approved by:" (2026-11-12).
+const signature = computed(() => quotation.value?.approval_signature ?? null)
+const approverTitle = computed(() => signerTitle(quotation.value))
 
 onMounted(() => store.fetchById(Number(route.params.id)).catch(() => null))
 onUnmounted(() => store.clearCurrent())
@@ -468,11 +474,30 @@ const print = () => window.print()
             </tbody>
           </table>
 
+          <!--
+            The approver as they were when they approved (2026-11-12): signature above
+            the line, name and job title below. Empty until approved, and on quotations
+            approved before signatures existed.
+          -->
           <div class="qd-sign">
             <div class="qd-strong">
               Approved by:
             </div>
+            <div class="qd-sign__space">
+              <img
+                v-if="signature?.has_signature"
+                class="qd-sign__image"
+                :src="approvalSignatureUrl(quotation.id)"
+                alt="Approver signature"
+              >
+            </div>
             <div class="qd-sign__line" />
+            <template v-if="signature">
+              <div class="qd-strong">
+                {{ signature.name }}
+              </div>
+              <div>{{ approverTitle }}</div>
+            </template>
           </div>
         </div>
       </section>
@@ -571,7 +596,11 @@ const print = () => window.print()
 .qd-totals td:first-child { text-align: end; }
 
 .qd-sign { margin-block-start: 25mm; text-align: center; }
-.qd-sign__line { border-block-end: 1px solid #000; margin-block-start: 12mm; margin-inline: 8mm; }
+
+/* The signature sits in the same 12mm the empty line always left, so the page does not grow. */
+.qd-sign__space { display: flex; align-items: flex-end; justify-content: center; block-size: 12mm; }
+.qd-sign__image { display: block; max-block-size: 12mm; max-inline-size: 45mm; object-fit: contain; }
+.qd-sign__line { border-block-end: 1px solid #000; margin-inline: 8mm; margin-block-end: 1mm; }
 
 @media print {
   /*

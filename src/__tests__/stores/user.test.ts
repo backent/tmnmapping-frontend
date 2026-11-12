@@ -21,6 +21,8 @@ const salesUser: ManagedUser = {
   role: 'sales',
   can_create_quotations: true,
   sales_group: 'sales_team',
+  job_title: '',
+  has_signature: false,
   created_at: '2026-09-01T00:00:00Z',
   updated_at: '2026-09-01T00:00:00Z',
 }
@@ -100,6 +102,7 @@ describe('useUserStore', () => {
         role: 'admin',
         can_create_quotations: false,
         sales_group: '',
+        job_title: '',
       })
 
       expect(store.items).toEqual([adminUser])
@@ -124,6 +127,7 @@ describe('useUserStore', () => {
         role: 'sales',
         can_create_quotations: true,
         sales_group: 'sales_team',
+        job_title: '',
       })
 
       expect(store.items[0].name).toBe('Renamed')
@@ -145,6 +149,7 @@ describe('useUserStore', () => {
         role: 'admin',
         can_create_quotations: false,
         sales_group: '',
+        job_title: '',
       })
 
       expect(store.currentItem).toEqual(salesUser)

@@ -2,10 +2,12 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
-import { ROLES, ROLE_DESCRIPTIONS, ROLE_OPTIONS } from '@/config/roles'
+import { APPROVER_ROLES, ROLES, ROLE_DESCRIPTIONS, ROLE_OPTIONS } from '@/config/roles'
 import type { Role, SalesGroup } from '@/config/roles'
 import type { CreateUserRequest } from '@/types/user'
 import { extractApiError } from '@/utils/apiError'
+import SignatureUploader from '@/components/signature/SignatureUploader.vue'
+import { deleteUserSignature, uploadUserSignature, userSignatureUrl } from '@/http/signature'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +29,7 @@ const form = ref<CreateUserRequest>({
   role: ROLES.SALES as Role,
   can_create_quotations: false,
   sales_group: '' as SalesGroup | '',
+  job_title: '',
 })
 
 const isLoading = ref(false)
@@ -39,6 +42,30 @@ const snackbarMessage = ref('')
 const snackbarColor = ref<'success' | 'error'>('success')
 
 const roleHint = computed(() => ROLE_DESCRIPTIONS[form.value.role] ?? '')
+
+// Approval signature (2026-11-12). An admin may upload or remove it for any approver,
+// on a saved account. It is saved on its own, not with the form.
+const hasSignature = ref(false)
+const signatureVersion = ref(Date.now())
+const isApproverRole = computed(() => APPROVER_ROLES.includes(form.value.role))
+
+const signatureUrl = computed(() =>
+  (itemId.value && hasSignature.value ? userSignatureUrl(itemId.value, signatureVersion.value) : null))
+
+const uploadSignature = async (file: File) => {
+  if (!itemId.value)
+    return
+  await uploadUserSignature(itemId.value, file)
+  hasSignature.value = true
+  signatureVersion.value = Date.now()
+}
+
+const removeSignature = async () => {
+  if (!itemId.value)
+    return
+  await deleteUserSignature(itemId.value)
+  hasSignature.value = false
+}
 
 const fetchItem = async () => {
   if (!itemId.value)
@@ -57,7 +84,10 @@ const fetchItem = async () => {
         role: item.role,
         can_create_quotations: item.can_create_quotations,
         sales_group: item.sales_group || '',
+        job_title: item.job_title || '',
       }
+      hasSignature.value = !!item.has_signature
+      signatureVersion.value = Date.now()
     }
   }
   catch (error: any) {
@@ -252,6 +282,21 @@ onUnmounted(() => {
                 :disabled="isSaving || isSelf"
               />
             </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <VTextField
+                v-model="form.job_title"
+                label="Job title"
+                placeholder="e.g. Chief Executive Officer"
+                hint="Printed under the approver's name on approved quotations. Empty prints the role."
+                persistent-hint
+                counter="100"
+                maxlength="100"
+                :disabled="isSaving"
+              />
+            </VCol>
             <VCol cols="12">
               <VSwitch
                 v-model="form.can_create_quotations"
@@ -259,6 +304,29 @@ onUnmounted(() => {
                 hint="Independent of role — a Head of Sales both approves and sells."
                 persistent-hint
                 :disabled="isSaving"
+              />
+            </VCol>
+
+            <!--
+              Approval signature: approvers only, on a saved account. Saved on its own,
+              not by the Update button.
+            -->
+            <VCol
+              v-if="isEdit && isApproverRole"
+              cols="12"
+            >
+              <VDivider class="mb-4" />
+              <div class="text-subtitle-1 font-weight-medium mb-1">
+                Approval signature
+              </div>
+              <p class="text-body-2 text-medium-emphasis mb-3">
+                Printed under "Approved by:" on the quotations this user approves. They cannot
+                approve without one. Saved immediately, separately from the form.
+              </p>
+              <SignatureUploader
+                :image-url="signatureUrl"
+                :upload="uploadSignature"
+                :remove="removeSignature"
               />
             </VCol>
 

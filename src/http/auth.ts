@@ -32,6 +32,10 @@ export interface User {
   /** Quotation capabilities, orthogonal to `role`. See backend migration 015. */
   can_create_quotations?: boolean
   sales_group?: string | null
+
+  /** Approval signatures (2026-11-12): an approver cannot approve without one. */
+  job_title?: string
+  has_signature?: boolean
   last_login?: string
   [key: string]: any
 }

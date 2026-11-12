@@ -160,6 +160,12 @@ export interface Quotation {
   created_at: string
   updated_at: string
   approved_at: string
+
+  /**
+   * Who signed the approval, as they were when they approved (2026-11-12). Null until
+   * approved, and on quotations approved before signatures existed.
+   */
+  approval_signature: ApprovalSignature | null
 }
 
 export interface DashboardCounts {
@@ -334,4 +340,11 @@ export function formatIdr(value: number): string {
     currency: 'IDR',
     maximumFractionDigits: 0,
   }).format(value || 0)
+}
+
+/** Printed under "Approved by:" on the document. */
+export interface ApprovalSignature {
+  name: string
+  job_title: string
+  has_signature: boolean
 }

@@ -35,6 +35,7 @@ const ADMIN_PERMISSIONS = [
   'building-prices.manage',
   'building-projects.view',
   'building-projects.manage',
+
   // Landlord cost. Admin, head_of_business_control and ceo hold it; sales does not,
   // which is why it is absent from SALES_PERMISSIONS below.
   'building-projects.finance',
@@ -58,6 +59,12 @@ const SALES_PERMISSIONS = [
   'quotations.view',
   'quotations.manage',
 ]
+
+/**
+ * What only the approver roles (head_of_sales, head_of_business_control, ceo) hold on
+ * top of reading quotations. Admin deliberately does not approve.
+ */
+const APPROVER_ONLY_PERMISSIONS = ['quotations.approve']
 
 function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[] } = {}): AuthGuardStore {
   const { permissions = ADMIN_PERMISSIONS, ...rest } = overrides
@@ -212,7 +219,14 @@ describe('route permissions', () => {
 
   // Every key a route names must be one the backend actually issues, or the guard
   // will reject everyone forever. This list mirrors models/permission.go.
-  const BACKEND_PERMISSIONS = [...new Set([...ADMIN_PERMISSIONS, ...SALES_PERMISSIONS])]
+  const BACKEND_PERMISSIONS = [...new Set([...ADMIN_PERMISSIONS, ...SALES_PERMISSIONS, ...APPROVER_ONLY_PERMISSIONS])]
+
+  // My Signature (2026-11-12): approvers keep the signature their approvals print.
+  it('opens My Signature to approvers only', () => {
+    const route = flat.find(r => r.path === '/my-signature')
+
+    expect(route?.permission).toBe('quotations.approve')
+  })
 
   it('only references permissions the backend issues', () => {
     for (const route of flat) {

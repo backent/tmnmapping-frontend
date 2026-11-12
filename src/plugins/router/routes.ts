@@ -194,6 +194,13 @@ export const routes = [
         meta: { permission: 'brands.manage' },
       },
       {
+        // An approver's own signature, printed on the quotations they approve (2026-11-12).
+        path: 'my-signature',
+        name: 'my-signature',
+        component: () => import('@/pages/my-signature.vue'),
+        meta: { permission: 'quotations.approve' },
+      },
+      {
         path: 'sales-assignments',
         name: 'sales-assignments',
         component: () => import('@/pages/sales-assignments.vue'),

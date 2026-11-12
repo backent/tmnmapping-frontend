@@ -22,6 +22,9 @@ const canViewBrands = computed(() => authStore.can('brands.view'))
 const canViewAssignments = computed(() => authStore.can('sales-assignments.view'))
 const canViewPrices = computed(() => authStore.can('building-prices.view'))
 const canViewQuotations = computed(() => authStore.can('quotations.view'))
+
+// Approvers keep the signature their approvals print (2026-11-12).
+const canApprove = computed(() => authStore.can('quotations.approve'))
 </script>
 
 <template>
@@ -89,6 +92,14 @@ const canViewQuotations = computed(() => authStore.can('quotations.view'))
       title: 'Quotations',
       icon: 'ri-file-list-3-line',
       to: '/quotations',
+    }"
+  />
+  <VerticalNavLink
+    v-if="canApprove"
+    :item="{
+      title: 'My Signature',
+      icon: 'ri-quill-pen-line',
+      to: '/my-signature',
     }"
   />
   <VerticalNavLink
