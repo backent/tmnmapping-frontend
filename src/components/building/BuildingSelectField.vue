@@ -14,6 +14,9 @@ import type { Building } from '@/types/building'
 interface BuildingRef {
   id: number
   name: string
+
+  // Optional: shown and searchable when the parent's API returns it (2026-11-12).
+  iris_code?: string
   project_name: string
   subdistrict: string
   citytown: string
@@ -42,6 +45,7 @@ function toRef(b: Building): BuildingRef {
   return {
     id: b.id,
     name: b.name,
+    iris_code: b.iris_code,
     project_name: b.project_name,
     subdistrict: b.subdistrict,
     citytown: b.citytown,
@@ -63,6 +67,7 @@ function matchesSearch(b: BuildingRef, query: string): boolean {
 
   return (
     b.name.toLowerCase().includes(q)
+    || (!!b.iris_code && b.iris_code.toLowerCase().includes(q))
     || (!!b.project_name && b.project_name.toLowerCase().includes(q))
     || (!!b.subdistrict && b.subdistrict.toLowerCase().includes(q))
     || (!!b.citytown && b.citytown.toLowerCase().includes(q))
@@ -337,7 +342,7 @@ function confirmDialog() {
     <VTextField
       v-model="mainSearch"
       label="Search selected buildings"
-      placeholder="Search by name, project, subdistrict, city, province, type..."
+      placeholder="Search by name, IRIS code, project, subdistrict, city, province, type..."
       prepend-inner-icon="ri-search-line"
       variant="outlined"
       density="compact"
@@ -352,6 +357,9 @@ function confirmDialog() {
         <tr>
           <th class="text-uppercase">
             Name
+          </th>
+          <th class="text-uppercase">
+            IRIS Code
           </th>
           <th class="text-uppercase">
             Project Name
@@ -383,6 +391,9 @@ function confirmDialog() {
         >
           <td>
             <span class="font-weight-medium">{{ b.name }}</span>
+          </td>
+          <td>
+            <span class="text-body-2">{{ b.iris_code || '-' }}</span>
           </td>
           <td>
             <span class="text-body-2">{{ b.project_name || '-' }}</span>
@@ -420,7 +431,7 @@ function confirmDialog() {
         </tr>
         <tr v-if="pagedSelected.length === 0">
           <td
-            colspan="7"
+            colspan="8"
             class="text-center text-disabled py-6"
           >
             {{ modelValue.length === 0 ? 'No buildings selected. Click "Add Buildings" to select.' : 'No buildings match your search.' }}
@@ -589,6 +600,9 @@ function confirmDialog() {
                   Name
                 </th>
                 <th class="text-uppercase">
+                  IRIS Code
+                </th>
+                <th class="text-uppercase">
                   Project Name
                 </th>
                 <th class="text-uppercase">
@@ -625,6 +639,9 @@ function confirmDialog() {
                   <span class="font-weight-medium">{{ b.name }}</span>
                 </td>
                 <td>
+                  <span class="text-body-2">{{ b.iris_code || '-' }}</span>
+                </td>
+                <td>
                   <span class="text-body-2">{{ b.project_name || '-' }}</span>
                 </td>
                 <td>
@@ -642,7 +659,7 @@ function confirmDialog() {
               </tr>
               <tr v-if="!pickerLoading && pickerBuildings.length === 0">
                 <td
-                  colspan="7"
+                  colspan="8"
                   class="text-center text-disabled py-4"
                 >
                   No buildings found.
@@ -650,7 +667,7 @@ function confirmDialog() {
               </tr>
               <tr v-if="pickerLoading">
                 <td
-                  colspan="7"
+                  colspan="8"
                   class="py-4"
                 >
                   <VProgressLinear indeterminate />

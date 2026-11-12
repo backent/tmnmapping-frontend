@@ -1,6 +1,7 @@
 export interface BuildingRef {
   id: number
   name: string
+  iris_code: string
   project_name: string
   subdistrict: string
   citytown: string
