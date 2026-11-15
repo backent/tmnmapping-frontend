@@ -95,7 +95,7 @@ describe('useQuotationStore', () => {
 
       const preview = await store.refreshPreview({
         discount: 65,
-        placement: { mode: 'building', building_ids: [1], tvc_duration_seconds: 15, weeks: 4, spots: 180 },
+        placement: { mode: 'building', building_ids: [1], tvc_duration_seconds: 15, weeks: 4, spots: 90, spots_base: 90 },
       })
 
       expect(preview?.pricing.total_including_tax).toBe(590_520_000)
@@ -121,7 +121,7 @@ describe('useQuotationStore', () => {
 
       await expect(store.refreshPreview({
         discount: 50,
-        placement: { mode: 'building', building_ids: [1], tvc_duration_seconds: 15, weeks: 4, spots: 180 },
+        placement: { mode: 'building', building_ids: [1], tvc_duration_seconds: 15, weeks: 4, spots: 90, spots_base: 90 },
       })).rejects.toBeDefined()
 
       expect(store.preview).toBeNull()

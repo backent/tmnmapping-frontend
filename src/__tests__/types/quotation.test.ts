@@ -57,6 +57,8 @@ describe('selectionPayloadFrom', () => {
     tvc_duration_seconds: 30,
     weeks: 4,
     spots: 360,
+    spots_base: 90,
+    spots_multiplier: 4,
     gross_price_per_week: 6_400_000,
     gross_price: 25_600_000,
     traffic: 0,
@@ -77,7 +79,14 @@ describe('selectionPayloadFrom', () => {
       tvc_duration_seconds: 30,
       weeks: 4,
       spots: 360,
+      spots_base: 90,
     })
+  })
+
+  // A selection priced before 2026-11-15 carries the old 180 base; editing it starts
+  // from the base the server would reprice it on.
+  it('edits a legacy selection on the inferred base', () => {
+    expect(selectionPayloadFrom({ ...stored, spots: 180, spots_base: 180 }).spots_base).toBe(90)
   })
 })
 

@@ -44,10 +44,13 @@ import {
 } from '@/utils/paymentTerms'
 import { launchDeadlineNote } from '@/config/quotationDocument'
 import {
+  SPOTS_DROPDOWN_ITEMS,
   SPOTS_OPTIONS,
   TVC_DURATION_OPTIONS,
   durationLabel,
+  parseSpotsChoice,
   rateMultiplier,
+  spotsChoiceKey,
   spotsLabel,
   toCampaignNumber,
 } from '@/utils/campaignUnits'
@@ -227,10 +230,23 @@ const yearOptions = computed(() => campaignYearOptions(new Date().getFullYear(),
 const meterPosition = computed(() => Math.min(Math.max(discountNumber(), 0), 100))
 
 const durationOptions = TVC_DURATION_OPTIONS.map(value => ({ title: durationLabel(value), value }))
-const spotsOptions = SPOTS_OPTIONS.map(value => ({ title: spotsLabel(value), value }))
+
+// One dropdown for spots (2026-11-15): each entry is a frequency on a base, so 180
+// appears twice, as 60 × 3 and as 90 × 2.
+const spotsOptions = SPOTS_DROPDOWN_ITEMS
+
+const spotsValue = (selection: SelectionPayload) => spotsChoiceKey(selection.spots, selection.spots_base)
+
+const setSpots = (selection: SelectionPayload, key: string) => {
+  const choice = parseSpotsChoice(key)
+  if (!choice)
+    return
+  selection.spots = choice.spots
+  selection.spots_base = choice.base
+}
 
 const rateMultiplierFor = (selection: SelectionPayload) =>
-  rateMultiplier(selection.tvc_duration_seconds, selection.spots)
+  rateMultiplier(selection.tvc_duration_seconds, selection.spots, selection.spots_base)
 
 const MODE_OPTIONS = [
   { value: 'building' as const, label: 'Individual buildings' },
@@ -243,7 +259,8 @@ const placement = ref<SelectionPayload>({
   building_ids: [],
   tvc_duration_seconds: 15,
   weeks: 4,
-  spots: 180,
+  spots: 90,
+  spots_base: 90,
 })
 
 const wantsBonus = ref(false)
@@ -253,7 +270,8 @@ const bonus = ref<SelectionPayload>({
   building_ids: [],
   tvc_duration_seconds: 15,
   weeks: 4,
-  spots: 180,
+  spots: 90,
+  spots_base: 90,
 })
 
 const priceableBuildings = ref<PriceableBuilding[]>([])
@@ -491,6 +509,7 @@ const selectionPayload = (selection: SelectionPayload): SelectionPayload | null 
     weeks: toCampaignNumber(selection.weeks),
     tvc_duration_seconds: toCampaignNumber(selection.tvc_duration_seconds),
     spots: toCampaignNumber(selection.spots),
+    spots_base: toCampaignNumber(selection.spots_base),
   }
 
   if (campaign.mode === 'package')
@@ -519,7 +538,7 @@ const campaignError = (selection: SelectionPayload, label: string): string => {
   if (toCampaignNumber(selection.weeks) < 1)
     return `${label}: campaign duration must be at least one week`
 
-  if (rateMultiplier(selection.tvc_duration_seconds, selection.spots) === 0) {
+  if (rateMultiplier(selection.tvc_duration_seconds, selection.spots, selection.spots_base) === 0) {
     return `${label}: choose a TVC duration of ${TVC_DURATION_OPTIONS.join('/')}s `
       + `and ${SPOTS_OPTIONS.join('/')} spots`
   }
@@ -751,7 +770,7 @@ const brandTitle = computed(() => brandOptions.value.find(b => b.value === form.
 const ownerTitle = computed(() => ownerOptions.value.find(o => o.value === salesOwnerId.value)?.title ?? '—')
 
 const campaignLine = (selection: SelectionPayload) =>
-  `${durationLabel(selection.tvc_duration_seconds)} · ${spotsLabel(selection.spots)} · ${selection.weeks} wk`
+  `${durationLabel(selection.tvc_duration_seconds)} · ${spotsLabel(selection.spots, selection.spots_base)} · ${selection.weeks} wk`
 </script>
 
 <template>
@@ -1307,17 +1326,21 @@ const campaignLine = (selection: SelectionPayload) =>
                     md="4"
                   >
                     <VSelect
-                      v-model.number="row.model.spots"
+                      :model-value="spotsValue(row.model)"
                       :items="spotsOptions"
                       label="Spots / day / screen"
+                      hint="60 and 90 spots both cost the base rate; more is a multiple of the base you pick."
+                      persistent-hint
+                      @update:model-value="setSpots(row.model, $event)"
                     />
                   </VCol>
                 </VRow>
 
                 <!--
-                  The rate a building or package carries buys 15 seconds at 180 spots
-                  for one week. Nothing else on this step says that a longer spot
-                  costs more, so it is said here, with the arithmetic shown.
+                  The rate a building or package carries buys 15 seconds at 60 or 90
+                  spots for one week (2026-11-15; it was 180). Nothing else on this
+                  step says that a longer spot costs more, so it is said here, with
+                  the arithmetic shown.
                 -->
                 <VAlert
                   :type="rateMultiplierFor(row.model) > 1 ? 'info' : 'success'"
@@ -1329,12 +1352,12 @@ const campaignLine = (selection: SelectionPayload) =>
                     <strong>×{{ rateMultiplierFor(row.model) }} the base rate</strong> —
                     {{ row.model.tvc_duration_seconds }}s is
                     ×{{ row.model.tvc_duration_seconds / 15 }} and
-                    {{ row.model.spots }} spots is ×{{ row.model.spots / 180 }},
+                    {{ row.model.spots }} spots is {{ row.model.spots_base }} × {{ row.model.spots / row.model.spots_base }},
                     then ×{{ row.model.weeks }} for the weeks.
                   </span>
                   <span v-else>
-                    Base rate — 15s at 180 spots is what a building or package price
-                    buys, then ×{{ row.model.weeks }} for the weeks.
+                    Base rate — 15s at 60 or 90 spots is what a building or package
+                    price buys, then ×{{ row.model.weeks }} for the weeks.
                   </span>
                 </VAlert>
               </div>

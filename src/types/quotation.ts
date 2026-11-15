@@ -6,6 +6,8 @@
  * here is always the figure that will be charged.
  */
 
+import { editableSpotsBase } from '@/utils/campaignUnits'
+
 export type QuotationStatus =
   | 'draft'
   | 'pending_manager'
@@ -24,6 +26,9 @@ export interface SelectionPayload {
   tvc_duration_seconds: number
   weeks: number
   spots: number
+
+  /** The base the spots are counted on: 60 or 90 (2026-11-15). */
+  spots_base: number
 }
 
 export interface QuotationPayload {
@@ -64,6 +69,10 @@ export interface Selection {
   tvc_duration_seconds: number
   weeks: number
   spots: number
+
+  /** 60 or 90; 180 on a selection priced before 2026-11-15. */
+  spots_base: number
+  spots_multiplier: number
   gross_price_per_week: number
   gross_price: number
   traffic: number
@@ -259,6 +268,7 @@ export function selectionPayloadFrom(selection: Selection): SelectionPayload {
     tvc_duration_seconds: selection.tvc_duration_seconds,
     weeks: selection.weeks,
     spots: selection.spots,
+    spots_base: editableSpotsBase(selection.spots, selection.spots_base),
   }
 }
 
