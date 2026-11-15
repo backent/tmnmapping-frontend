@@ -49,6 +49,12 @@ const hasSignature = ref(false)
 const signatureVersion = ref(Date.now())
 const isApproverRole = computed(() => APPROVER_ROLES.includes(form.value.role))
 
+// A freelancer has no access (2026-11-15), so the quotation flag means nothing for them.
+watch(() => form.value.role, role => {
+  if (role === ROLES.FREELANCE)
+    form.value.can_create_quotations = false
+})
+
 const signatureUrl = computed(() =>
   (itemId.value && hasSignature.value ? userSignatureUrl(itemId.value, signatureVersion.value) : null))
 
@@ -297,7 +303,11 @@ onUnmounted(() => {
                 :disabled="isSaving"
               />
             </VCol>
-            <VCol cols="12">
+            <!-- A freelancer has no access, so creating quotations is not theirs to do. -->
+            <VCol
+              v-if="form.role !== ROLES.FREELANCE"
+              cols="12"
+            >
               <VSwitch
                 v-model="form.can_create_quotations"
                 label="Can create quotations"

@@ -13,11 +13,14 @@ export const ROLES = {
   HEAD_OF_SALES: 'head_of_sales',
   HEAD_OF_BUSINESS_CONTROL: 'head_of_business_control',
   CEO: 'ceo',
+
+  // No access to the app (2026-11-15): a sales admin enters their quotations.
+  FREELANCE: 'freelance',
 } as const
 
 export type Role = typeof ROLES[keyof typeof ROLES]
 
-/** Every recognised role, ascending by authority. */
+/** Every recognised role: the staff roles ascending by authority, then freelance, which has no access. */
 export const ALL_ROLES: Role[] = [
   ROLES.SALES,
   ROLES.SALES_ADMIN,
@@ -25,6 +28,7 @@ export const ALL_ROLES: Role[] = [
   ROLES.HEAD_OF_BUSINESS_CONTROL,
   ROLES.CEO,
   ROLES.ADMIN,
+  ROLES.FREELANCE,
 ]
 
 /**
@@ -98,6 +102,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   [ROLES.HEAD_OF_SALES]: 'Head of Sales',
   [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Head of Business Control',
   [ROLES.CEO]: 'CEO',
+  [ROLES.FREELANCE]: 'Freelance',
 }
 
 /** What each role is for, shown as a hint under the role select. */
@@ -108,6 +113,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [ROLES.HEAD_OF_SALES]: 'Approves discounts up to 65%, and may also own quotations.',
   [ROLES.HEAD_OF_BUSINESS_CONTROL]: 'Approves discounts above 65% and below 70%.',
   [ROLES.CEO]: 'Approves discounts of 70% and above.',
+  [ROLES.FREELANCE]: 'No access to the app. Can be a brand\'s PIC; a sales admin or admin enters their quotations, which go to Business Control (below 70%) or the CEO (70% and above).',
 }
 
 export const ROLE_OPTIONS = ALL_ROLES.map(role => ({

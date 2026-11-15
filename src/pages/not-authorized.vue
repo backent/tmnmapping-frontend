@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
+import { useAuthStore } from '@/stores/auth'
 import miscError from '@images/pages/404.png'
 import miscMaskDark from '@images/pages/misc-mask-dark.png'
 import miscMaskLight from '@images/pages/misc-mask-light.png'
 import tree from '@images/pages/tree.png'
 
 const vuetifyTheme = useTheme()
+const authStore = useAuthStore()
+const router = useRouter()
+
+// An account with no access at all (a freelancer) has no dashboard to go back to.
+const hasNoAccess = computed(() => !authStore.hasAnyPermission)
+
+const logout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
 
 const authThemeMask = computed(() => {
   return vuetifyTheme.global.name.value === 'light'
@@ -19,7 +31,9 @@ const authThemeMask = computed(() => {
     <ErrorHeader
       status-code="403"
       title="You are not authorized 🔐"
-      description="Your role does not have access to this page. Ask an administrator if you need it."
+      :description="hasNoAccess
+        ? 'Your account has no access to the app. A sales admin enters and follows up your quotations.'
+        : 'Your role does not have access to this page. Ask an administrator if you need it.'"
     />
 
     <!-- 👉 Image -->
@@ -31,6 +45,14 @@ const authThemeMask = computed(() => {
         class="mx-auto"
       />
       <VBtn
+        v-if="hasNoAccess"
+        class="mt-10"
+        @click="logout"
+      >
+        Log out
+      </VBtn>
+      <VBtn
+        v-else
         to="/dashboard"
         class="mt-10"
       >

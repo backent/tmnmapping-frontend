@@ -3,6 +3,9 @@ import {
   ALL_ROLES,
   APPROVER_ROLES,
   ROLES,
+  ROLE_DESCRIPTIONS,
+  ROLE_LABELS,
+  ROLE_OPTIONS,
   isValidRole,
   normalizeRole,
   roleHasAny,
@@ -66,5 +69,19 @@ describe('roleHasAny', () => {
   it('never matches a null role', () => {
     expect(roleHasAny(null, ALL_ROLES)).toBe(false)
     expect(roleHasAny(null, [] as Role[])).toBe(false)
+  })
+})
+
+// Freelance (2026-11-15): a role with no access, which a sales admin quotes for.
+describe('freelance', () => {
+  it('is a recognised role with a label and a description', () => {
+    expect(isValidRole(ROLES.FREELANCE)).toBe(true)
+    expect(ROLE_LABELS[ROLES.FREELANCE]).toBe('Freelance')
+    expect(ROLE_DESCRIPTIONS[ROLES.FREELANCE]).toContain('No access')
+    expect(ROLE_OPTIONS.map(o => o.value)).toContain('freelance')
+  })
+
+  it('is not an approver', () => {
+    expect(APPROVER_ROLES).not.toContain(ROLES.FREELANCE)
   })
 })

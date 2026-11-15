@@ -81,6 +81,14 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
+     * Whether the user holds any permission at all. A freelancer holds none
+     * (2026-11-15): their account exists for a sales admin to quote on their behalf.
+     */
+    hasAnyPermission(): boolean {
+      return this.permissions.length > 0
+    },
+
+    /**
      * Check whether the user holds one of the given roles
      */
     hasAnyRole() {

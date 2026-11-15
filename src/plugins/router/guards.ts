@@ -20,6 +20,7 @@ export interface AuthGuardStore {
   isAuthenticated: boolean
   currentUser: unknown
   can: (permission: Permission) => boolean
+  hasAnyPermission: boolean
   canCreateQuotations: boolean
   fetchCurrentUser: () => Promise<unknown>
 }
@@ -61,6 +62,12 @@ export async function resolveNavigation(
 
   if (ROLE_EXEMPT_ROUTES.includes(to.path))
     return true
+
+  // An account with no permission at all (a freelancer, 2026-11-15) has nothing to
+  // see. Routes without a `permission` would otherwise let it in, because every
+  // other role can read them.
+  if (!authStore.hasAnyPermission)
+    return '/not-authorized'
 
   // Route-level authorization. Routes without a `permission` are open to every
   // authenticated role. The backend enforces the same rules on the API; this only

@@ -73,6 +73,7 @@ function makeStore(overrides: Partial<AuthGuardStore> & { permissions?: string[]
     isAuthenticated: true,
     currentUser: { id: 1 },
     can: (permission: Permission) => permissions.includes(permission),
+    hasAnyPermission: permissions.length > 0,
     canCreateQuotations: true,
     fetchCurrentUser: vi.fn().mockResolvedValue({}),
     ...rest,
@@ -302,4 +303,20 @@ describe('route permissions', () => {
       expect(route!.permission).toBeUndefined()
     },
   )
+})
+
+// A freelancer holds no permission (2026-11-15): every screen is closed to them,
+// including the ones without a permission of their own, which every other role reads.
+describe('an account with no permission', () => {
+  it('is sent to not-authorized from any screen', async () => {
+    const store = makeStore({ permissions: [] })
+
+    expect(await resolveNavigation(to('/buildings'), store)).toBe('/not-authorized')
+    expect(await resolveNavigation(to('/dashboard'), store)).toBe('/not-authorized')
+    expect(await resolveNavigation(to('/quotations', 'quotations.view'), store)).toBe('/not-authorized')
+  })
+
+  it('can still reach not-authorized, so there is no loop', async () => {
+    expect(await resolveNavigation(to('/not-authorized'), makeStore({ permissions: [] }))).toBe(true)
+  })
 })

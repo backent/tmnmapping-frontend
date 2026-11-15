@@ -18,6 +18,7 @@ declare module 'vue' {
     CardStatisticsVertical: typeof import('./src/@core/components/cards/CardStatisticsVertical.vue')['default']
     CardStatisticsWithImages: typeof import('./src/@core/components/cards/CardStatisticsWithImages.vue')['default']
     ConnectivityFilter: typeof import('./src/components/mapping/ConnectivityFilter.vue')['default']
+    ErrorHeader: typeof import('./src/components/ErrorHeader.vue')['default']
     FilterGroup: typeof import('./src/components/mapping/FilterGroup.vue')['default']
     FilterSidebar: typeof import('./src/components/mapping/FilterSidebar.vue')['default']
     ImportExportToolbar: typeof import('./src/components/advertiser/ImportExportToolbar.vue')['default']
