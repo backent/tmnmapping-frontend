@@ -129,9 +129,9 @@ describe('formatIdrCompact', () => {
 
 // Approval tracks (2026-11-15).
 describe('approval tracks', () => {
-  it('puts sales and sales admin owners on the sales track, anyone else on the executive one', () => {
+  it('puts only sales owners on the sales track, anyone else (sales admin included) on the executive one', () => {
     expect(trackForOwnerRole('sales')).toBe('sales')
-    expect(trackForOwnerRole('sales_admin')).toBe('sales')
+    expect(trackForOwnerRole('sales_admin')).toBe('executive')
     for (const role of ['admin', 'head_of_sales', 'head_of_business_control', 'ceo', 'anything', null, undefined])
       expect(trackForOwnerRole(role)).toBe('executive')
   })

@@ -332,14 +332,15 @@ export const APPROVAL_BANDS: Record<string, { label: string; range: string; colo
 
 /**
  * Approval tracks (2026-11-15). The quotation's owner (the brand's PIC) picks it, not
- * whoever entered it: sales and sales admin owners go through Head of Sales; anyone
- * else skips it, Business Control below the executive threshold and the CEO from it.
+ * whoever entered it. Only owners with the sales role go through Head of Sales; anyone
+ * else, sales admin included, skips it: Business Control below the executive threshold
+ * and the CEO from it.
  * A CEO's own quotation in the CEO's band is approved on submit.
  */
 export type ApprovalTrack = 'sales' | 'executive'
 
 export function trackForOwnerRole(role: string | null | undefined): ApprovalTrack {
-  return role === 'sales' || role === 'sales_admin' ? 'sales' : 'executive'
+  return role === 'sales' ? 'sales' : 'executive'
 }
 
 /** The executive track's lower band: everything below the CEO goes to Business Control. */

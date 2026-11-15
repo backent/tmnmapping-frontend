@@ -19,7 +19,7 @@ describe('ownerTrackNote', () => {
     expect(ownerTrackNote({ role: 'ceo' })).toBe(EXECUTIVE_TRACK_NOTE)
     expect(ownerTrackNote({ role: 'admin' })).toBe(EXECUTIVE_TRACK_NOTE)
     expect(ownerTrackNote({ role: 'sales' })).toBe('')
-    expect(ownerTrackNote({ role: 'sales_admin' })).toBe('')
+    expect(ownerTrackNote({ role: 'sales_admin' })).toBe(EXECUTIVE_TRACK_NOTE)
     expect(ownerTrackNote(undefined)).toBe('')
   })
 })
