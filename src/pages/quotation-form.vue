@@ -25,13 +25,15 @@ import type { CurrentPair } from '@/utils/assignmentOptions'
 import PricingSummary from '@/components/quotation/PricingSummary.vue'
 import PricingBar from '@/components/quotation/PricingBar.vue'
 import {
-  APPROVAL_BANDS,
   APPROVER_ROLE_LABELS,
   DISCOUNT_THRESHOLDS,
+  approvalBandFor,
   formatIdr,
   selectionPayloadFrom,
+  trackForOwnerRole,
 } from '@/types/quotation'
 import { hasBrandContact, mergeBrandContact } from '@/utils/brandContact'
+import { ownerLabel } from '@/utils/ownerOptions'
 import { DEFAULT_VAT_PERCENT, vatPercentToRate, vatRateToPercent } from '@/utils/vat'
 import {
   DEFAULT_PAYMENT_TERMS,
@@ -59,7 +61,7 @@ import {
   weeklyBaseTotal,
 } from '@/utils/quotationWizard'
 import { formatCalendarDate } from '@/utils/date'
-import type { QuotationPayload, SelectionPayload } from '@/types/quotation'
+import type { ApprovalTrack, QuotationPayload, SelectionPayload } from '@/types/quotation'
 import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
@@ -159,7 +161,7 @@ const ownerOptions = computed(() => [
   { title: `Me (${authStore.currentUser?.name ?? 'you'})`, value: null as number | null },
   ...owners.value
     .filter(u => u.id !== authStore.currentUser?.id)
-    .map(u => ({ title: `${u.name} (${u.username})`, value: u.id as number | null })),
+    .map(u => ({ title: ownerLabel(u), value: u.id as number | null })),
 ])
 
 /**
@@ -538,6 +540,10 @@ const refreshPreview = () => {
       await store.refreshPreview({
         discount: discountNumber(),
         tax_rate: form.value.tax_rate,
+
+        // The owner's role picks the approval track (2026-11-15); ignored by the
+        // server unless a quotation admin is entering it for someone else.
+        sales_user_id: assignmentOwnerId.value,
         placement: selectionPayload(placement.value),
         bonus: wantsBonus.value ? selectionPayload(bonus.value) : null,
       })
@@ -549,7 +555,7 @@ const refreshPreview = () => {
   }, 300)
 }
 
-watch([placement, bonus, wantsBonus, () => form.value.discount, () => form.value.tax_rate],
+watch([placement, bonus, wantsBonus, () => form.value.discount, () => form.value.tax_rate, assignmentOwnerId],
   refreshPreview, { deep: true })
 
 const loadReferenceData = async () => {
@@ -721,7 +727,24 @@ const save = async (thenSubmit: boolean) => {
 }
 
 const previewApproval = computed(() => store.preview?.approval ?? null)
-const previewBand = computed(() => APPROVAL_BANDS[previewApproval.value?.band ?? ''] ?? null)
+const previewBand = computed(() => approvalBandFor(previewApproval.value))
+
+/**
+ * The owner's approval track, for the discount meter (2026-11-15). The server's
+ * preview says it once something is selected; until then it follows the owner's role.
+ */
+const ownerTrack = computed<ApprovalTrack>(() => {
+  if (previewApproval.value?.approval_track)
+    return previewApproval.value.approval_track
+  if (isEdit.value)
+    return store.currentItem?.approval_track ?? 'sales'
+
+  const ownerRole = salesOwnerId.value
+    ? owners.value.find(o => o.id === salesOwnerId.value)?.role
+    : authStore.currentUser?.role
+
+  return trackForOwnerRole(ownerRole)
+})
 
 const customerTitle = computed(() => customerOptions.value.find(c => c.value === form.value.customer_id)?.title ?? '—')
 const brandTitle = computed(() => brandOptions.value.find(b => b.value === form.value.brand_id)?.title ?? '—')
@@ -1337,7 +1360,40 @@ const campaignLine = (selection: SelectionPayload) =>
                 bands are the default thresholds, for orientation; the approver named
                 underneath comes from the server's preview.
               -->
-              <div class="discount-meter my-5">
+              <!--
+                An owner outside sales skips Head of Sales (2026-11-15): two bands,
+                Business Control below the CEO's threshold, the CEO from it.
+              -->
+              <div
+                v-if="ownerTrack === 'executive'"
+                class="discount-meter my-5"
+              >
+                <div class="discount-meter__bar">
+                  <span
+                    class="bg-warning"
+                    :style="{ flex: DISCOUNT_THRESHOLDS.executive }"
+                  />
+                  <span
+                    class="bg-error"
+                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.executive }"
+                  />
+                </div>
+                <span
+                  class="discount-meter__pin"
+                  :style="{ insetInlineStart: `${meterPosition}%` }"
+                />
+                <div class="discount-meter__labels text-caption text-disabled">
+                  <span :style="{ flex: DISCOUNT_THRESHOLDS.executive }">Business Control · &lt;{{ DISCOUNT_THRESHOLDS.executive }}%</span>
+                  <span
+                    class="text-end"
+                    :style="{ flex: 100 - DISCOUNT_THRESHOLDS.executive }"
+                  >CEO · ≥{{ DISCOUNT_THRESHOLDS.executive }}%</span>
+                </div>
+              </div>
+              <div
+                v-else
+                class="discount-meter my-5"
+              >
                 <div class="discount-meter__bar">
                   <span
                     class="bg-success"
@@ -1380,7 +1436,16 @@ const campaignLine = (selection: SelectionPayload) =>
                 >
                   {{ previewBand.label }} · {{ previewBand.range }}
                 </div>
-                <div class="font-weight-medium">
+                <div
+                  v-if="previewApproval.auto_approved"
+                  class="font-weight-medium"
+                >
+                  No approver needed · prints {{ previewApproval.approver_name || 'the CEO' }}'s signature
+                </div>
+                <div
+                  v-else
+                  class="font-weight-medium"
+                >
                   Goes to {{ APPROVER_ROLE_LABELS[previewApproval.approver_role] ?? previewApproval.approver_role }}
                   <span v-if="previewApproval.approver_name"> · {{ previewApproval.approver_name }}</span>
                 </div>
@@ -1613,9 +1678,15 @@ const campaignLine = (selection: SelectionPayload) =>
                 variant="tonal"
                 class="mt-4"
               >
-                Submitting re-prices everything at current prices and sends it to
-                {{ previewApproval ? (APPROVER_ROLE_LABELS[previewApproval.approver_role] ?? 'the approver') : 'the approver' }}
-                for approval. You can still edit it if it comes back.
+                <template v-if="previewApproval?.auto_approved">
+                  Submitting re-prices everything at current prices and approves it straight
+                  away: the owner is the CEO, the top approver.
+                </template>
+                <template v-else>
+                  Submitting re-prices everything at current prices and sends it to
+                  {{ previewApproval ? (APPROVER_ROLE_LABELS[previewApproval.approver_role] ?? 'the approver') : 'the approver' }}
+                  for approval. You can still edit it if it comes back.
+                </template>
               </VAlert>
             </div>
           </VCardText>

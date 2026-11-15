@@ -6,6 +6,7 @@ import type { QuotationOwner } from '@/types/user'
 import { STATUS_OPTIONS } from '@/types/advertiser'
 import type { MasterDataStatus, SalesAssignment, SalesAssignmentPayload, SalesAssignmentStatus } from '@/types/advertiser'
 import { extractApiError } from '@/utils/apiError'
+import { ownerLabel, ownerTrackNote } from '@/utils/ownerOptions'
 import { ASSIGNMENT_TERM_MONTHS, assignmentStatusChip, isAssignmentExpired, termExpiry, todayWIB } from '@/utils/salesAssignmentTerm'
 
 const route = useRoute()
@@ -81,7 +82,10 @@ const brandOptions = computed(() =>
     .map(b => ({ title: `${b.name} (${b.code})`, value: b.id })))
 
 const userOptions = computed(() =>
-  owners.value.map(u => ({ title: `${u.name} (${u.username})`, value: u.id })))
+  owners.value.map(u => ({ title: ownerLabel(u), value: u.id })))
+
+// Any user can be the PIC (2026-11-15); one outside sales changes the approval path.
+const picTrackNote = computed(() => ownerTrackNote(owners.value.find(u => u.id === form.value.sales_user_id)))
 
 const loadReferenceData = async () => {
   await Promise.all([
@@ -320,6 +324,8 @@ onUnmounted(() => store.clearCurrentItem())
                 v-model="form.sales_user_id"
                 :items="userOptions"
                 label="Sales PIC"
+                :hint="picTrackNote"
+                :persistent-hint="!!picTrackNote"
                 :disabled="isSaving || isExpired"
               />
             </VCol>

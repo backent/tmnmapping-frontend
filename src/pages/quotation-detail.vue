@@ -9,10 +9,10 @@ import { approvalTrack, latestEvent } from '@/utils/quotationDetail'
 import { isCustomPaymentTerms, paymentTermLines } from '@/utils/paymentTerms'
 import type { TrackState } from '@/utils/quotationDetail'
 import {
-  APPROVAL_BANDS,
   APPROVER_ROLE_LABELS,
   QUOTATION_STATUS_COLORS,
   QUOTATION_STATUS_LABELS,
+  approvalBandFor,
   approvalHintFor,
   discountBandColor,
   formatIdr,
@@ -91,7 +91,7 @@ const track = computed(() => (quotation.value
 const lastReturn = computed(() =>
   quotation.value?.status === 'returned' ? latestEvent(quotation.value.approvals, ['returned']) : null)
 
-const band = computed(() => APPROVAL_BANDS[approval.value?.band ?? ''] ?? null)
+const band = computed(() => approvalBandFor(approval.value))
 
 const isExpired = computed(() =>
   !!quotation.value && !isDraft.value && isPastCalendarDate(quotation.value.valid_until))
@@ -123,6 +123,7 @@ const previewDraft = async () => {
   await store.refreshPreview({
     discount: q.discount,
     tax_rate: q.tax_rate,
+    sales_user_id: q.sales_user_id,
     placement: placement.value ? selectionPayloadFrom(placement.value) : null,
     bonus: bonus.value ? selectionPayloadFrom(bonus.value) : null,
   }).catch(() => null)
@@ -457,7 +458,7 @@ const trackColor: Record<TrackState, string | undefined> = {
                 <VIcon
                   icon="ri-circle-fill"
                   size="10"
-                  :color="discountBandColor(quotation.discount)"
+                  :color="band?.color ?? discountBandColor(quotation.discount)"
                 />
               </span>
               <span class="text-caption text-disabled">{{ band ? `${band.label}, ${band.range}` : '' }}</span>

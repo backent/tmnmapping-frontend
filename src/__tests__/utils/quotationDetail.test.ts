@@ -119,3 +119,28 @@ describe('approvalTrack', () => {
     ])
   })
 })
+
+// An owner outside sales never goes through Head of Sales (2026-11-15).
+describe('approvalTrack on the executive track', () => {
+  const executive = (status: QuotationStatus, approvals: ApprovalEvent[]) =>
+    approvalTrack({ ...quotation(status, approvals), approval_track: 'executive' }, null, now)
+      .map(s => `${s.key}:${s.state}`)
+
+  it('leaves Head of Sales out entirely', () => {
+    expect(executive('pending_business_control', [submitted])).toEqual([
+      'submitted:done',
+      'head_of_business_control:current',
+      'ceo:skipped',
+      'approved:todo',
+    ])
+  })
+
+  it('draws a CEO quotation approved on submit as done by the CEO', () => {
+    expect(executive('approved', [submitted, event('approved', 'ceo', 'Thomas', '2026-10-15T03:00:00Z')])).toEqual([
+      'submitted:done',
+      'head_of_business_control:skipped',
+      'ceo:done',
+      'approved:done',
+    ])
+  })
+})

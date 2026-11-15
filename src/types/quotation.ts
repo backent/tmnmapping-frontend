@@ -98,6 +98,12 @@ export interface ApprovalHint {
   approver_name: string
   resolvable: boolean
   reason: string
+
+  /** The owner's track (2026-11-15). Absent on hints built from a status. */
+  approval_track?: ApprovalTrack
+
+  /** The owner is the CEO, so the quotation is approved on submit. */
+  auto_approved?: boolean
 }
 
 export interface PricingPreview {
@@ -162,6 +168,12 @@ export interface Quotation {
   approved_at: string
 
   /**
+   * "sales" (Head of Sales, Business Control or CEO) or "executive" (no Head of Sales),
+   * from the owner's role (2026-11-15). Fixed at submit; on a draft, the owner's current one.
+   */
+  approval_track: ApprovalTrack
+
+  /**
    * Who signed the approval, as they were when they approved (2026-11-12). Null until
    * approved, and on quotations approved before signatures existed.
    */
@@ -218,7 +230,7 @@ export const PENDING_STATUS_FILTER = 'pending'
  * those get no strip.
  */
 export function approvalHintFor(
-  quotation: Pick<Quotation, 'status' | 'required_approver_name'>,
+  quotation: Pick<Quotation, 'status' | 'required_approver_name'> & Partial<Pick<Quotation, 'approval_track'>>,
 ): ApprovalHint | null {
   const route = ({
     pending_manager: { band: 'standard', approver_role: 'head_of_sales' },
@@ -234,6 +246,7 @@ export function approvalHintFor(
     approver_name: quotation.required_approver_name,
     resolvable: true,
     reason: '',
+    approval_track: quotation.approval_track,
   }
 }
 
@@ -315,6 +328,41 @@ export const APPROVAL_BANDS: Record<string, { label: string; range: string; colo
     color: 'warning',
   },
   executive: { label: 'Executive approval', range: `${DISCOUNT_THRESHOLDS.executive}% and above`, color: 'error' },
+}
+
+/**
+ * Approval tracks (2026-11-15). The quotation's owner (the brand's PIC) picks it, not
+ * whoever entered it: sales and sales admin owners go through Head of Sales; anyone
+ * else skips it, Business Control below the executive threshold and the CEO from it.
+ * A CEO's own quotation in the CEO's band is approved on submit.
+ */
+export type ApprovalTrack = 'sales' | 'executive'
+
+export function trackForOwnerRole(role: string | null | undefined): ApprovalTrack {
+  return role === 'sales' || role === 'sales_admin' ? 'sales' : 'executive'
+}
+
+/** The executive track's lower band: everything below the CEO goes to Business Control. */
+const EXECUTIVE_TRACK_BELOW = {
+  label: 'Business Control approval',
+  range: `below ${DISCOUNT_THRESHOLDS.executive}%`,
+  color: 'warning',
+}
+
+const AUTO_APPROVED_BAND = { label: 'Approved on submit', range: 'the owner is the CEO', color: 'success' }
+
+/** How an approval hint reads, on its owner's track. */
+export function approvalBandFor(
+  hint: Pick<ApprovalHint, 'band' | 'approval_track' | 'auto_approved'> | null | undefined,
+): { label: string; range: string; color: string } | null {
+  if (!hint)
+    return null
+  if (hint.auto_approved)
+    return AUTO_APPROVED_BAND
+  if (hint.approval_track === 'executive' && hint.band !== 'executive')
+    return EXECUTIVE_TRACK_BELOW
+
+  return APPROVAL_BANDS[hint.band] ?? null
 }
 
 export const APPROVER_ROLE_LABELS: Record<string, string> = {

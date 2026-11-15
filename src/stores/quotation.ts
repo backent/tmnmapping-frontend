@@ -182,6 +182,7 @@ export const useQuotationStore = defineStore('quotation', {
     async refreshPreview(payload: {
       discount: number
       tax_rate?: number
+      sales_user_id?: number | null
       placement?: SelectionPayload | null
       bonus?: SelectionPayload | null
     }) {

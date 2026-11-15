@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { APPROVAL_BANDS, APPROVER_ROLE_LABELS, formatIdr } from '@/types/quotation'
+import { APPROVER_ROLE_LABELS, approvalBandFor, formatIdr } from '@/types/quotation'
 import { formatVatPercent } from '@/utils/vat'
 import type { ApprovalHint, Pricing, Selection } from '@/types/quotation'
 
@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<{
   sticky?: boolean
 }>(), { sticky: true })
 
-const band = computed(() => APPROVAL_BANDS[props.approval?.band ?? ''] ?? null)
+const band = computed(() => approvalBandFor(props.approval))
 
 const roleLabel = (role: string) => APPROVER_ROLE_LABELS[role] ?? role
 

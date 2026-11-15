@@ -4,12 +4,14 @@ import {
   DISCOUNT_THRESHOLDS,
   PENDING_STATUS_FILTER,
   QUOTATION_STATUS_LABELS,
+  approvalBandFor,
   approvalHintFor,
   campaignSummary,
   discountBandColor,
   formatIdrCompact,
   isUnpriced,
   selectionPayloadFrom,
+  trackForOwnerRole,
 } from '@/types/quotation'
 import type { CampaignLine, QuotationStatus, Selection } from '@/types/quotation'
 
@@ -122,5 +124,31 @@ describe('formatIdrCompact', () => {
   it('shortens millions and billions the Indonesian way', () => {
     expect(plain(420_201_600)).toBe('Rp 420,2 jt')
     expect(plain(1_154_400_000)).toBe('Rp 1,2 M')
+  })
+})
+
+// Approval tracks (2026-11-15).
+describe('approval tracks', () => {
+  it('puts sales and sales admin owners on the sales track, anyone else on the executive one', () => {
+    expect(trackForOwnerRole('sales')).toBe('sales')
+    expect(trackForOwnerRole('sales_admin')).toBe('sales')
+    for (const role of ['admin', 'head_of_sales', 'head_of_business_control', 'ceo', 'anything', null, undefined])
+      expect(trackForOwnerRole(role)).toBe('executive')
+  })
+
+  it('reads a band on its track', () => {
+    expect(approvalBandFor({ band: 'standard', approval_track: 'sales' })).toBe(APPROVAL_BANDS.standard)
+    expect(approvalBandFor({ band: 'standard', approval_track: 'executive' })?.label).toBe('Business Control approval')
+    expect(approvalBandFor({ band: 'elevated', approval_track: 'executive' })?.range).toBe('below 70%')
+    expect(approvalBandFor({ band: 'executive', approval_track: 'executive' })).toBe(APPROVAL_BANDS.executive)
+    expect(approvalBandFor({ band: 'executive', approval_track: 'executive', auto_approved: true })?.label).toBe('Approved on submit')
+    expect(approvalBandFor(null)).toBeNull()
+  })
+
+  it('carries the track on a hint built from a pending status', () => {
+    const hint = approvalHintFor({ status: 'pending_business_control', required_approver_name: 'April', approval_track: 'executive' })
+
+    expect(hint?.approval_track).toBe('executive')
+    expect(approvalBandFor(hint)?.label).toBe('Business Control approval')
   })
 })

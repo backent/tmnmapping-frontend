@@ -101,14 +101,16 @@ const shortDate = (value: string) => {
 }
 
 /**
- * The approval tracker: Submitted, the three approver roles, Approved.
+ * The approval tracker: Submitted, the three approver roles, Approved. On the
+ * executive track (an owner outside sales) Head of Sales is left out: two roles.
  *
  * Only one approver role is ever needed, so the other two read "Not needed" and are
  * dimmed. That is the point of drawing all three: the seller sees which level the
  * discount reached, and that it did not need the others.
  */
 export function approvalTrack(
-  quotation: Pick<Quotation, 'status' | 'approvals' | 'version' | 'required_approver_name'>,
+  quotation: Pick<Quotation, 'status' | 'approvals' | 'version' | 'required_approver_name'>
+  & Partial<Pick<Quotation, 'approval_track'>>,
   draftApproverRole?: string | null,
   now: Date = new Date(),
 ): TrackStep[] {
@@ -128,7 +130,13 @@ export function approvalTrack(
         : '',
   }]
 
-  for (const approver of APPROVER_ROLES) {
+  // An owner outside sales never goes through Head of Sales (2026-11-15), so that
+  // step is not drawn at all rather than shown as "Not needed".
+  const approvers: readonly ApproverRole[] = quotation.approval_track === 'executive'
+    ? APPROVER_ROLES.filter(r => r !== 'head_of_sales')
+    : APPROVER_ROLES
+
+  for (const approver of approvers) {
     const label = APPROVER_ROLE_LABELS[approver]
 
     // Not known yet (a draft whose preview has not loaded): no role is ruled out.

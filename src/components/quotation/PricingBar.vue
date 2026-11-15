@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { APPROVAL_BANDS, APPROVER_ROLE_LABELS, formatIdrCompact } from '@/types/quotation'
+import { APPROVER_ROLE_LABELS, approvalBandFor, formatIdrCompact } from '@/types/quotation'
 import type { ApprovalHint, Pricing } from '@/types/quotation'
 
 /**
@@ -18,7 +18,7 @@ const props = defineProps<{
 
 defineEmits<{ open: [] }>()
 
-const band = computed(() => APPROVAL_BANDS[props.approval?.band ?? ''] ?? null)
+const band = computed(() => approvalBandFor(props.approval))
 </script>
 
 <template>

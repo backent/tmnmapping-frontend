@@ -58,6 +58,9 @@ export function returnQuotation(id: number, comment: string): Promise<ApiRespons
 export function previewPricing(payload: {
   discount: number
   tax_rate?: number
+
+  /** The owner a quotation admin is entering for, which picks the approval track. */
+  sales_user_id?: number | null
   placement?: SelectionPayload | null
   bonus?: SelectionPayload | null
 }): Promise<ApiResponse<PricingPreview>> {
