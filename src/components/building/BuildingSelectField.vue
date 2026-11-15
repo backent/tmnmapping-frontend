@@ -90,7 +90,9 @@ const pagedSelected = computed(() => {
   return filteredSelected.value.slice(start, start + mainPerPage.value)
 })
 
-watch(mainSearch, () => { mainPage.value = 1 })
+watch(mainSearch, () => {
+  mainPage.value = 1
+})
 watch([() => props.modelValue.length, mainPerPage], () => {
   if (mainPage.value > mainTotalPages.value)
     mainPage.value = mainTotalPages.value
@@ -188,7 +190,9 @@ watch(dialogSearch, () => {
   dialogPage.value = 1
   if (searchDebounce)
     clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(() => { loadPickerPage() }, 500)
+  searchDebounce = setTimeout(() => {
+    loadPickerPage()
+  }, 500)
 })
 
 watch([dialogPage, dialogPerPage], () => {
@@ -508,7 +512,7 @@ function confirmDialog() {
               sm="6"
               md="2"
             >
-              <VSelect
+              <VAutocomplete
                 v-model="dialogFilters[field]"
                 :items="optionsFor(field)"
                 :label="FILTER_LABELS[field]"
@@ -529,7 +533,7 @@ function confirmDialog() {
                     class="text-caption text-disabled ms-1"
                   >+{{ dialogFilters[field].length - 1 }}</span>
                 </template>
-              </VSelect>
+              </VAutocomplete>
             </VCol>
           </VRow>
 

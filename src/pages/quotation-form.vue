@@ -882,7 +882,7 @@ const campaignLine = (selection: SelectionPayload) =>
 
             <!-- 1. Client -->
             <div v-if="step === STEP.client">
-              <VSelect
+              <VAutocomplete
                 v-if="canChooseOwner"
                 v-model="salesOwnerId"
                 :items="ownerOptions"
@@ -1059,7 +1059,7 @@ const campaignLine = (selection: SelectionPayload) =>
                       sm="6"
                       md="4"
                     >
-                      <VSelect
+                      <VAutocomplete
                         v-model="typeFilter"
                         :items="typeOptions"
                         label="Building type"
@@ -1076,7 +1076,7 @@ const campaignLine = (selection: SelectionPayload) =>
                       sm="6"
                       md="4"
                     >
-                      <VSelect
+                      <VAutocomplete
                         v-model="cityFilter"
                         :items="cityOptions"
                         label="City"

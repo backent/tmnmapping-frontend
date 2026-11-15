@@ -296,7 +296,7 @@ onUnmounted(() => store.clearCurrentItem())
               cols="12"
               md="6"
             >
-              <VSelect
+              <VAutocomplete
                 v-model="form.customer_id"
                 :items="customerOptions"
                 label="Customer"
@@ -307,7 +307,7 @@ onUnmounted(() => store.clearCurrentItem())
               cols="12"
               md="6"
             >
-              <VSelect
+              <VAutocomplete
                 v-model="form.brand_id"
                 :items="brandOptions"
                 label="Brand"
@@ -320,7 +320,7 @@ onUnmounted(() => store.clearCurrentItem())
               cols="12"
               md="6"
             >
-              <VSelect
+              <VAutocomplete
                 v-model="form.sales_user_id"
                 :items="userOptions"
                 label="Sales PIC"
