@@ -1,10 +1,22 @@
 <script setup lang="ts">
 import { useBuildingStore } from '@/stores/building'
+import { getBuildings } from '@/http/building'
+import {
+  BUILDING_FILTER_FIELDS,
+  countActiveFilters,
+  emptyBuildingFilters,
+  mergeStagedSelection,
+  serializeBuildingFilters,
+} from '@/utils/buildingQuery'
+import type { BuildingFilterField, BuildingFilters } from '@/utils/buildingQuery'
 import type { Building } from '@/types/building'
 
 interface BuildingRef {
   id: number
   name: string
+
+  // Optional: shown and searchable when the parent's API returns it (2026-11-12).
+  iris_code?: string
   project_name: string
   subdistrict: string
   citytown: string
@@ -33,6 +45,7 @@ function toRef(b: Building): BuildingRef {
   return {
     id: b.id,
     name: b.name,
+    iris_code: b.iris_code,
     project_name: b.project_name,
     subdistrict: b.subdistrict,
     citytown: b.citytown,
@@ -54,6 +67,7 @@ function matchesSearch(b: BuildingRef, query: string): boolean {
 
   return (
     b.name.toLowerCase().includes(q)
+    || (!!b.iris_code && b.iris_code.toLowerCase().includes(q))
     || (!!b.project_name && b.project_name.toLowerCase().includes(q))
     || (!!b.subdistrict && b.subdistrict.toLowerCase().includes(q))
     || (!!b.citytown && b.citytown.toLowerCase().includes(q))
@@ -76,7 +90,9 @@ const pagedSelected = computed(() => {
   return filteredSelected.value.slice(start, start + mainPerPage.value)
 })
 
-watch(mainSearch, () => { mainPage.value = 1 })
+watch(mainSearch, () => {
+  mainPage.value = 1
+})
 watch([() => props.modelValue.length, mainPerPage], () => {
   if (mainPage.value > mainTotalPages.value)
     mainPage.value = mainTotalPages.value
@@ -89,9 +105,52 @@ function removeBuilding(id: number) {
 // --- Modal picker (server-side search + pagination via buildingStore) ---
 
 const dialogOpen = ref(false)
+
+// Opening resets search, filters and page, and every one of those has a watcher
+// that reloads. Without this the dialog would fire several requests to show its
+// first page. Held for the one tick it takes the resets to flush.
+const suspendPickerReload = ref(false)
+
 const dialogSearch = ref('')
 const dialogPage = ref(1)
 const dialogPerPage = ref(10)
+
+/**
+ * Picker filters.
+ *
+ * These are sent to the server rather than applied here: the picker is
+ * server-paginated, so filtering in the browser would only narrow the ten rows on
+ * screen and quietly hide the rest of the match. `GET /buildings` takes each of
+ * these as a comma-separated list and turns it into a SQL `IN`, which is why they
+ * can be multi-select.
+ *
+ * The four chosen mirror the columns the table already shows, so a filter always
+ * corresponds to something visible.
+ */
+const FILTER_FIELDS = BUILDING_FILTER_FIELDS
+
+const FILTER_LABELS: Record<BuildingFilterField, string> = {
+  building_type: 'Building type',
+  province: 'Province',
+  citytown: 'City / town',
+  subdistrict: 'Subdistrict',
+}
+
+const dialogFilters = ref<BuildingFilters>(emptyBuildingFilters())
+
+const filterOptions = computed(() => buildingStore.filterOptions)
+
+const optionsFor = (field: BuildingFilterField): string[] =>
+  (filterOptions.value?.[field] ?? []).filter(Boolean)
+
+const activeFilterCount = computed(() => countActiveFilters(dialogFilters.value))
+
+const hasDialogFilter = computed(() => activeFilterCount.value > 0 || !!dialogSearch.value?.trim())
+
+function clearDialogFilters() {
+  dialogSearch.value = ''
+  dialogFilters.value = emptyBuildingFilters()
+}
 
 // Pending picks keyed by id so selections survive page/search changes.
 const dialogPending = ref<Map<number, BuildingRef>>(new Map())
@@ -113,9 +172,12 @@ async function loadPickerPage() {
     orderDirection: 'ASC',
   }
 
-  const q = dialogSearch.value.trim()
+  const q = dialogSearch.value?.trim()
   if (q)
     params.search = q
+
+  Object.assign(params, serializeBuildingFilters(dialogFilters.value))
+
   if (props.modelValue.length > 0)
     params.exclude_ids = props.modelValue.map(b => b.id).join(',')
   await buildingStore.fetchBuildingsForPicker(params)
@@ -123,26 +185,48 @@ async function loadPickerPage() {
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(dialogSearch, () => {
-  if (!dialogOpen.value)
+  if (!dialogOpen.value || suspendPickerReload.value)
     return
   dialogPage.value = 1
   if (searchDebounce)
     clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(() => { loadPickerPage() }, 500)
+  searchDebounce = setTimeout(() => {
+    loadPickerPage()
+  }, 500)
 })
 
 watch([dialogPage, dialogPerPage], () => {
-  if (!dialogOpen.value)
+  if (!dialogOpen.value || suspendPickerReload.value)
     return
   loadPickerPage()
 })
 
-function openDialog() {
-  dialogSearch.value = ''
+// No debounce: picking from a dropdown is one deliberate act, unlike typing a name.
+watch(dialogFilters, () => {
+  if (!dialogOpen.value || suspendPickerReload.value)
+    return
+  dialogPage.value = 1
+  loadPickerPage()
+}, { deep: true })
+
+async function openDialog() {
+  suspendPickerReload.value = true
+
+  clearDialogFilters()
   dialogPage.value = 1
   dialogPerPage.value = 10
   dialogPending.value = new Map()
   dialogOpen.value = true
+
+  // Fetched once per session and cached on the store; the dropdowns render empty
+  // rather than blocking the picker if it fails.
+  if (!buildingStore.filterOptions)
+    buildingStore.fetchFilterOptions().catch(() => null)
+
+  await nextTick()
+  suspendPickerReload.value = false
+
+  // One request for the first page, however much state the open just reset.
   loadPickerPage()
 }
 
@@ -162,6 +246,57 @@ function togglePending(b: Building) {
     next.delete(b.id)
   else next.set(b.id, toRef(b))
   dialogPending.value = next
+}
+
+const isSelectingAll = ref(false)
+
+/**
+ * Stage every building matching the current filters, not just the page on screen.
+ *
+ * The picker is paginated by the server, so the matches have to be fetched: one
+ * request with `take` set to the known total, carrying the same filters and the same
+ * exclude_ids, so it returns exactly the rows the user is looking at and nothing
+ * more. The whole buildings table is a few MB at most, and a filtered match is a
+ * fraction of that, so this stays one bounded request rather than a page-by-page walk.
+ */
+async function selectAllMatching() {
+  if (pickerTotal.value === 0 || isSelectingAll.value)
+    return
+
+  isSelectingAll.value = true
+  try {
+    const params: Record<string, string | number> = {
+      take: pickerTotal.value,
+      skip: 0,
+      orderBy: 'name',
+      orderDirection: 'ASC',
+    }
+
+    const q = dialogSearch.value?.trim()
+    if (q)
+      params.search = q
+
+    Object.assign(params, serializeBuildingFilters(dialogFilters.value))
+
+    if (props.modelValue.length > 0)
+      params.exclude_ids = props.modelValue.map(b => b.id).join(',')
+
+    const response = await getBuildings(params)
+
+    dialogPending.value = mergeStagedSelection(
+      dialogPending.value,
+      (response.data || []).map(toRef),
+      selectedIds.value,
+    )
+  }
+  finally {
+    isSelectingAll.value = false
+  }
+}
+
+/** Drop everything staged, leaving buildings already attached to the package alone. */
+function clearPending() {
+  dialogPending.value = new Map()
 }
 
 function confirmDialog() {
@@ -211,7 +346,7 @@ function confirmDialog() {
     <VTextField
       v-model="mainSearch"
       label="Search selected buildings"
-      placeholder="Search by name, project, subdistrict, city, province, type..."
+      placeholder="Search by name, IRIS code, project, subdistrict, city, province, type..."
       prepend-inner-icon="ri-search-line"
       variant="outlined"
       density="compact"
@@ -226,6 +361,9 @@ function confirmDialog() {
         <tr>
           <th class="text-uppercase">
             Name
+          </th>
+          <th class="text-uppercase">
+            IRIS Code
           </th>
           <th class="text-uppercase">
             Project Name
@@ -257,6 +395,9 @@ function confirmDialog() {
         >
           <td>
             <span class="font-weight-medium">{{ b.name }}</span>
+          </td>
+          <td>
+            <span class="text-body-2">{{ b.iris_code || '-' }}</span>
           </td>
           <td>
             <span class="text-body-2">{{ b.project_name || '-' }}</span>
@@ -294,7 +435,7 @@ function confirmDialog() {
         </tr>
         <tr v-if="pagedSelected.length === 0">
           <td
-            colspan="7"
+            colspan="8"
             class="text-center text-disabled py-6"
           >
             {{ modelValue.length === 0 ? 'No buildings selected. Click "Add Buildings" to select.' : 'No buildings match your search.' }}
@@ -347,18 +488,113 @@ function confirmDialog() {
         </VCardTitle>
         <VDivider />
         <VCardText>
-          <VTextField
-            v-model="dialogSearch"
-            label="Search buildings"
-            placeholder="Search by name, project, city..."
-            prepend-inner-icon="ri-search-line"
-            variant="outlined"
+          <VRow dense>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <VTextField
+                v-model="dialogSearch"
+                label="Search buildings"
+                placeholder="Search by name"
+                prepend-inner-icon="ri-search-line"
+                variant="outlined"
+                density="compact"
+                clearable
+                hide-details
+                @click:clear="dialogSearch = ''"
+              />
+            </VCol>
+            <VCol
+              v-for="field in FILTER_FIELDS"
+              :key="field"
+              cols="12"
+              sm="6"
+              md="2"
+            >
+              <VAutocomplete
+                v-model="dialogFilters[field]"
+                :items="optionsFor(field)"
+                :label="FILTER_LABELS[field]"
+                variant="outlined"
+                density="compact"
+                multiple
+                clearable
+                hide-details
+              >
+                <!-- Chips would wrap the row to three lines once two are picked. -->
+                <template #selection="{ item, index }">
+                  <span
+                    v-if="index === 0"
+                    class="text-truncate"
+                  >{{ item.title }}</span>
+                  <span
+                    v-else-if="index === 1"
+                    class="text-caption text-disabled ms-1"
+                  >+{{ dialogFilters[field].length - 1 }}</span>
+                </template>
+              </VAutocomplete>
+            </VCol>
+          </VRow>
+
+          <div class="d-flex align-center flex-wrap gap-2 my-3">
+            <span class="text-body-2">
+              <strong>{{ pickerTotal }}</strong>
+              building{{ pickerTotal === 1 ? '' : 's' }} match
+              <span
+                v-if="activeFilterCount"
+                class="text-disabled"
+              >
+                ({{ activeFilterCount }} filter{{ activeFilterCount === 1 ? '' : 's' }} applied)
+              </span>
+            </span>
+            <span
+              v-if="modelValue.length"
+              class="text-caption text-disabled"
+            >
+              · already-added buildings are excluded
+            </span>
+            <VSpacer />
+            <VBtn
+              size="small"
+              variant="tonal"
+              :loading="isSelectingAll"
+              :disabled="pickerTotal === 0"
+              @click="selectAllMatching"
+            >
+              <VIcon
+                icon="ri-checkbox-multiple-line"
+                class="me-1"
+              />
+              Select all {{ pickerTotal }} matching
+            </VBtn>
+            <VBtn
+              v-if="dialogPending.size > 0"
+              size="small"
+              variant="text"
+              @click="clearPending"
+            >
+              Clear {{ dialogPending.size }} staged
+            </VBtn>
+            <VBtn
+              v-if="hasDialogFilter"
+              size="small"
+              variant="text"
+              @click="clearDialogFilters"
+            >
+              Reset filters
+            </VBtn>
+          </div>
+
+          <VAlert
+            v-if="!pickerLoading && pickerBuildings.length === 0"
+            type="info"
+            variant="tonal"
             density="compact"
-            clearable
             class="mb-3"
-            hide-details
-            @click:clear="dialogSearch = ''"
-          />
+          >
+            No building matches these filters.
+          </VAlert>
 
           <VTable density="compact">
             <thead>
@@ -366,6 +602,9 @@ function confirmDialog() {
                 <th style="width: 50px;" />
                 <th class="text-uppercase">
                   Name
+                </th>
+                <th class="text-uppercase">
+                  IRIS Code
                 </th>
                 <th class="text-uppercase">
                   Project Name
@@ -404,6 +643,9 @@ function confirmDialog() {
                   <span class="font-weight-medium">{{ b.name }}</span>
                 </td>
                 <td>
+                  <span class="text-body-2">{{ b.iris_code || '-' }}</span>
+                </td>
+                <td>
                   <span class="text-body-2">{{ b.project_name || '-' }}</span>
                 </td>
                 <td>
@@ -421,7 +663,7 @@ function confirmDialog() {
               </tr>
               <tr v-if="!pickerLoading && pickerBuildings.length === 0">
                 <td
-                  colspan="7"
+                  colspan="8"
                   class="text-center text-disabled py-4"
                 >
                   No buildings found.
@@ -429,7 +671,7 @@ function confirmDialog() {
               </tr>
               <tr v-if="pickerLoading">
                 <td
-                  colspan="7"
+                  colspan="8"
                   class="py-4"
                 >
                   <VProgressLinear indeterminate />

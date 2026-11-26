@@ -8,6 +8,7 @@ import { useMotherBrandStore } from '@/stores/motherbrand'
 import { useBranchStore } from '@/stores/branch'
 import PlaceAutocomplete from '@/components/poi/PlaceAutocomplete.vue'
 import type { CreatePOIRequest, POIPointInput } from '@/types/poi'
+import { extractApiError } from '@/utils/apiError'
 
 const route = useRoute()
 const router = useRouter()
@@ -82,7 +83,7 @@ watch(pointSearch, () => { pointPage.value = 1 })
 
 const branchNameById = computed(() => {
   const map = new Map<number, string>()
-  for (const b of branchStore.dropdownItems as Array<{ id: number, name: string }>)
+  for (const b of branchStore.dropdownItems as Array<{ id: number; name: string }>)
     map.set(b.id, b.name)
 
   return map
@@ -91,6 +92,7 @@ const branchNameById = computed(() => {
 // --- Point modal ---
 const pointDialog = ref(false)
 const pointEditIndex = ref<number | null>(null)
+
 const pointDraft = ref<POIPointInput>({
   poi_name: '',
   address: '',
@@ -98,6 +100,7 @@ const pointDraft = ref<POIPointInput>({
   longitude: 0,
   branch_id: null,
 })
+
 const pointDraftError = ref('')
 
 const openAddPointDialog = () => {
@@ -229,7 +232,7 @@ const fetchPOI = async () => {
   }
   catch (error: any) {
     console.error('Fetch error:', error)
-    errorMessage.value = error?.details?.message || error?.details || 'Failed to load POI'
+    errorMessage.value = extractApiError(error, 'Failed to load POI')
   }
   finally {
     isLoading.value = false
@@ -276,7 +279,7 @@ const submit = async () => {
   catch (error: any) {
     console.error('Save error:', error)
 
-    const errorMsg = error?.details?.message || error?.details || 'Failed to save POI'
+    const errorMsg = extractApiError(error, 'Failed to save POI')
 
     errorMessage.value = errorMsg
     snackbarMessage.value = errorMsg
@@ -525,7 +528,7 @@ onUnmounted(() => {
                 <tbody>
                   <tr
                     v-for="(point, _i) in pagedPoints"
-                    :key="(point.id ?? '') + '|' + point.poi_name + '|' + point.latitude"
+                    :key="`${point.id ?? ''}|${point.poi_name}|${point.latitude}`"
                   >
                     <td>
                       <span class="font-weight-medium">{{ point.poi_name }}</span>

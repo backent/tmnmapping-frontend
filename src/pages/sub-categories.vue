@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useSubCategoryStore } from '@/stores/subcategory'
 import type { SubCategory } from '@/types/subcategory'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const subCategoryStore = useSubCategoryStore()
@@ -49,7 +50,7 @@ const fetchItems = async () => {
     await subCategoryStore.fetchList(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load sub-categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to load sub-categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -101,7 +102,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete sub-category'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete sub-category')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -134,7 +135,7 @@ const handleFileSelected = async (event: Event) => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import sub-categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to import sub-categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -154,7 +155,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export sub-categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to export sub-categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

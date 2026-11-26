@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useCategoryStore } from '@/stores/category'
 import type { Category } from '@/types/category'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const categoryStore = useCategoryStore()
@@ -49,7 +50,7 @@ const fetchItems = async () => {
     await categoryStore.fetchList(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to load categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -101,7 +102,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete category'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete category')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -134,7 +135,7 @@ const handleFileSelected = async (event: Event) => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to import categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -154,7 +155,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export categories'
+    snackbarMessage.value = extractApiError(error, 'Failed to export categories')
     snackbarColor.value = 'error'
     snackbar.value = true
   }

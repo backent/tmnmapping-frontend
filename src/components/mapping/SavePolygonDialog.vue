@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useSavedPolygonStore } from '@/stores/savedpolygon'
+import { extractApiError } from '@/utils/apiError'
 
 interface Props {
   modelValue: boolean
@@ -47,7 +48,7 @@ async function save() {
     emit('update:modelValue', false)
   }
   catch (err: any) {
-    errorMessage.value = err?.details?.message || err?.details || 'Failed to save polygon'
+    errorMessage.value = extractApiError(err, 'Failed to save polygon')
   }
   finally {
     isSaving.value = false

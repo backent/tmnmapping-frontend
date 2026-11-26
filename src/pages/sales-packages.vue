@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useSalesPackageStore } from '@/stores/salespackage'
 import type { SalesPackage } from '@/types/salespackage'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
+import { SALES_PACKAGE_IMPORT_COLUMNS, importProblems } from '@/utils/salesPackageImport'
+import type { ImportDuplicate, ImportRowError } from '@/utils/salesPackageImport'
+import { useTableSort } from '@/composables/useTableSort'
+import SortableTh from '@/components/common/SortableTh.vue'
 
 const router = useRouter()
 const salesPackageStore = useSalesPackageStore()
+const authStore = useAuthStore()
+
+// Both buttons, not just Import: unlike the other master-data screens, the API
+// requires sales-packages.manage for the EXPORT route too, so showing Export to a
+// view-only user would only ever produce a 403.
+const canManage = computed(() => authStore.can('sales-packages.manage'))
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
@@ -23,19 +35,18 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isImporting = ref(false)
 const isExporting = ref(false)
 
-// Import duplicate error dialog
-interface DuplicateRow {
-  name: string
-  building_name: string
-  rows: number[]
-}
-const duplicateDialog = ref(false)
-const duplicateRows = ref<DuplicateRow[]>([])
+// Import problems dialog: every unmatched or duplicate row, listed at once.
+const importErrorDialog = ref(false)
+const importErrorMessage = ref('')
+const duplicateRows = ref<ImportDuplicate[]>([])
+const importRowErrors = ref<ImportRowError[]>([])
 
 const packages = computed(() => salesPackageStore.packages)
 const isLoading = computed(() => salesPackageStore.isLoading)
 const totalRecords = computed(() => salesPackageStore.pagination.total)
 const totalPages = computed(() => Math.ceil(totalRecords.value / itemsPerPage.value) || 1)
+
+const { orderBy, orderDirection, toggle } = useTableSort('created_at', 'DESC')
 
 const fetchPackages = async () => {
   try {
@@ -44,8 +55,8 @@ const fetchPackages = async () => {
     const params: PaginationParams & { search?: string } = {
       take: itemsPerPage.value,
       skip,
-      orderBy: 'created_at',
-      orderDirection: 'DESC',
+      orderBy: orderBy.value,
+      orderDirection: orderDirection.value,
     }
 
     if (searchQuery.value.trim())
@@ -54,7 +65,7 @@ const fetchPackages = async () => {
     await salesPackageStore.fetchSalesPackages(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to load sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -68,6 +79,12 @@ const handleSearch = () => {
     currentPage.value = 1
     fetchPackages()
   }, 300)
+}
+
+const handleSort = (column: string) => {
+  toggle(column)
+  currentPage.value = 1
+  fetchPackages()
 }
 
 onMounted(async () => {
@@ -99,7 +116,7 @@ const handleDelete = async (pkg: SalesPackage) => {
     await fetchPackages()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete sales package'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete sales package')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -125,20 +142,22 @@ const handleFileSelected = async (event: Event) => {
     const response = await salesPackageStore.importSalesPackages(file)
     const count = response.data?.length || 0
 
-    snackbarMessage.value = `Successfully imported ${count} sales package(s)`
+    snackbarMessage.value = `Imported ${count} sales package(s). Existing packages kept their code and price.`
     snackbarColor.value = 'success'
     snackbar.value = true
     currentPage.value = 1
     await fetchPackages()
   }
   catch (error: any) {
-    const dupes = error?.details?.extras?.duplicates as DuplicateRow[] | undefined
-    if (dupes && dupes.length > 0) {
-      duplicateRows.value = dupes
-      duplicateDialog.value = true
+    const problems = importProblems(error)
+    if (problems) {
+      duplicateRows.value = problems.duplicates
+      importRowErrors.value = problems.rowErrors
+      importErrorMessage.value = problems.message
+      importErrorDialog.value = true
     }
     else {
-      snackbarMessage.value = error?.details?.data || error?.details?.message || 'Failed to import sales packages'
+      snackbarMessage.value = extractApiError(error, 'Failed to import sales packages')
       snackbarColor.value = 'error'
       snackbar.value = true
     }
@@ -159,7 +178,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export sales packages'
+    snackbarMessage.value = extractApiError(error, 'Failed to export sales packages')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -177,6 +196,7 @@ const handleExport = async () => {
           <span>Sales Packages</span>
           <div class="d-flex gap-2">
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isExporting"
@@ -189,6 +209,7 @@ const handleExport = async () => {
               Export
             </VBtn>
             <VBtn
+              v-if="canManage"
               color="secondary"
               variant="outlined"
               :loading="isImporting"
@@ -199,6 +220,13 @@ const handleExport = async () => {
                 class="me-1"
               />
               Import
+              <VTooltip
+                activator="parent"
+                location="bottom"
+                max-width="320"
+              >
+                Columns: {{ SALES_PACKAGE_IMPORT_COLUMNS.join(', ') }}. Buildings are matched by IRIS code (by name when a row has none). An existing package keeps its code and price; only its buildings are replaced. Export gives a ready-made file.
+              </VTooltip>
             </VBtn>
             <VBtn
               color="primary"
@@ -252,15 +280,25 @@ const handleExport = async () => {
             <VTable>
               <thead>
                 <tr>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="name"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Name
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase">
                     Buildings
                   </th>
-                  <th class="text-uppercase">
+                  <SortableTh
+                    column="created_at"
+                    :order-by="orderBy"
+                    :order-direction="orderDirection"
+                    @sort="handleSort"
+                  >
                     Created At
-                  </th>
+                  </SortableTh>
                   <th class="text-uppercase text-center">
                     Actions
                   </th>
@@ -360,10 +398,10 @@ const handleExport = async () => {
       </VCard>
     </VCol>
 
-    <!-- Duplicate rows dialog (import validation) -->
+    <!-- Import problems dialog (import validation) -->
     <VDialog
-      v-model="duplicateDialog"
-      max-width="720"
+      v-model="importErrorDialog"
+      max-width="760"
       scrollable
     >
       <VCard>
@@ -372,43 +410,91 @@ const handleExport = async () => {
             icon="ri-error-warning-line"
             color="error"
           />
-          <span>Import failed: duplicate rows</span>
+          <span>Import failed</span>
         </VCardTitle>
         <VCardText>
           <p class="mb-4 text-body-2">
-            The same sales package cannot reference the same building more than once. Please fix the rows below in your file and try again.
+            {{ importErrorMessage }} Nothing was imported. Please fix the rows below in your file and try again.
           </p>
-          <VTable density="compact">
-            <thead>
-              <tr>
-                <th class="text-uppercase">
-                  Name
-                </th>
-                <th class="text-uppercase">
-                  Building
-                </th>
-                <th class="text-uppercase">
-                  Rows
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(dup, idx) in duplicateRows"
-                :key="idx"
-              >
-                <td>{{ dup.name }}</td>
-                <td>{{ dup.building_name || '-' }}</td>
-                <td>{{ dup.rows.join(', ') }}</td>
-              </tr>
-            </tbody>
-          </VTable>
+
+          <template v-if="importRowErrors.length">
+            <div class="text-subtitle-2 mb-2">
+              Rows not matched to a building
+            </div>
+            <VTable
+              density="compact"
+              class="mb-4"
+            >
+              <thead>
+                <tr>
+                  <th class="text-uppercase">
+                    Row
+                  </th>
+                  <th class="text-uppercase">
+                    Package
+                  </th>
+                  <th class="text-uppercase">
+                    IRIS Code / Building
+                  </th>
+                  <th class="text-uppercase">
+                    Problem
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(rowError, idx) in importRowErrors"
+                  :key="`row-${idx}`"
+                >
+                  <td>{{ rowError.row }}</td>
+                  <td>{{ rowError.name }}</td>
+                  <td>{{ rowError.value || '-' }}</td>
+                  <td>{{ rowError.message }}</td>
+                </tr>
+              </tbody>
+            </VTable>
+          </template>
+
+          <template v-if="duplicateRows.length">
+            <div class="text-subtitle-2 mb-2">
+              Buildings listed more than once for the same package
+            </div>
+            <VTable density="compact">
+              <thead>
+                <tr>
+                  <th class="text-uppercase">
+                    Package
+                  </th>
+                  <th class="text-uppercase">
+                    Building
+                  </th>
+                  <th class="text-uppercase">
+                    IRIS Code
+                  </th>
+                  <th class="text-uppercase">
+                    Rows
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(dup, idx) in duplicateRows"
+                  :key="`dup-${idx}`"
+                >
+                  <td>{{ dup.name }}</td>
+                  <td>{{ dup.building_name || '-' }}</td>
+                  <td>{{ dup.iris_code || '-' }}</td>
+                  <td>{{ dup.rows.join(', ') }}</td>
+                </tr>
+              </tbody>
+            </VTable>
+          </template>
         </VCardText>
         <VCardActions>
           <VSpacer />
           <VBtn
             color="primary"
-            @click="duplicateDialog = false"
+            @click="importErrorDialog = false"
           >
             Close
           </VBtn>

@@ -22,6 +22,7 @@ const POLYGON_A = [
   { lat: 1, lng: 2 },
   { lat: 2, lng: 2 },
 ]
+
 const POLYGON_B = [
   { lat: 10, lng: 10 },
   { lat: 10, lng: 11 },
@@ -76,10 +77,12 @@ describe('useMappingStore fit-to-polygon counter', () => {
 
     await store.setPolygon(POLYGON_A)
     store.setFitBoundsToPolygon(true)
+
     const afterFirstRequest = store.fitBoundsToPolygon
 
     await store.setPolygon(POLYGON_B)
     store.setFitBoundsToPolygon(true)
+
     const afterSecondRequest = store.fitBoundsToPolygon
 
     expect(afterSecondRequest).toBeGreaterThan(afterFirstRequest)

@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useBranchStore } from '@/stores/branch'
 import type { Branch } from '@/types/branch'
 import type { PaginationParams } from '@/types/api'
+import { extractApiError } from '@/utils/apiError'
 
 const router = useRouter()
 const branchStore = useBranchStore()
@@ -49,7 +50,7 @@ const fetchItems = async () => {
     await branchStore.fetchList(params)
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to load branches'
+    snackbarMessage.value = extractApiError(error, 'Failed to load branches')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -101,7 +102,7 @@ const handleDelete = async () => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to delete branch'
+    snackbarMessage.value = extractApiError(error, 'Failed to delete branch')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -134,7 +135,7 @@ const handleFileSelected = async (event: Event) => {
     await fetchItems()
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to import branches'
+    snackbarMessage.value = extractApiError(error, 'Failed to import branches')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
@@ -154,7 +155,7 @@ const handleExport = async () => {
     snackbar.value = true
   }
   catch (error: any) {
-    snackbarMessage.value = error?.details?.message || error?.details || 'Failed to export branches'
+    snackbarMessage.value = extractApiError(error, 'Failed to export branches')
     snackbarColor.value = 'error'
     snackbar.value = true
   }
